@@ -62,6 +62,8 @@ class PipelineContractTests(unittest.TestCase):
         self.assertIn(
             "PREDECESSOR_NOT_TERMINALLY_ACCEPTABLE:verify:discover", result.issues
         )
+        self.assertNotIn("verify", result.completed_stage_ids)
+        self.assertNotIn("assess", result.completed_stage_ids)
 
     def test_bounded_run_is_explicit(self):
         bounded = RunContract(
