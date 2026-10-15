@@ -47,7 +47,7 @@ The source architecture expands this into access governance; candidate ground tr
 - Attachment discovery, fetch, extraction, atomization and evidence consolidation are separate states.
 - Bounded runs cannot be represented as completed full runs.
 
-## Runtime boundary finding
+## Runtime boundary findings
 
 The inspected `search_agent/runtime.py` constructs an `Opportunity` with `decision_source_verified=True`, `privacy_ok=True`, and `schema_ok=True` as defaults when upstream objects omit those fields. This can turn missing evidence into success-shaped values at that boundary. A replacement runtime must preserve explicit UNKNOWN/unverified states and derive privacy/schema verification from actual checks, not defaults. This is a code-observed risk, not proof that every upstream path currently omits those fields.
 
