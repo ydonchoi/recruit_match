@@ -69,6 +69,14 @@ class AttachmentSafetyTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "TIMEOUT_MUST_BE_FINITE_AND_POSITIVE"):
             AttachmentLimits(timeout_seconds=True)
 
+    def test_policy_decision_must_be_boolean(self):
+        with self.assertRaisesRegex(ValueError, "POLICY_DECISION_MUST_BE_BOOLEAN"):
+            AttachmentPolicy(frozenset({"jobs.example.test"}), policy_allows="false")
+
+    def test_robots_required_must_be_boolean(self):
+        with self.assertRaisesRegex(ValueError, "ROBOTS_REQUIRED_MUST_BE_BOOLEAN"):
+            AttachmentPolicy(frozenset({"jobs.example.test"}), policy_allows=True, robots_required=1)
+
     def test_invalid_host_allowlist_is_rejected(self):
         with self.assertRaisesRegex(ValueError, "INVALID_HOST_ALLOWLIST"):
             PublicURLPolicy(frozenset({"jobs.example.test", None}), resolver_public)
