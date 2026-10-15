@@ -77,3 +77,56 @@ The legacy pipeline documents GitHub Sync and collection-branch/PR integration. 
 ## Non-claims
 
 This trace does not establish complete runtime connectivity, passing tests, live Notion correctness, production readiness or exhaustive source coverage.
+
+
+## Additional caller-level trace (source revision `89899ee3b0719d73f36311004ac32f87e8a78dee`)
+
+### Request planning path versus execution path
+
+The inspected request-planning path is:
+
+```text
+SearchAgentRequestHandler.plan
+  -> TopLevelRouter.classify
+  -> CandidateEvidenceProvider.get
+  -> TopLevelRouter.plan
+  -> SearchRun + ToolCall("web.search", ...)
+```
+
+This path creates a tool-call plan; the inspected `request_handler.py` does not itself execute the returned `ToolCall`. It must not be mistaken for proof that a web search was actually performed.
+
+The separate execution path in `SearchAgentOrchestrator.execute_request` is:
+
+```text
+AdaptiveSearchPlanner.plan
+  -> injected search_executor(query)
+  -> SearchRuntime.execute(run, source_refs)
+  -> save traces
+  -> _to_assessment + assess_result
+  -> RegistryWriteProposal(approval_required=False)
+  -> registry_writer.execute(proposal)
+  -> save_registry_result
+  -> if status == READY_TO_MUTATE: UserRegistry.enroll
+  -> record utility/feedback/search run
+  -> SearchScreeningLoop.evaluate_and_adapt
+  -> persist metric update and validation
+```
+
+This path is **callable source code**, but the available evidence does not establish that a production trigger constructs the dependencies and invokes it with a real authorized search adapter. `SourceAcquisition` is a separate injected contract and is not directly invoked in the shown `execute_request` method; the method receives `search_executor` directly.
+
+### Fail-open projection and authorization findings
+
+- `SearchAgentOrchestrator._to_assessment` defaults missing `decision_source_verified` to `True`, missing `privacy_ok` and `schema_ok` to `True`, and missing `duplicate_conflict` to `False`. Missing attributes therefore become success-shaped decisions.
+- The constructed `RegistryWriteProposal` sets `approval_required=False`. When the writer returns `READY_TO_MUTATE`, the orchestrator enrolls the opportunity in `UserRegistry`.
+- `RecruitmentFlow._analysis_metadata` synthesizes missing records with `total_score=0.0`, `duplicate_free=True`, `privacy_ok=True`, and `schema_ok=True`. These are not supported by the absence of data and must be represented as UNKNOWN/unverified.
+- `domain_adapters.evidence_validation_service` calls `bool(row.get("privacy_ok", True))` and `bool(row.get("schema_ok", True))`, repeating the fail-open defaults at an adapter boundary.
+- The top-level router defaults to policy version `v5.4.13` in the inspected file, while the reviewed active repository instruction is `v5.4.25`. This is version drift; it does not alone establish the effective production version.
+
+### Target rebuild implications
+
+1. The new runner must be called by a known entry point; planning a `ToolCall` is not an execution receipt.
+2. Search adapters must return structured acquisition receipts and provenance, not arbitrary strings that later become source evidence by presence alone.
+3. Verification, privacy review, schema validation and duplicate resolution must be explicit tri-state or typed decisions. Missing fields cannot default to success.
+4. Registry eligibility/recommendation, private persistence, and external mutation must be separate operations with separate authorization.
+5. The target must record stage-level receipts, including the bounded run endpoint, before any persistence or external mutation is considered.
+6. No legacy candidate records or assessment outputs are needed to preserve these behaviors; synthetic tests can exercise the contracts.
