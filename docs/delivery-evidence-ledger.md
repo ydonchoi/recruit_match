@@ -3,7 +3,7 @@
 - Snapshot date: 2026-10-15
 - Target repository: `ydonchoi/recruit_match` (private)
 - Target branch: `bootstrap/verification-first-architecture`
-- Target branch head before this ledger update: `b4ae150b5235433c8a328d618f3e43da48269dc8`
+- Target branch head before this ledger update: `6a7e8675dbb2313c1c9cc45b55afe0a18eafe039`
 - Legacy source revision: `ydonchoi/recruitment_matching@89899ee3b0719d73f36311004ac32f87e8a78dee`
 - PR: [#1](https://github.com/ydonchoi/recruit_match/pull/1), Draft, not merged
 
@@ -55,7 +55,7 @@ This is a count of declared test functions by source inspection, not a count of 
 - Documented test command: `PYTHONPATH=src python -m unittest discover -s tests -v`.
 - Local execution of that command: **NOT PERFORMED**.
 - A separate browser-shell execution attempt could not start a clone because that environment has no `git` executable. The Python test command was not reached; this is not a test result.
-- GitHub Actions attempts repeatedly fail before exposing test steps. The latest observed run is [38718987417](https://github.com/ydonchoi/recruit_match/actions/runs/38718987417), for code-bearing head `54a298545bebfaf9a098e9aa923793a281d8672e`. Its job reports `runner_id=0`, empty runner name and no steps. The same pattern is present in the immediately preceding attempts.
+- GitHub Actions attempts repeatedly fail before exposing test steps. The latest run observed during this review was [38720734931](https://github.com/ydonchoi/recruit_match/actions/runs/38720734931), for code-bearing head `272d500741e703620a2a13e0ebca0e6f63a1428c`. Its job reports `runner_id=0`, empty runner name and no steps. The same pattern is present in the immediately preceding attempts. This observation is not a test result.
 - The observed pattern is consistent with runner initialization unavailability, but the exact infrastructure cause is not confirmed by logs.
 - No test assertion output is available. Test pass/fail count: **UNKNOWN**.
 - The synthetic full-workflow test calls the public `run_analysis` entry point, but it has **not been executed**.
