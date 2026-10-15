@@ -78,8 +78,9 @@ No mandatory stage may return `SKIPPED`, `ASSUMED_COMPLETE`, `IMPLICIT_PASS`, or
 
 ## Implementation order
 
-- **Gate 0 — source inventory:** completed at tracked-tree level; complete call graph still open.
-- **Gate 1 — contract and privacy boundaries:** document target architecture and stage envelope; no real-data migration.
+- **Gate 0 — source inventory:** tracked-tree inventory completed for source SHA `89899ee3b0719d73f36311004ac32f87e8a78dee` (1,059 paths, not truncated); complete call graph and full file-content review remain open.
+- **Gate 1 — contract and privacy boundaries:** documented. No real-data migration.
+- **Gate 2 — initial contracts:** provisional opportunity state separation and typed stage receipt/run validator added; tests written but not executed, and the validator is not wired into a runtime.
 - **Gate 2 — domain contracts:** strict enums, UNKNOWN semantics, identity/conflict and stage result types; synthetic-only tests.
 - **Gate 3 — execution pipeline:** enforce predecessors and bounded-run contract; no external mutation.
 - **Gate 4 — search and attachment adapters:** policy-first, explicit access and source authority, deterministic traces, adversarial tests.
