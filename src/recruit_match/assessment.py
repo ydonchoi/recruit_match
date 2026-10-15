@@ -140,9 +140,6 @@ def weighted_fit_score(
     )
     if any(value is None for value in values):
         return None
-    total_weight = sum(weights)
-    if not isfinite(total_weight):
-        raise ValueError("INVALID_FIT_WEIGHTS")
     score = sum(value * weight for value, weight in zip(values, weights)) / total_weight
     if not isfinite(score):
         raise ValueError("INVALID_FIT_SCORE")
