@@ -3,7 +3,7 @@
 - Snapshot date: 2026-10-15
 - Target repository: `ydonchoi/recruit_match` (private)
 - Target branch: `bootstrap/verification-first-architecture`
-- Source snapshot before this ledger update: `5750225dffdc2f0dec565bce8dbc9e7ec69c89f8`
+- Target branch head at this ledger snapshot: `d61fecdd6287d839debfd7d4ac8fdbcab55b8500`
 - Legacy source revision: `ydonchoi/recruitment_matching@89899ee3b0719d73f36311004ac32f87e8a78dee`
 - PR: [#1](https://github.com/ydonchoi/recruit_match/pull/1), Draft, not merged
 
@@ -31,6 +31,7 @@
 | `docs/architecture.md` | `50d7d8ea2d73b9e3b9e97dbb217f9b74fa0c6aa1` | PRESENT / architecture status updated |
 | `docs/legacy-architecture-inventory.md` | `aba47610afa4586f4da68c6020b12b8db011fa1a` | PRESENT / complete tracked-path inventory, partial call graph |
 | `docs/target-architecture-and-migration-plan.md` | `1166785636961e63e8c6e7dbabde5e8fa5b4704b` | PRESENT / partial implementation status |
+| `docs/static-review-and-migration-status.md` | `bf8b1ab52ec7fd794cb2e6ba3e8a28c4965ac219` | PRESENT / static findings, migration disposition, residual risks; no execution claimed |
 | `.github/workflows/unit-tests.yml` | `29b5c93e607bd3d26aa1a5395fe7a7d5d0510bc6` | PRESENT / workflow definition only |
 
 ## Authored test inventory
@@ -67,7 +68,7 @@ This is a count of declared test functions by source inspection, not a count of 
 - Recommendation inputs and the assessment handler now require the canonical `CurrentnessState` enum instead of accepting arbitrary strings.
 - Eligibility evaluation now rejects malformed collections and duplicate requirement IDs; a critical requirement needs both candidate and recruitment evidence domains plus at least two distinct evidence references before its status can decide eligibility.
 - Ranking rejects duplicate opportunity IDs rather than silently allowing ambiguous duplicate entries.
-- Attachment DNS resolver output is shape-validated and malformed socket-address tuples return a sanitized policy error.
+- Attachment policy flags must be booleans; DNS resolver output is shape-validated and malformed socket-address tuples return a sanitized policy error.
 - Added eight test functions covering these boundaries. They are authored only; **not executed**. Current authored test count: 121.
 
 ## Current architecture evidence
