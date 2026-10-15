@@ -7,51 +7,46 @@ A clean, verification-first reimplementation of the recruitment matching system.
 **Review the whole legacy architecture first; then selectively migrate, redesign, rebuild, or retire each component.** This project is not limited to moving the data model, and it will not blindly copy the legacy implementation.
 
 - Legacy source: [ydonchoi/recruitment_matching](https://github.com/ydonchoi/recruitment_matching)
-- Current migration inventory: [docs/migration-map.md](docs/migration-map.md)
-- Target architecture: [docs/architecture.md](docs/architecture.md) (proposed; not production validated)
-- Initial domain model: [docs/data-model.md](docs/data-model.md) (provisional, not canonical)
+- Migration inventory: [docs/migration-map.md](docs/migration-map.md)
+- Tracked-tree inventory and code findings: [docs/legacy-architecture-inventory.md](docs/legacy-architecture-inventory.md)
+- Target architecture: [docs/architecture.md](docs/architecture.md) and [docs/target-architecture-and-migration-plan.md](docs/target-architecture-and-migration-plan.md)
+- Partial execution trace: [docs/pipeline-execution-trace.md](docs/pipeline-execution-trace.md)
+- Data boundary: [docs/data-boundary-decision.md](docs/data-boundary-decision.md)
+- Attachment retrieval limits: [docs/attachment-retrieval-boundary.md](docs/attachment-retrieval-boundary.md)
+- Verification evidence: [docs/delivery-evidence-ledger.md](docs/delivery-evidence-ledger.md)
 
 ## Verification principles
 
 1. Evidence and observed execution results outrank self-reported completion.
 2. Missing or unknown values never silently become successful states.
-3. Application outcome, execution readiness, lifecycle, and sync status are separate concepts.
+3. Lifecycle, currentness, source verification, eligibility, recommendation, execution readiness and application outcome are separate concepts.
 4. A test being written is not the same as it passing; unexecuted checks remain unverified.
 5. External adapters translate data and report failures; they do not invent domain truth.
 6. External mutations require explicit idempotency and recovery design before production use.
-7. Runtime integration is not complete until the trigger-to-result path is demonstrated end-to-end.
+7. End-to-end integration is not complete until the trigger-to-result path is demonstrated.
 
 ## Current status
 
-- **Stage:** architecture inventory and migration planning
-- **Runtime integration:** not implemented
+- **Stage:** architecture discovery and initial contract implementation
+- **Legacy tracked-tree inventory:** complete for the recorded source revision; full call graph and full file-content review remain partial
+- **In-memory stage runner:** implemented as an injectable contract runner; no production handler graph is configured
+- **Attachment retrieval:** source-level policy boundary implemented; DNS pinning and live network security remain unresolved
+- **End-to-end runtime integration:** not implemented
 - **Notion writes:** not implemented
-- **GitHub Actions:** no successful run claimed
-- **Verification:** local standard-library tests can be run with `PYTHONPATH=src python -m unittest discover -s tests -v`
+- **GitHub Registry CRUD/sync:** excluded from the default target
+- **Tests:** 33 test functions are authored; execution and results are unverified
+- **GitHub Actions:** workflow authored; no successful run claimed
 
 ## Repository layout
 
-- `src/recruit_match/domain.py`: provisional domain types and fail-closed validation.
+- `src/recruit_match/domain.py`: provisional opportunity domain types and fail-closed validation.
 - `src/recruit_match/pipeline.py`: typed stage receipts and fail-closed bounded-run validation.
 - `src/recruit_match/runner.py`: injected, in-memory bounded pipeline runner; no production handlers or persistence are configured.
-- `src/recruit_match/attachments.py`: policy-first attachment retrieval boundary with injectable DNS, robots and transport contracts; production network transport is not supplied.
-- `.gitignore`: default exclusions for local candidate data, credentials, raw source documents and generated run artifacts; this is a guardrail, not a security boundary.
-- `tests/`: synthetic-only unit tests for domain, stage contracts, runner ordering/failure behavior and attachment policy boundary; execution remains unverified.
-- `docs/attachment-retrieval-boundary.md`: URL/DNS/redirect/size/content policy and explicit unimplemented production controls.
+- `src/recruit_match/attachments.py`: public attachment fetch boundary with allowlist, DNS preflight, redirects, robots, time/size limits, MIME/signature checks and integrity receipt. It does not pin DNS results to the socket and is not production-ready.
+- `tests/`: synthetic unit tests for domain, stage contracts, runner behavior and attachment safety boundaries.
 - `pyproject.toml`: minimal Python package metadata.
 - `.github/workflows/unit-tests.yml`: CI definition for later execution; no run is claimed.
-- `docs/migration-map.md`: source-backed legacy architecture inventory and migration decisions.
-- `docs/legacy-architecture-inventory.md`: tracked-tree inventory and component dispositions; full call graph remains partial.
-- `docs/target-architecture-and-migration-plan.md`: proposed target components and gated implementation order.
-- `docs/notion-schema-assessment.md`: observed Notion schema metadata and adapter gaps.
-- `docs/pipeline-execution-trace.md`: partial trace of legacy pipeline and selected implementation paths.
-- `docs/data-boundary-decision.md`: no-GitHub-registry-sync decision and data placement rules.
-- `docs/notion-schema-assessment.md`: actual Notion schema metadata review; writes remain blocked pending access and minimization review.
-- `docs/legacy-architecture-inventory.md`: 1,059-path tracked-tree inventory and migration dispositions.
-- `docs/target-architecture-and-migration-plan.md`: proposed component architecture and gated implementation order.
-- `docs/architecture.md`: target boundaries and intended event path.
-- `docs/verification-policy.md`: verification statuses and evidence rules.
-- `docs/data-model.md`: provisional state model.
+- `.gitignore`: excludes local candidate-data directories, credentials, raw source documents and generated run artifacts; this is a guardrail, not a security boundary.
 
 ## Local development
 
@@ -61,4 +56,4 @@ Python 3.11+ is recommended. The bootstrap test suite uses only the Python stand
 PYTHONPATH=src python -m unittest discover -s tests -v
 ```
 
-Passing local tests validates only the code paths those tests exercise. It does not prove live Notion integration, GitHub event wiring, concurrency safety, or production readiness.
+Passing local tests validates only the code paths those tests exercise. It does not prove live search connectivity, attachment transport security, Notion integration, persistence concurrency, data deletion or production readiness.
