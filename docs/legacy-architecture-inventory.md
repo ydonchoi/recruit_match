@@ -63,6 +63,12 @@ Total tracked paths: **1,059**. File extension inventory: 831 Markdown, 162 Pyth
 7. **Policy-version drift:** `tools/recruitment_safety_check.py` references v5.4.20 while the active instruction is v5.4.25; text-presence checks are not semantic or runtime safety proofs.
 8. **Notion mapping gap:** the legacy adapter maps only a subset of the observed opportunity schema and has known first-match, pagination and success-default hazards. Do not port it wholesale.
 
+## New-repository implementation started
+
+- `src/recruit_match/pipeline.py` now defines a typed stage receipt, explicit bounded-run contract, predecessor list, and fail-closed validator. It rejects missing required receipts, duplicate receipts, unapproved NOT_APPLICABLE, FAILED/BLOCKED stages, predecessor mismatches, run ID mismatches and out-of-scope receipts.
+- `src/recruit_match/domain.py` now keeps lifecycle, currentness, source verification, eligibility, recommendation, execution readiness and application outcome separate. GitHub sync state has been removed from the domain record because GitHub registry sync is out of scope by default.
+- Tests were added for these contracts, but have not been executed in this session. The validator is not yet wired into a runtime pipeline.
+
 ## Candidate-data boundary
 
 The legacy tracked tree contains candidate-related paths, candidate-linked evidence/provenance records and ranking/analysis artifacts. The active instruction and its partial audit explicitly warn that a tree/content audit does not establish history, fork, cache, CI-artifact or external-copy erasure.
