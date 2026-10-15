@@ -91,6 +91,11 @@ class DomainValidationTests(unittest.TestCase):
         issues = validate_record(record)
         self.assertIn("SOURCE_URL_NOT_HTTPS", {issue.code for issue in issues})
 
+    def test_source_url_with_invalid_port_is_rejected(self):
+        record = self.make_record(source_url="https://example.com:invalid/jobs/1")
+        issues = validate_record(record)
+        self.assertIn("SOURCE_URL_NOT_HTTPS", {issue.code for issue in issues})
+
     def test_sync_state_is_not_part_of_the_domain_record(self):
         fields = set(OpportunityRecord.__dataclass_fields__)
         self.assertNotIn("sync_state", fields)
