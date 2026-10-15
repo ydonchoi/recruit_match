@@ -76,7 +76,13 @@ def execute_pipeline(
 
         if any(
             receipt.stage_id in spec.predecessors
-            and receipt.status not in (StageStatus.SUCCESS, StageStatus.NOT_APPLICABLE)
+            and not (
+                receipt.status is StageStatus.SUCCESS
+                or (
+                    receipt.status is StageStatus.NOT_APPLICABLE
+                    and by_id[receipt.stage_id].allow_not_applicable
+                )
+            )
             for receipt in receipts
         ):
             receipts.append(
@@ -109,6 +115,8 @@ def execute_pipeline(
             result = handler(dict(context))
             if not isinstance(result, StageExecution):
                 raise TypeError("HANDLER_RESULT_MUST_BE_STAGE_EXECUTION")
+            if not isinstance(result.status, StageStatus):
+                raise TypeError("HANDLER_STATUS_MUST_BE_STAGE_STATUS")
         except Exception:
             # Do not propagate exception messages, which can contain secrets or
             # source/candidate content. Detailed diagnostics belong in a
@@ -125,16 +133,29 @@ def execute_pipeline(
             )
             break
 
-        receipt = StageReceipt(
-            run_id=contract.run_id,
-            stage_id=stage_id,
-            status=result.status,
-            attempt=1,
-            predecessor_stage_ids=spec.predecessors,
-            output_refs=result.output_refs,
-            evidence_refs=result.evidence_refs,
-            reason=result.reason,
-        )
+        try:
+            receipt = StageReceipt(
+                run_id=contract.run_id,
+                stage_id=stage_id,
+                status=result.status,
+                attempt=1,
+                predecessor_stage_ids=spec.predecessors,
+                output_refs=result.output_refs,
+                evidence_refs=result.evidence_refs,
+                reason=result.reason,
+            )
+        except (TypeError, ValueError):
+            receipts.append(
+                StageReceipt(
+                    run_id=contract.run_id,
+                    stage_id=stage_id,
+                    status=StageStatus.FAILED,
+                    attempt=1,
+                    predecessor_stage_ids=spec.predecessors,
+                    reason="HANDLER_RETURN_INVALID",
+                )
+            )
+            break
         receipts.append(receipt)
 
         if result.status is StageStatus.SUCCESS:
