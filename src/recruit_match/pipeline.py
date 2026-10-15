@@ -105,6 +105,8 @@ class RunContract:
         ):
             raise ValueError("INVALID_RUN_BOUNDARY")
         ids = [stage.stage_id for stage in self.stages]
+        if not ids:
+            raise ValueError("RUN_REQUIRES_AT_LEAST_ONE_STAGE")
         if any(not stage_id.strip() for stage_id in ids):
             raise ValueError("STAGE_ID_REQUIRED")
         if len(ids) != len(set(ids)):
