@@ -54,6 +54,8 @@ class StageReceipt:
             self.reason and self.reason.strip()
         ):
             raise ValueError("NOT_APPLICABLE_REQUIRES_REASON")
+        if self.status is StageStatus.NOT_APPLICABLE and not self.evidence_refs:
+            raise ValueError("NOT_APPLICABLE_REQUIRES_EVIDENCE")
 
 
 @dataclass(frozen=True, slots=True)
@@ -72,6 +74,9 @@ class RunContract:
             raise ValueError("STAGE_ID_REQUIRED")
         if len(ids) != len(set(ids)):
             raise ValueError("DUPLICATE_STAGE_SPEC")
+        for stage in self.stages:
+            if len(stage.predecessors) != len(set(stage.predecessors)):
+                raise ValueError(f"DUPLICATE_PREDECESSOR:{stage.stage_id}")
         if self.bounded_through is not None and self.bounded_through not in ids:
             raise ValueError("BOUNDARY_NOT_IN_RUN_SCOPE")
         seen: set[str] = set()
