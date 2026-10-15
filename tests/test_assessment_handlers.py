@@ -59,6 +59,15 @@ class AssessmentHandlerTests(unittest.TestCase):
         self.assertTrue(result.validation.valid)
         self.assertEqual(result.context["compensation"].tier, CompensationTier.UNKNOWN)
 
+    def test_ranking_handler_rejects_boolean_limit(self):
+        result = self.run_one("ranking", {
+            "ranking_candidates": [],
+            "ranking_limit": True,
+        })
+        self.assertFalse(result.validation.valid)
+        self.assertEqual(result.receipts[0].status, StageStatus.BLOCKED)
+        self.assertEqual(result.receipts[0].reason, "RANKING_LIMIT_INVALID")
+
     def test_ranking_handler_does_not_pad_shortlists(self):
         result = self.run_one("ranking", {
             "ranking_candidates": [
