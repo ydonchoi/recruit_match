@@ -119,6 +119,20 @@ def execute_pipeline(
                 raise TypeError("HANDLER_STATUS_MUST_BE_STAGE_STATUS")
             if not isinstance(result.output, Mapping):
                 raise TypeError("HANDLER_OUTPUT_MUST_BE_MAPPING")
+            if any(not isinstance(key, str) or not key.strip() for key in result.output):
+                raise TypeError("HANDLER_OUTPUT_KEYS_MUST_BE_STRINGS")
+            for name, refs in (
+                ("OUTPUT_REFS", result.output_refs),
+                ("EVIDENCE_REFS", result.evidence_refs),
+            ):
+                if not isinstance(refs, tuple) or any(
+                    not isinstance(ref, str) or not ref.strip() for ref in refs
+                ):
+                    raise TypeError(f"HANDLER_{name}_INVALID")
+            if result.reason is not None and (
+                not isinstance(result.reason, str) or not result.reason.strip()
+            ):
+                raise TypeError("HANDLER_REASON_INVALID")
         except Exception:
             # Do not propagate exception messages, which can contain secrets or
             # source/candidate content. Detailed diagnostics belong in a
