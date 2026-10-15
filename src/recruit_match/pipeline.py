@@ -25,6 +25,18 @@ class StageSpec:
     predecessors: tuple[str, ...] = ()
     evidence_required: bool = False
 
+    def __post_init__(self) -> None:
+        if not isinstance(self.stage_id, str) or not self.stage_id.strip():
+            raise ValueError("STAGE_ID_REQUIRED")
+        if not isinstance(self.required, bool) or not isinstance(self.allow_not_applicable, bool):
+            raise ValueError("INVALID_STAGE_POLICY_FLAG")
+        if not isinstance(self.evidence_required, bool):
+            raise ValueError("INVALID_EVIDENCE_REQUIRED_FLAG")
+        if not isinstance(self.predecessors, tuple) or any(
+            not isinstance(item, str) or not item.strip() for item in self.predecessors
+        ):
+            raise ValueError("INVALID_STAGE_PREDECESSORS")
+
 
 @dataclass(frozen=True, slots=True)
 class StageReceipt:
@@ -39,14 +51,24 @@ class StageReceipt:
     reason: str | None = None
 
     def __post_init__(self) -> None:
-        if not self.run_id.strip():
+        if not isinstance(self.run_id, str) or not self.run_id.strip():
             raise ValueError("RUN_ID_REQUIRED")
-        if not self.stage_id.strip():
+        if not isinstance(self.stage_id, str) or not self.stage_id.strip():
             raise ValueError("STAGE_ID_REQUIRED")
         if not isinstance(self.status, StageStatus):
             raise ValueError("INVALID_STAGE_STATUS")
-        if self.attempt < 1:
-            raise ValueError("ATTEMPT_MUST_BE_POSITIVE")
+        if not isinstance(self.attempt, int) or isinstance(self.attempt, bool) or self.attempt < 1:
+            raise ValueError("ATTEMPT_MUST_BE_POSITIVE_INTEGER")
+        for name, refs in (
+            ("predecessor_stage_ids", self.predecessor_stage_ids),
+            ("input_refs", self.input_refs),
+            ("output_refs", self.output_refs),
+            ("evidence_refs", self.evidence_refs),
+        ):
+            if not isinstance(refs, tuple) or any(
+                not isinstance(ref, str) or not ref.strip() for ref in refs
+            ):
+                raise ValueError(f"INVALID_{name.upper()}")
         if self.status in (StageStatus.FAILED, StageStatus.BLOCKED) and not (
             self.reason and self.reason.strip()
         ):
@@ -68,8 +90,16 @@ class RunContract:
     bounded_through: str | None = None
 
     def __post_init__(self) -> None:
-        if not self.run_id.strip():
+        if not isinstance(self.run_id, str) or not self.run_id.strip():
             raise ValueError("RUN_ID_REQUIRED")
+        if not isinstance(self.stages, tuple) or any(
+            not isinstance(stage, StageSpec) for stage in self.stages
+        ):
+            raise ValueError("INVALID_RUN_STAGES")
+        if self.bounded_through is not None and (
+            not isinstance(self.bounded_through, str) or not self.bounded_through.strip()
+        ):
+            raise ValueError("INVALID_RUN_BOUNDARY")
         ids = [stage.stage_id for stage in self.stages]
         if any(not stage_id.strip() for stage_id in ids):
             raise ValueError("STAGE_ID_REQUIRED")
