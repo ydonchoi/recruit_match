@@ -32,9 +32,14 @@ A clean, verification-first reimplementation of the recruitment matching system.
 ## Repository layout
 
 - `src/recruit_match/domain.py`: provisional domain types and fail-closed validation.
-- `src/recruit_match/pipeline.py`: typed stage receipts and fail-closed bounded-run validation (not yet integrated into a runtime).
+- `src/recruit_match/pipeline.py`: typed stage receipts and fail-closed bounded-run validation.
+- `src/recruit_match/runner.py`: injected, in-memory bounded pipeline runner; no production handlers or persistence are configured.
+- `src/recruit_match/attachments.py`: policy-first attachment retrieval boundary with injectable DNS, robots and transport contracts; production network transport is not supplied.
 - `.gitignore`: default exclusions for local candidate data, credentials, raw source documents and generated run artifacts; this is a guardrail, not a security boundary.
-- `tests/`: executable unit tests for domain and pipeline stage contracts; execution remains unverified.
+- `tests/`: synthetic-only unit tests for domain, stage contracts, runner ordering/failure behavior and attachment policy boundary; execution remains unverified.
+- `docs/attachment-retrieval-boundary.md`: URL/DNS/redirect/size/content policy and explicit unimplemented production controls.
+- `pyproject.toml`: minimal Python package metadata.
+- `.github/workflows/unit-tests.yml`: CI definition for later execution; no run is claimed.
 - `docs/migration-map.md`: source-backed legacy architecture inventory and migration decisions.
 - `docs/legacy-architecture-inventory.md`: tracked-tree inventory and component dispositions; full call graph remains partial.
 - `docs/target-architecture-and-migration-plan.md`: proposed target components and gated implementation order.
