@@ -89,12 +89,16 @@ class PublicURLPolicy:
         self.resolver = resolver
 
     def validate(self, url: str) -> None:
-        parsed = urlparse(url)
+        try:
+            parsed = urlparse(url)
+            port = parsed.port
+        except ValueError as exc:
+            raise AttachmentFetchError("MALFORMED_URL") from exc
         if parsed.scheme.lower() != "https" or not parsed.hostname:
             raise AttachmentFetchError("HTTPS_URL_REQUIRED")
         if parsed.username is not None or parsed.password is not None:
             raise AttachmentFetchError("URL_CREDENTIALS_FORBIDDEN")
-        if parsed.port not in (None, 443):
+        if port not in (None, 443):
             raise AttachmentFetchError("NONSTANDARD_PORT_FORBIDDEN")
         host = parsed.hostname.lower().rstrip(".")
         if not self.allowed_hosts or host not in self.allowed_hosts:
@@ -216,8 +220,12 @@ class SafeAttachmentFetcher:
         if not self.policy.allowed_hosts:
             raise AttachmentFetchError("EMPTY_ALLOWLIST_DENIED")
         self.url_policy.validate(url)
-        if self.policy.robots_required and not self._robots_allowed(url):
-            raise AttachmentFetchError("ROBOTS_DENIED")
+        if self.policy.robots_required:
+            parsed = urlparse(url)
+            robots_url = f"https://{parsed.netloc}/robots.txt"
+            self.url_policy.validate(robots_url)
+            if not self._robots_allowed(url):
+                raise AttachmentFetchError("ROBOTS_DENIED")
 
         with self._open(url, "application/pdf,application/zip,application/octet-stream") as response:
             final_url = response.geturl()
