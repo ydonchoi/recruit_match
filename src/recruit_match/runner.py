@@ -117,6 +117,8 @@ def execute_pipeline(
                 raise TypeError("HANDLER_RESULT_MUST_BE_STAGE_EXECUTION")
             if not isinstance(result.status, StageStatus):
                 raise TypeError("HANDLER_STATUS_MUST_BE_STAGE_STATUS")
+            if not isinstance(result.output, Mapping):
+                raise TypeError("HANDLER_OUTPUT_MUST_BE_MAPPING")
         except Exception:
             # Do not propagate exception messages, which can contain secrets or
             # source/candidate content. Detailed diagnostics belong in a
