@@ -42,7 +42,8 @@ class AttachmentLimits:
 
     def __post_init__(self) -> None:
         if (
-            not isinstance(self.timeout_seconds, (int, float))
+            isinstance(self.timeout_seconds, bool)
+            or not isinstance(self.timeout_seconds, (int, float))
             or not math.isfinite(self.timeout_seconds)
             or self.timeout_seconds <= 0
         ):
@@ -99,6 +100,12 @@ class PublicURLPolicy:
         allowed_hosts: frozenset[str],
         resolver: Resolver = _default_resolver,
     ) -> None:
+        if not isinstance(allowed_hosts, (set, frozenset, tuple, list)) or any(
+            not isinstance(host, str) or not host.strip() for host in allowed_hosts
+        ):
+            raise ValueError("INVALID_HOST_ALLOWLIST")
+        if not callable(resolver):
+            raise ValueError("INVALID_DNS_RESOLVER")
         self.allowed_hosts = frozenset(host.lower().rstrip(".") for host in allowed_hosts)
         self.resolver = resolver
 
@@ -139,7 +146,7 @@ class PublicURLPolicy:
         try:
             parsed = urlparse(url)
             port = parsed.port
-        except ValueError as exc:
+        except (ValueError, TypeError, AttributeError) as exc:
             raise AttachmentFetchError("MALFORMED_URL") from exc
         if parsed.scheme.lower() != "https" or not parsed.hostname:
             raise AttachmentFetchError("HTTPS_URL_REQUIRED")
