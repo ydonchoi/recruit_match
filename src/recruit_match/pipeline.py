@@ -69,6 +69,10 @@ class StageReceipt:
                 not isinstance(ref, str) or not ref.strip() for ref in refs
             ):
                 raise ValueError(f"INVALID_{name.upper()}")
+        if self.reason is not None and (
+            not isinstance(self.reason, str) or not self.reason.strip()
+        ):
+            raise ValueError("INVALID_STAGE_REASON")
         if self.status in (StageStatus.FAILED, StageStatus.BLOCKED) and not (
             self.reason and self.reason.strip()
         ):
