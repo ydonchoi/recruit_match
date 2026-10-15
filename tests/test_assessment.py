@@ -112,8 +112,25 @@ class AssessmentContractTests(unittest.TestCase):
             weighted_fit_score(dimensions, (0.5, float("nan"), 0.2, 0.1))
 
     def test_estimate_requires_source_and_assumptions(self):
-        result = resolve_compensation(estimate=CompensationQuote("80-100", "", VerificationState.VERIFIED, ()))
+        result = resolve_compensation(estimate=CompensationQuote("80-100", "estimate#1", VerificationState.VERIFIED, ()))
         self.assertEqual(result.tier, CompensationTier.UNKNOWN)
+        self.assertEqual(result.reason, "ESTIMATE_ASSUMPTIONS_MISSING")
+
+    def test_compensation_quote_rejects_invalid_verification_type(self):
+        with self.assertRaisesRegex(ValueError, "INVALID_COMPENSATION_VERIFICATION"):
+            CompensationQuote("80-100", "estimate#1", "VERIFIED")
+
+    def test_recommendation_inputs_reject_invalid_gate_types(self):
+        with self.assertRaisesRegex(ValueError, "INVALID_RECOMMENDATION_GATE:privacy_review"):
+            RecommendationInputs(
+                eligibility=EligibilityState.PASS,
+                source_verification=VerificationState.VERIFIED,
+                currentness="ACTIVE",
+                duplicate_state=DuplicateState.RESOLVED,
+                privacy_review="VERIFIED",
+                provenance=VerificationState.VERIFIED,
+                schema_validation=VerificationState.VERIFIED,
+            )
 
     def test_recommendation_requires_all_explicit_gates(self):
         result = decide_recommendation(RecommendationInputs(
