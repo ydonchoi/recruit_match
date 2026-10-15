@@ -1,32 +1,29 @@
 # Attachment Retrieval Boundary
 
-Status: **implemented as an injectable policy boundary; no production transport is supplied or verified**
+Status: **source-level safety boundary implemented; production network safety not fully verified**
 
-## Required policy inputs
+## Current implementation
 
-The caller must provide an explicit host allowlist, DNS resolver, robots-policy decision function, and transport. An empty allowlist fails closed. URL credentials, non-HTTPS URLs, nonstandard ports, fragments and unallowlisted hosts are rejected.
+`src/recruit_match/attachments.py` provides:
 
-Before each request, all DNS addresses must be public/global. The validated address set is passed to the transport so the eventual network adapter can pin the connection to a validated address while preserving TLS hostname validation. **A transport that ignores this requirement is not safe for production use.** DNS validation followed by an independent, unpinned DNS lookup can be vulnerable to rebinding.
+- HTTPS-only URLs, exact non-empty host allowlisting, credential and nonstandard-port rejection.
+- DNS preflight that rejects empty resolution and non-public/reserved/local addresses.
+- Manual redirect policy checks through a custom urllib redirect handler.
+- Explicit request timeout and bounded `robots.txt` and attachment reads.
+- Content-Length and streaming byte-limit enforcement, PDF/ZIP magic checks, MIME consistency and SHA-256 receipts.
+- A caller-controlled policy gate; no authentication, CAPTCHA, anti-bot, or access-control bypass.
 
-Redirects are handled manually. Every target is revalidated for URL policy, allowlist, DNS and robots permission before another request is made. Automatic redirect following by the transport is rejected by checking that the response URL matches the requested URL.
+Synthetic unit tests cover HTTPS, empty allowlists, private DNS, URL credentials, bounded reads, MIME/signature mismatches, policy-before-network behavior, and robots timeout behavior. These tests have been authored but not executed in this session.
 
-## Resource and content limits
+## Important remaining security gap
 
-- Timeout and maximum bytes are explicit positive parameters.
-- No automatic retries are performed.
-- Response bodies exceeding the configured byte limit are rejected.
-- Only PDF and ZIP-signature content is accepted by the initial boundary.
-- MIME type must be compatible with the observed signature.
-- SHA-256, size, source/final URL, host, retrieval timestamp and signature are returned as a receipt.
+The current urllib implementation validates DNS answers before making requests, but urllib subsequently resolves the hostname for its own connection. The validated IP address is **not pinned to the socket connection**. A DNS change/rebinding between preflight and connection therefore remains a risk; the current implementation must not be described as fully SSRF-resistant.
 
-Signature validation is a file-type boundary, not a malware scan, sandbox, document parser or proof of semantic validity. ZIP signatures do not prove that an archive is a valid or safe OOXML document. Any extraction stage must separately enforce decompression limits, path traversal defenses, parser isolation and time limits.
+Before production use, replace or wrap the network boundary with a transport that connects only to a validated public IP while preserving TLS hostname verification and SNI. Test redirect hops, DNS changes, IPv4/IPv6 edge cases, malformed URLs, and proxy behavior. Do not enable arbitrary hosts by default.
 
-## Not implemented / not verified
+## Other limits
 
-- A production HTTP transport that enforces IP pinning and TLS hostname validation.
-- A real robots.txt retrieval/cache implementation with bounded network timeouts.
-- DNS rebinding resistance at the socket/transport boundary.
-- Malware scanning or isolated document extraction.
-- Live network tests against third-party hosts.
-
-Until these components are implemented and adversarially tested, this module is a contract and test seam, not an enabled network collector.
+- The current signature check identifies PDF and ZIP-like containers; it is not malware scanning, archive validation, parser isolation, or proof that an OOXML document is safe.
+- ZIP decompression limits, archive path traversal defense, parser process isolation, and extraction timeouts remain separate requirements.
+- The real robots retrieval is bounded by request timeout and response bytes, but no live third-party network tests have been run.
+- This module is not connected to the end-to-end recruitment pipeline.
