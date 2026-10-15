@@ -65,6 +65,19 @@ class AttachmentSafetyTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "TIMEOUT_MUST_BE_FINITE_AND_POSITIVE"):
             AttachmentLimits(timeout_seconds=float("inf"))
 
+    def test_boolean_timeout_is_rejected(self):
+        with self.assertRaisesRegex(ValueError, "TIMEOUT_MUST_BE_FINITE_AND_POSITIVE"):
+            AttachmentLimits(timeout_seconds=True)
+
+    def test_invalid_host_allowlist_is_rejected(self):
+        with self.assertRaisesRegex(ValueError, "INVALID_HOST_ALLOWLIST"):
+            PublicURLPolicy(frozenset({"jobs.example.test", None}), resolver_public)
+
+    def test_non_string_url_is_rejected_without_leaking_parser_error(self):
+        policy = PublicURLPolicy(frozenset({"jobs.example.test"}), resolver_public)
+        with self.assertRaisesRegex(AttachmentFetchError, "MALFORMED_URL"):
+            policy.validate(None)
+
     def test_non_integer_byte_limit_is_rejected(self):
         with self.assertRaisesRegex(ValueError, "BYTE_LIMIT_MUST_BE_POSITIVE_INTEGER"):
             AttachmentLimits(max_bytes=1.5)
