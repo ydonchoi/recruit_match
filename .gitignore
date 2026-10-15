@@ -1,0 +1,52 @@
+# Python runtime/build artifacts
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+.venv/
+venv/
+
+# Secrets and local credentials
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+*.cookie
+*.cookies
+
+# Local/private data and run outputs: do not commit candidate-linked material
+/data/
+/private-data/
+/candidate-data/
+/candidate/
+/attachments/
+/artifacts/
+/reports/
+/run-output/
+/local-cache/
+
+# Original documents and extracted raw source material must remain outside GitHub
+*.pdf
+*.doc
+*.docx
+*.xls
+*.xlsx
+*.ppt
+*.pptx
+*.hwp
+*.hwpx
+*.odt
+*.ods
+*.rtf
+
+# Local editor / OS files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
