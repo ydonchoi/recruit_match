@@ -66,6 +66,9 @@ Total tracked paths: **1,059**. File extension inventory: 831 Markdown, 162 Pyth
 ## New-repository implementation started
 
 - `src/recruit_match/pipeline.py` now defines a typed stage receipt, explicit bounded-run contract, predecessor list, and fail-closed validator. It rejects missing required receipts, duplicate receipts, unapproved NOT_APPLICABLE, FAILED/BLOCKED stages, predecessor mismatches, run ID mismatches and out-of-scope receipts.
+- `src/recruit_match/runner.py` executes injected handlers in order, passes context in memory, stops on failures/blocks, and sanitizes handler exceptions. It does not provide durable persistence or production integrations.
+- `src/recruit_match/attachments.py` defines an injectable URL/DNS/robots/transport boundary, manual redirect checks, size limits, basic PDF/ZIP signature and MIME checks, and a SHA-256 receipt. No production transport or live network behavior is included. The transport must pin the connection to validated public DNS addresses; this requirement is a contract, not yet an independently verified transport implementation.
+- `docs/attachment-retrieval-boundary.md` records the remaining security work.
 - `src/recruit_match/domain.py` now keeps lifecycle, currentness, source verification, eligibility, recommendation, execution readiness and application outcome separate. GitHub sync state has been removed from the domain record because GitHub registry sync is out of scope by default.
 - Tests were added for these contracts, but have not been executed in this session. The validator is not yet wired into a runtime pipeline.
 
@@ -89,5 +92,5 @@ This inventory did **not** copy candidate records, personal details, ranking res
 
 - Tracked path inventory: **verified for source tree SHA `89899ee3b0719d73f36311004ac32f87e8a78dee`** (`truncated=false`, 1,059 paths).
 - Selected code findings: **source-observed** from files named above; not all paths were reviewed.
-- Test execution: **not performed** in this session.
+- Test execution: **not performed** in this session. The unit-test workflow is authored but has no observed run.
 - Full call graph, live search connectivity, live Notion writes, access control, data erasure, and production readiness: **unverified**.
