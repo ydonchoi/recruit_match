@@ -100,6 +100,18 @@ class PipelineRunnerTests(unittest.TestCase):
         self.assertEqual(result.receipts[0].reason, "STAGE_EVIDENCE_MISSING")
         self.assertNotIn("source", result.context)
 
+    def test_malformed_evidence_refs_fail_closed(self):
+        contract = RunContract("synthetic-evidence", (StageSpec("source", evidence_required=True),))
+        result = execute_pipeline(
+            contract,
+            {"source": lambda context: StageExecution(
+                StageStatus.SUCCESS, {}, evidence_refs=("",)
+            )},
+        )
+        self.assertFalse(result.validation.valid)
+        self.assertEqual(result.receipts[0].status, StageStatus.FAILED)
+        self.assertEqual(result.receipts[0].reason, "STAGE_HANDLER_EXCEPTION")
+
     def test_bounded_run_does_not_claim_later_stages(self):
         bounded = RunContract(
             run_id="synthetic-run",
