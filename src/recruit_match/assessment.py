@@ -272,4 +272,9 @@ def rank_candidates(candidates: Sequence[RankingCandidate], *, limit: int = 50) 
             candidate.opportunity_id,
         )
 
-    return tuple(sorted(candidates, key=key)[:limit])
+    # A failed mandatory gate is a hard exclusion, not merely a low ranking.
+    eligible_for_ranking = tuple(
+        candidate for candidate in candidates
+        if candidate.eligibility is not EligibilityState.FAIL
+    )
+    return tuple(sorted(eligible_for_ranking, key=key)[:limit])
