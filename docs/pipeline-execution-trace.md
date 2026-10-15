@@ -51,6 +51,10 @@ The source architecture expands this into access governance; candidate ground tr
 
 The inspected `search_agent/runtime.py` constructs an `Opportunity` with `decision_source_verified=True`, `privacy_ok=True`, and `schema_ok=True` as defaults when upstream objects omit those fields. This can turn missing evidence into success-shaped values at that boundary. A replacement runtime must preserve explicit UNKNOWN/unverified states and derive privacy/schema verification from actual checks, not defaults. This is a code-observed risk, not proof that every upstream path currently omits those fields.
 
+## Registry mutation boundary finding
+
+The inspected `search_agent/orchestrator.py` invokes an injected `registry_writer.execute(proposal)`, and the proposal is constructed with `approval_required=False`. When the result is `READY_TO_MUTATE`, the orchestrator enrolls the opportunity into `UserRegistry`; that registry defaults to in-memory storage unless a store supplies one. The writer runtime can separately invoke an injected mutation adapter. This means the Registry Writer is not proven to be synonymous with GitHub sync: its eligibility/decision function may still be useful even if GitHub CRUD/sync is removed. Before rebuilding it, separate (a) recommendation/eligibility, (b) private-store persistence, and (c) any optional external mutation. Do not port an implicit auto-mutation path without a clear authorization contract.
+
 ## Notion schema evidence
 
 The connected Notion workspace exposes a canonical opportunity data source with lifecycle, eligibility, score, recommendation, execution, revalidation and provenance fields, including `GitHub Source` and `Notion Sync State`. It also exposes separate Candidate Profile and Candidate Evidence data sources containing candidate-linked fields such as name, preferences, compensation, capability, achievement, evidence and source. This confirms a data-source-level separation, not separate access permissions. The field names `GitHub Source` and `Notion Sync State` do not prove GitHub sync is necessary or operational. Schema metadata was inspected; no candidate rows were queried.
