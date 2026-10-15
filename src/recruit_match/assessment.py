@@ -69,8 +69,14 @@ def evaluate_eligibility(requirements: Iterable[RequirementCheck]) -> Eligibilit
         return EligibilityState.UNKNOWN
     if any(item.status is RequirementStatus.FAIL for item in critical):
         return EligibilityState.FAIL
-    if any(item.status is RequirementStatus.UNKNOWN for item in critical):
-        return EligibilityState.UNKNOWN
+    for item in critical:
+        if item.status is RequirementStatus.UNKNOWN:
+            return EligibilityState.UNKNOWN
+        if item.status is RequirementStatus.PASS and (
+            not item.evidence_refs
+            or not {EvidenceDomain.CANDIDATE, EvidenceDomain.RECRUITMENT}.issubset(set(item.evidence_domains))
+        ):
+            return EligibilityState.UNKNOWN
     return EligibilityState.PASS
 
 
@@ -112,6 +118,14 @@ def weighted_fit_score(
 
 
 @dataclass(frozen=True, slots=True)
+class CompensationQuote:
+    amount_or_range: str
+    source_ref: str
+    verification: VerificationState
+    assumptions: tuple[str, ...] = ()
+
+
+@dataclass(frozen=True, slots=True)
 class CompensationEvidence:
     tier: CompensationTier
     amount_or_range: str | None
@@ -123,32 +137,38 @@ class CompensationEvidence:
 
 def resolve_compensation(
     *,
-    official: tuple[str, str] | None = None,
-    institution_table: tuple[str, str] | None = None,
-    public_benchmark: tuple[str, str] | None = None,
-    estimate: tuple[str, str, tuple[str, ...]] | None = None,
+    official: CompensationQuote | None = None,
+    institution_table: CompensationQuote | None = None,
+    public_benchmark: CompensationQuote | None = None,
+    estimate: CompensationQuote | None = None,
 ) -> CompensationEvidence:
     """Resolve by evidence tier; every accepted value must carry a source ref."""
-    if official is not None:
-        amount, source_ref = official
-        if amount.strip() and source_ref.strip():
-            return CompensationEvidence(CompensationTier.OFFICIAL, amount, source_ref, confidence="HIGH")
-        return CompensationEvidence(CompensationTier.UNKNOWN, None, None, confidence="UNKNOWN", reason="OFFICIAL_EVIDENCE_INCOMPLETE")
-    if institution_table is not None:
-        amount, source_ref = institution_table
-        if amount.strip() and source_ref.strip():
-            return CompensationEvidence(CompensationTier.INSTITUTION_TABLE, amount, source_ref, confidence="HIGH")
-        return CompensationEvidence(CompensationTier.UNKNOWN, None, None, confidence="UNKNOWN", reason="INSTITUTION_EVIDENCE_INCOMPLETE")
-    if public_benchmark is not None:
-        amount, source_ref = public_benchmark
-        if amount.strip() and source_ref.strip():
-            return CompensationEvidence(CompensationTier.PUBLIC_BENCHMARK, amount, source_ref, confidence="MEDIUM")
-        return CompensationEvidence(CompensationTier.UNKNOWN, None, None, confidence="UNKNOWN", reason="BENCHMARK_EVIDENCE_INCOMPLETE")
-    if estimate is not None:
-        amount, source_ref, assumptions = estimate
-        if amount.strip() and source_ref.strip() and assumptions:
-            return CompensationEvidence(CompensationTier.ESTIMATE, amount, source_ref, assumptions, "LOW")
-        return CompensationEvidence(CompensationTier.UNKNOWN, None, None, confidence="UNKNOWN", reason="ESTIMATE_ASSUMPTIONS_OR_SOURCE_MISSING")
+    for quote, tier, confidence in (
+        (official, CompensationTier.OFFICIAL, "HIGH"),
+        (institution_table, CompensationTier.INSTITUTION_TABLE, "HIGH"),
+        (public_benchmark, CompensationTier.PUBLIC_BENCHMARK, "MEDIUM"),
+        (estimate, CompensationTier.ESTIMATE, "LOW"),
+    ):
+        if quote is None:
+            continue
+        if quote.verification is not VerificationState.VERIFIED:
+            return CompensationEvidence(
+                CompensationTier.UNKNOWN, None, None, confidence="UNKNOWN",
+                reason=f"COMPENSATION_SOURCE_NOT_VERIFIED:{tier.value}",
+            )
+        if not quote.amount_or_range.strip() or not quote.source_ref.strip():
+            return CompensationEvidence(
+                CompensationTier.UNKNOWN, None, None, confidence="UNKNOWN",
+                reason=f"COMPENSATION_EVIDENCE_INCOMPLETE:{tier.value}",
+            )
+        if tier is CompensationTier.ESTIMATE and not quote.assumptions:
+            return CompensationEvidence(
+                CompensationTier.UNKNOWN, None, None, confidence="UNKNOWN",
+                reason="ESTIMATE_ASSUMPTIONS_MISSING",
+            )
+        return CompensationEvidence(
+            tier, quote.amount_or_range, quote.source_ref, quote.assumptions, confidence
+        )
     return CompensationEvidence(CompensationTier.UNKNOWN, None, None, confidence="UNKNOWN", reason="COMPENSATION_NOT_FOUND")
 
 
