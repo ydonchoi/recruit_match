@@ -15,6 +15,18 @@ class PipelineRunnerTests(unittest.TestCase):
             ),
         )
 
+    def test_invalid_handler_registry_is_rejected_before_execution(self):
+        with self.assertRaisesRegex(ValueError, "INVALID_HANDLER_REGISTRY"):
+            execute_pipeline(self.contract, {"discover": "not-callable"})
+
+    def test_invalid_initial_context_is_rejected(self):
+        with self.assertRaisesRegex(ValueError, "INITIAL_CONTEXT_MUST_BE_MAPPING"):
+            execute_pipeline(self.contract, {}, initial_context=[])
+
+    def test_non_string_initial_context_key_is_rejected(self):
+        with self.assertRaisesRegex(ValueError, "INITIAL_CONTEXT_KEYS_MUST_BE_STRINGS"):
+            execute_pipeline(self.contract, {}, initial_context={1: "value"})
+
     def test_successful_handlers_run_in_order_and_pass_context(self):
         calls = []
         def discover(context):
