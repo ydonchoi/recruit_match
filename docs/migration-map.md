@@ -82,3 +82,12 @@ This document does not claim:
 - that Notion or GitHub sync works end-to-end;
 - that the proposed target architecture is implemented;
 - that a local test pass certifies production readiness.
+
+
+## Target migration decision added 2026-10-15
+
+- GitHub Registry create/update/delete and registry-sync are **OUT OF SCOPE by default** for the new repository. Do not reproduce the legacy GitHub Sync stage merely because the old README includes it.
+- Notion persistence is **UNASSESSED / BLOCKED pending schema and access review**. No live Notion adapter or write path is to be implemented until the actual DB model, access controls, retention, minimum fields and required workflows have been reviewed.
+- Preserve the logical Registry concept only if the end-to-end pipeline requires a durable opportunity lifecycle. Do not assume a particular backend before the schema review.
+- Candidate-specific records, personal data, assessment outputs and sensitive source material are not permitted in GitHub. Any legacy cleanup is a separate, scoped task; no historical deletion is claimed.
+- The data-boundary decision is recorded in [data-boundary-decision.md](data-boundary-decision.md), and the partial runtime trace in [pipeline-execution-trace.md](pipeline-execution-trace.md).
