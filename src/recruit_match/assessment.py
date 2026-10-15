@@ -260,6 +260,8 @@ class RecommendationInputs:
 
 def decide_recommendation(value: RecommendationInputs) -> RecommendationState:
     """Only explicit all-green evidence can recommend; UNKNOWN is review, not pass."""
+    if not isinstance(value, RecommendationInputs):
+        raise ValueError("INVALID_RECOMMENDATION_INPUTS")
     if value.eligibility is EligibilityState.FAIL:
         return RecommendationState.NOT_RECOMMENDED
     if value.duplicate_state is DuplicateState.CONFLICT:
