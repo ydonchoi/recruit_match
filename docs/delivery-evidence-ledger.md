@@ -3,7 +3,7 @@
 - Snapshot time: 2026-10-15
 - Target repository: `ydonchoi/recruit_match`
 - Target branch: `bootstrap/verification-first-architecture`
-- Target source snapshot before this ledger update: `48e5c8d98710bc0a13b92b6c677927e9037d9f46`
+- Target source snapshot before this ledger update: `0e50e098814dd698e0601413a7b8e7bc367eaff8`
 - Legacy source snapshot: `ydonchoi/recruitment_matching@89899ee3b0719d73f36311004ac32f87e8a78dee`
 - PR: [#1](https://github.com/ydonchoi/recruit_match/pull/1), Draft, not merged
 
@@ -27,17 +27,17 @@ Blob SHA values are Git blob identifiers from the target snapshot tree. They ide
 | `src/recruit_match/pipeline.py` | `0448684208bf17cdca574eaf58e06b3f919375bb` | PRESENT / SOURCE-REVIEWED |
 | `src/recruit_match/runner.py` | `0515c89a60a93700fe950b7364c9fbee4036adde` | PRESENT / SOURCE-REVIEWED; in-memory only |
 | `src/recruit_match/workflow.py` | `88c15bbc72066fe323e53dd6370840bc89052533` | PRESENT / 18-stage contract; no live adapter graph |
-| `src/recruit_match/attachments.py` | `9c315f0717cb1d4d8fc3252e56125152b18cb45b` | PRESENT / SOURCE-REVIEWED; DNS-pinned default transport, execution unverified |
+| `src/recruit_match/attachments.py` | `b5426827cc929ba812c7b76c93b1d343729cda07` | PRESENT / SOURCE-REVIEWED; DNS-pinned default transport, execution unverified |
 | `tests/test_domain.py` | `c5b3b041d846f6dd6020b3fb1e225dc8ae2754d6` | PRESENT / 11 test functions authored |
 | `tests/test_assessment.py` | `c30a4378a1e46f423dc3327734c23ce7601982ee` | PRESENT / 20 test functions authored |
 | `tests/test_assessment_handlers.py` | `5a2b81849797dbc76bd4638b8062ec9ca10f0875` | PRESENT / 6 test functions authored |
 | `tests/test_pipeline.py` | `be977ecc7c2324515b88c9289f64889045392dee` | PRESENT / 9 test functions authored |
 | `tests/test_runner.py` | `76648c36b9daaf2ccaeb121ee22824e143643540` | PRESENT / 6 test functions authored |
-| `tests/test_attachments.py` | `8717d410a3d750cda6d6a8031daf8d640407180e` | PRESENT / 14 test functions authored |
+| `tests/test_attachments.py` | `b10878fca3b84176ea9224419f0cc84945f069f5` | PRESENT / 16 test functions authored |
 | `tests/test_workflow.py` | `f6b5e2da3d7e5c9f014c20bd9e620a9778df8f9b` | PRESENT / 8 test functions authored |
 | `.github/workflows/unit-tests.yml` | `29b5c93e607bd3d26aa1a5395fe7a7d5d0510bc6` | PRESENT / workflow authored, no usable run |
 
-The seven test files contain **74 declared test functions** by source inspection. This is a count of test definitions, not a count of passing tests.
+The seven test files contain **76 declared test functions** by source inspection. This is a count of test definitions, not a count of passing tests.
 
 ## Execution evidence
 
@@ -47,7 +47,8 @@ The seven test files contain **74 declared test functions** by source inspection
   - [38714021019](https://github.com/ydonchoi/recruit_match/actions/runs/38714021019), head `48595a9c7ac133694f20ff794d056b467f1be648`, conclusion `failure`.
   - [38714612584](https://github.com/ydonchoi/recruit_match/actions/runs/38714612584), head `67c9e1432e6e8a233d9aa374e050ff6bc9680c73`, conclusion `failure`.
 - Both jobs reported `runner_id=0`, empty runner name, empty step list and no usable job logs. They failed before any test-step evidence was available. These are **not** evidence that unit assertions failed, and they are not passing test runs.
-- Actions run for commit `48e5c8d98710bc0a13b92b6c677927e9037d9f46`: [run 38715712142](https://github.com/ydonchoi/recruit_match/actions/runs/38715712142), conclusion `failure`; the job again has `runner_id=0`, empty runner name and no steps.
+- Actions run for earlier commit `48e5c8d98710bc0a13b92b6c677927e9037d9f46`: [run 38715712142](https://github.com/ydonchoi/recruit_match/actions/runs/38715712142), conclusion `failure`; the job again has `runner_id=0`, empty runner name and no steps.
+- Actions run for current snapshot `0e50e098814dd698e0601413a7b8e7bc367eaff8`: **none observed**.
 - Test pass/fail count: **UNKNOWN**.
 - End-to-end trigger-to-result test with real external adapters: **NOT PERFORMED**. A synthetic full-contract test is authored but not executed.
 - Live search connectivity and production transport behavior: **UNVERIFIED**.
@@ -62,7 +63,7 @@ The seven test files contain **74 declared test functions** by source inspection
 ## Known blockers before merge or integration
 
 1. Execute the authored test suite in an approved environment and retain actual output.
-2. Exercise the new DNS-pinned transport in tests, including TLS hostname mismatch, redirect hops, DNS changes, IPv4/IPv6 and proxy behavior.
+2. Execute the authored transport tests, including DNS changes, pinned socket target and proxy configuration; add a local TLS test for certificate hostname mismatch and controlled redirect hops.
 4. Connect external search, candidate-context, identity-resolution, source-verification, currentness, attachment and evidence handlers to the 18-stage workflow.
 5. Execute the synthetic full-contract test and then add a true integration test with controlled adapters.
 6. Decide and approve the private canonical data store, field minimization, access control, retention and deletion semantics before enabling writes.
