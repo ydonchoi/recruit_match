@@ -1,9 +1,12 @@
 import io
+import socket
 import unittest
+from unittest.mock import patch
 from email.message import Message
 
 from recruit_match.attachments import (
     AttachmentFetchError,
+    _PinnedHTTPSConnection,
     AttachmentLimits,
     AttachmentPolicy,
     PublicURLPolicy,
@@ -112,6 +115,73 @@ class AttachmentSafetyTests(unittest.TestCase):
         with self.assertRaisesRegex(AttachmentFetchError, "POLICY_GATE_DENIED"):
             fetcher.fetch("https://jobs.example.test/a.pdf")
         self.assertEqual(opener.calls, [])
+
+
+    def test_transport_pins_socket_to_public_ip_and_keeps_tls_hostname(self):
+        policy = PublicURLPolicy(frozenset({"jobs.example.test"}), resolver_public)
+
+        class FakeTLSContext:
+            check_hostname = True
+            def wrap_socket(self, raw_socket, server_hostname):
+                self.server_hostname = server_hostname
+                self.raw_socket = raw_socket
+                return "wrapped-tls-socket"
+
+        context = FakeTLSContext()
+        connection = _PinnedHTTPSConnection(
+            "jobs.example.test",
+            policy=policy,
+            timeout=2,
+            context=context,
+            check_hostname=True,
+        )
+        raw_socket = object()
+        with patch("recruit_match.attachments.socket.create_connection", return_value=raw_socket) as connect:
+            connection.connect()
+        self.assertEqual(connect.call_args.args[0], ("93.184.216.34", 443))
+        self.assertEqual(context.server_hostname, "jobs.example.test")
+        self.assertEqual(context.raw_socket, raw_socket)
+        self.assertEqual(connection.sock, "wrapped-tls-socket")
+
+    def test_transport_rechecks_dns_and_rejects_private_address_before_connect(self):
+        answers = [
+            [(None, None, None, None, ("93.184.216.34", 443))],
+            [(None, None, None, None, ("127.0.0.1", 443))],
+        ]
+        def changing_resolver(host, port):
+            return answers.pop(0)
+
+        policy = PublicURLPolicy(frozenset({"jobs.example.test"}), changing_resolver)
+        policy.validate("https://jobs.example.test/a.pdf")
+
+        class FakeTLSContext:
+            check_hostname = True
+            def wrap_socket(self, raw_socket, server_hostname):
+                return raw_socket
+
+        connection = _PinnedHTTPSConnection(
+            "jobs.example.test",
+            policy=policy,
+            timeout=2,
+            context=FakeTLSContext(),
+            check_hostname=True,
+        )
+        with patch("recruit_match.attachments.socket.create_connection") as connect:
+            with self.assertRaisesRegex(AttachmentFetchError, "NONPUBLIC_DNS_TARGET_FORBIDDEN"):
+                connection.connect()
+        connect.assert_not_called()
+
+    def test_default_transport_disables_environment_proxies(self):
+        fetcher = SafeAttachmentFetcher(
+            AttachmentPolicy(frozenset({"jobs.example.test"}), policy_allows=True),
+            resolver=resolver_public,
+        )
+        proxy_handlers = [
+            handler for handler in fetcher.opener.handlers
+            if handler.__class__.__name__ == "ProxyHandler"
+        ]
+        self.assertEqual(len(proxy_handlers), 1)
+        self.assertEqual(proxy_handlers[0].proxies, {})
 
     def test_robots_fetch_uses_explicit_timeout_and_bounded_read(self):
         robots = FakeResponse(b"User-agent: *\nDisallow: /private\n", "https://jobs.example.test/robots.txt", "text/plain")
