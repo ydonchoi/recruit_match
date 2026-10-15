@@ -40,6 +40,28 @@ class AssessmentContractTests(unittest.TestCase):
         checks = [RequirementCheck("license", True, RequirementStatus.FAIL)]
         self.assertEqual(evaluate_eligibility(checks), EligibilityState.UNKNOWN)
 
+    def test_evidence_backed_critical_failure_dominates_other_unknowns(self):
+        checks = [
+            RequirementCheck(
+                "mandatory-license", True, RequirementStatus.FAIL,
+                (EvidenceDomain.CANDIDATE, EvidenceDomain.RECRUITMENT),
+                ("synthetic:candidate-license", "synthetic:official-license-rule"),
+            ),
+            RequirementCheck("degree", True, RequirementStatus.UNKNOWN),
+        ]
+        self.assertEqual(evaluate_eligibility(checks), EligibilityState.FAIL)
+
+    def test_unsubstantiated_critical_failure_remains_unknown(self):
+        checks = [
+            RequirementCheck("mandatory-license", True, RequirementStatus.FAIL),
+            RequirementCheck(
+                "degree", True, RequirementStatus.PASS,
+                (EvidenceDomain.CANDIDATE, EvidenceDomain.RECRUITMENT),
+                ("synthetic:candidate-degree", "synthetic:official-degree-rule"),
+            ),
+        ]
+        self.assertEqual(evaluate_eligibility(checks), EligibilityState.UNKNOWN)
+
     def test_unknown_critical_requirement_is_unknown(self):
         checks = [RequirementCheck("degree", True, RequirementStatus.PASS,
                                    (EvidenceDomain.CANDIDATE, EvidenceDomain.RECRUITMENT),
