@@ -3,7 +3,7 @@
 - Snapshot time: 2026-10-15
 - Target repository: `ydonchoi/recruit_match`
 - Target branch: `bootstrap/verification-first-architecture`
-- Target source snapshot before this ledger update: `ebace19438f99d3b517368f17cb0d1e338a86543`
+- Target source snapshot before this ledger update: `990bc890e51ec4c50deded1405c9b93f0e47f7fe`
 - Legacy source snapshot: `ydonchoi/recruitment_matching@89899ee3b0719d73f36311004ac32f87e8a78dee`
 - PR: [#1](https://github.com/ydonchoi/recruit_match/pull/1), Draft, not merged
 
@@ -21,20 +21,19 @@ Blob SHA values are Git blob identifiers from the target snapshot tree. They ide
 
 | Artifact | Git blob SHA | Evidence status |
 |---|---|---|
-| `src/recruit_match/domain.py` | `6aa49da2bcacd52dbaea1f3700ff9bfa1d4c32a0` | PRESENT / SOURCE-REVIEWED |
-| `src/recruit_match/assessment.py` | `7989f9d5d87088f16f0ae8b0d6ec7c30dd81895a` | PRESENT / SOURCE-REVIEWED; not wired to runner |
+| `src/recruit_match/domain.py` | `bbc45b509e0a69bc05df69e2f194ccd412a21333` | PRESENT / SOURCE-REVIEWED |
+| `src/recruit_match/assessment.py` | `9210f2bc2322439bdc863b4d65f8b6043be60a1d` | PRESENT / SOURCE-REVIEWED; not wired to runner |
 | `src/recruit_match/pipeline.py` | `89299a93aca1d5cb9f7138b346bc01c642a2a809` | PRESENT / SOURCE-REVIEWED |
 | `src/recruit_match/runner.py` | `0515c89a60a93700fe950b7364c9fbee4036adde` | PRESENT / SOURCE-REVIEWED; injected handlers only |
 | `src/recruit_match/attachments.py` | `ea8857d263c77a5112e28f00e6a26a6a4048494e` | PRESENT / SOURCE-REVIEWED; DNS pinning gap remains |
-| `tests/test_domain.py` | `5cfd4ad3b10ab82477927a3a61268db736d64ddb` | PRESENT / 8 test functions authored |
-| `tests/test_assessment.py` | `e69b13fb0b42fae6e5bd97b28137ab6fb641eeec` | PRESENT / 15 test functions authored |
+| `tests/test_domain.py` | `c5b3b041d846f6dd6020b3fb1e225dc8ae2754d6` | PRESENT / 11 test functions authored |
+| `tests/test_assessment.py` | `c30a4378a1e46f423dc3327734c23ce7601982ee` | PRESENT / 20 test functions authored |
 | `tests/test_pipeline.py` | `04f950f962e1d037338a9c7112bc7016635c920f` | PRESENT / 8 test functions authored |
 | `tests/test_runner.py` | `76648c36b9daaf2ccaeb121ee22824e143643540` | PRESENT / 6 test functions authored |
 | `tests/test_attachments.py` | `01a2c21305292c1a44043a32166533035bdfeec2` | PRESENT / 11 test functions authored |
 | `.github/workflows/unit-tests.yml` | `29b5c93e607bd3d26aa1a5395fe7a7d5d0510bc6` | PRESENT / workflow authored, no usable run |
-| `docs/attachment-retrieval-boundary.md` | `372101f9e10b7c63f0fd5e6faef1309bd24bc563` | PRESENT / residual security limits documented |
 
-The five test files contain **48 declared test functions** by source inspection. This is a count of test definitions, not a count of passing tests.
+The five test files contain **56 declared test functions** by source inspection. This is a count of test definitions, not a count of passing tests.
 
 ## Execution evidence
 
@@ -42,7 +41,7 @@ The five test files contain **48 declared test functions** by source inspection.
 - Local execution in this session: **NOT PERFORMED**.
 - Actions run observed on earlier PR head `48595a9c7ac133694f20ff794d056b467f1be648`: [run 38714021019](https://github.com/ydonchoi/recruit_match/actions/runs/38714021019), conclusion `failure`.
 - That job reported `runner_id=0`, an empty runner name, an empty step list, and no downloadable job log. The failure occurred before any test-step evidence was available. It is **not evidence that unit assertions failed**, and it is not a passing test run.
-- Actions run for the current snapshot `ebace19438f99d3b517368f17cb0d1e338a86543`: **none observed**.
+- Actions run for current snapshot `990bc890e51ec4c50deded1405c9b93f0e47f7fe`: **none observed**.
 - Test pass/fail count: **UNKNOWN** (no test command output or executed steps available).
 - End-to-end trigger-to-result test: **NOT PERFORMED**.
 - Live search connectivity and production transport behavior: **UNVERIFIED**.
