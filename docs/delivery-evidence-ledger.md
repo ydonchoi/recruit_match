@@ -47,12 +47,17 @@ The seven test files contain **71 declared test functions** by source inspection
   - [38714021019](https://github.com/ydonchoi/recruit_match/actions/runs/38714021019), head `48595a9c7ac133694f20ff794d056b467f1be648`, conclusion `failure`.
   - [38714612584](https://github.com/ydonchoi/recruit_match/actions/runs/38714612584), head `67c9e1432e6e8a233d9aa374e050ff6bc9680c73`, conclusion `failure`.
 - Both jobs reported `runner_id=0`, empty runner name, empty step list and no usable job logs. They failed before any test-step evidence was available. These are **not** evidence that unit assertions failed, and they are not passing test runs.
-- Actions run for current snapshot `f4be9bee11061d705ae427ab7d4fa25be63bf74c`: not observed at snapshot time.
+- Actions run for snapshot `f4be9bee11061d705ae427ab7d4fa25be63bf74c`: not observed at that snapshot. A later run on commit `48b4e9dbc0081e3d6de36f7e1348673d8ca53c5c` is observed: [run 38714988414](https://github.com/ydonchoi/recruit_match/actions/runs/38714988414), conclusion `failure`; the job again has `runner_id=0`, empty runner name and no steps.
 - Test pass/fail count: **UNKNOWN**.
 - End-to-end trigger-to-result test with real external adapters: **NOT PERFORMED**. A synthetic full-contract test is authored but not executed.
 - Live search connectivity and production transport behavior: **UNVERIFIED**.
 - Live Notion writes, durable persistence, concurrency and recovery: **NOT IMPLEMENTED / UNVERIFIED**.
 - Candidate-data deletion from legacy Git history, forks, caches or external stores: **NOT PERFORMED / UNVERIFIED**.
+
+## Latest CI observation
+
+- [Run 38714988414](https://github.com/ydonchoi/recruit_match/actions/runs/38714988414), head `48b4e9dbc0081e3d6de36f7e1348673d8ca53c5c`: failed before steps, with no runner ID/name or usable test output.
+- The repeated failure pattern is consistent with unavailable runner execution, but the exact infrastructure cause is not confirmed by logs. Unit test results remain unknown.
 
 ## Known blockers before merge or integration
 
