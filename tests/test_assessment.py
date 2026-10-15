@@ -17,7 +17,7 @@ from recruit_match.assessment import (
     resolve_compensation,
     weighted_fit_score,
 )
-from recruit_match.domain import EligibilityState, RecommendationState
+from recruit_match.domain import CurrentnessState, EligibilityState, RecommendationState
 
 
 class AssessmentContractTests(unittest.TestCase):
@@ -147,7 +147,7 @@ class AssessmentContractTests(unittest.TestCase):
             RecommendationInputs(
                 eligibility=EligibilityState.PASS,
                 source_verification=VerificationState.VERIFIED,
-                currentness="ACTIVE",
+                currentness=CurrentnessState.ACTIVE,
                 duplicate_state=DuplicateState.RESOLVED,
                 privacy_review="VERIFIED",
                 provenance=VerificationState.VERIFIED,
@@ -162,7 +162,7 @@ class AssessmentContractTests(unittest.TestCase):
         result = decide_recommendation(RecommendationInputs(
             eligibility=EligibilityState.PASS,
             source_verification=VerificationState.VERIFIED,
-            currentness="ACTIVE",
+            currentness=CurrentnessState.ACTIVE,
             duplicate_state=DuplicateState.RESOLVED,
             privacy_review=VerificationState.VERIFIED,
             provenance=VerificationState.VERIFIED,
@@ -174,7 +174,7 @@ class AssessmentContractTests(unittest.TestCase):
         result = decide_recommendation(RecommendationInputs(
             eligibility=EligibilityState.PASS,
             source_verification=VerificationState.VERIFIED,
-            currentness="ACTIVE",
+            currentness=CurrentnessState.ACTIVE,
             duplicate_state=DuplicateState.RESOLVED,
             privacy_review=VerificationState.VERIFIED,
             provenance=VerificationState.FAILED,
@@ -186,7 +186,7 @@ class AssessmentContractTests(unittest.TestCase):
         result = decide_recommendation(RecommendationInputs(
             eligibility=EligibilityState.PASS,
             source_verification=VerificationState.VERIFIED,
-            currentness="ACTIVE",
+            currentness=CurrentnessState.ACTIVE,
             duplicate_state=DuplicateState.RESOLVED,
             privacy_review=VerificationState.UNKNOWN,
             provenance=VerificationState.VERIFIED,
@@ -198,7 +198,7 @@ class AssessmentContractTests(unittest.TestCase):
         result = decide_recommendation(RecommendationInputs(
             eligibility=EligibilityState.FAIL,
             source_verification=VerificationState.VERIFIED,
-            currentness="ACTIVE",
+            currentness=CurrentnessState.ACTIVE,
             duplicate_state=DuplicateState.RESOLVED,
             privacy_review=VerificationState.VERIFIED,
             provenance=VerificationState.VERIFIED,
