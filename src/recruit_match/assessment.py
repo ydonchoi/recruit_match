@@ -10,7 +10,7 @@ from enum import StrEnum
 from math import isfinite
 from typing import Iterable, Sequence
 
-from .domain import EligibilityState, RecommendationState
+from .domain import CurrentnessState, EligibilityState, RecommendationState
 
 
 class EvidenceDomain(StrEnum):
@@ -71,14 +71,28 @@ class RequirementCheck:
 
 def evaluate_eligibility(requirements: Iterable[RequirementCheck]) -> EligibilityState:
     """Evaluate mandatory requirements; an empty/unresolved set never passes."""
-    checks = tuple(requirements)
+    try:
+        checks = tuple(requirements)
+    except TypeError as exc:
+        raise ValueError("INVALID_REQUIREMENT_COLLECTION") from exc
+    if any(not isinstance(item, RequirementCheck) for item in checks):
+        raise ValueError("INVALID_REQUIREMENT_CHECK")
+    requirement_ids = [item.requirement_id for item in checks]
+    if len(requirement_ids) != len(set(requirement_ids)):
+        raise ValueError("DUPLICATE_REQUIREMENT_ID")
     critical = tuple(item for item in checks if item.critical)
     if not critical:
         return EligibilityState.UNKNOWN
     required_domains = {EvidenceDomain.CANDIDATE, EvidenceDomain.RECRUITMENT}
 
     def has_decision_evidence(item: RequirementCheck) -> bool:
-        return bool(item.evidence_refs) and required_domains.issubset(set(item.evidence_domains))
+        # The contract requires separately traceable candidate-side and
+        # recruitment-side evidence references, not a single opaque pointer.
+        return (
+            len(set(item.evidence_refs)) >= 2
+            and len(set(item.evidence_domains)) == len(item.evidence_domains)
+            and required_domains.issubset(set(item.evidence_domains))
+        )
 
     # A documented critical failure is decisive even if another requirement is
     # unknown. A failure without adequate evidence is not a confirmed failure.
@@ -235,7 +249,7 @@ def resolve_compensation(
 class RecommendationInputs:
     eligibility: EligibilityState
     source_verification: VerificationState
-    currentness: str
+    currentness: CurrentnessState
     duplicate_state: DuplicateState
     privacy_review: VerificationState
     provenance: VerificationState
@@ -254,7 +268,7 @@ class RecommendationInputs:
                 raise ValueError(f"INVALID_RECOMMENDATION_GATE:{name}")
         if not isinstance(self.duplicate_state, DuplicateState):
             raise ValueError("INVALID_RECOMMENDATION_DUPLICATE_STATE")
-        if not isinstance(self.currentness, str) or not self.currentness.strip():
+        if not isinstance(self.currentness, CurrentnessState):
             raise ValueError("INVALID_RECOMMENDATION_CURRENTNESS")
 
 
@@ -270,13 +284,21 @@ def decide_recommendation(value: RecommendationInputs) -> RecommendationState:
         return RecommendationState.NOT_RECOMMENDED
     if value.privacy_review is VerificationState.FAILED or value.schema_validation is VerificationState.FAILED:
         return RecommendationState.NOT_RECOMMENDED
-    if value.currentness in ("CLOSED", "ARCHIVED", "EXPIRED"):
+    if value.currentness in (
+        CurrentnessState.CLOSED,
+        CurrentnessState.ARCHIVED,
+        CurrentnessState.EXPIRED,
+    ):
         return RecommendationState.NOT_RECOMMENDED
 
     all_explicitly_valid = (
         value.eligibility is EligibilityState.PASS
         and value.source_verification is VerificationState.VERIFIED
-        and value.currentness in ("ACTIVE", "URGENT", "CLOSING_SOON")
+        and value.currentness in (
+            CurrentnessState.ACTIVE,
+            CurrentnessState.URGENT,
+            CurrentnessState.CLOSING_SOON,
+        )
         and value.duplicate_state is DuplicateState.RESOLVED
         and value.privacy_review is VerificationState.VERIFIED
         and value.provenance is VerificationState.VERIFIED
@@ -332,6 +354,9 @@ def rank_candidates(candidates: Sequence[RankingCandidate], *, limit: int = 50) 
         not isinstance(candidate, RankingCandidate) for candidate in candidates
     ):
         raise ValueError("INVALID_RANKING_CANDIDATES")
+    opportunity_ids = [candidate.opportunity_id for candidate in candidates]
+    if len(opportunity_ids) != len(set(opportunity_ids)):
+        raise ValueError("DUPLICATE_OPPORTUNITY_ID_IN_RANKING")
 
     eligibility_order = {
         EligibilityState.PASS: 0,
