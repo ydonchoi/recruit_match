@@ -123,6 +123,7 @@ def validate_run(contract: RunContract, receipts: Iterable[StageReceipt]) -> Run
     specs = {stage.stage_id: stage for stage in contract.stages}
     in_scope = contract.in_scope_stage_ids
     completed: list[str] = []
+    accepted_predecessors: set[str] = set()
 
     for stage_id in in_scope:
         spec = specs[stage_id]
@@ -152,15 +153,24 @@ def validate_run(contract: RunContract, receipts: Iterable[StageReceipt]) -> Run
                 and specs[predecessor_id].allow_not_applicable
             ):
                 issues.append(f"PREDECESSOR_NOT_TERMINALLY_ACCEPTABLE:{stage_id}:{predecessor_id}")
-            elif predecessor.status is StageStatus.NOT_APPLICABLE and not specs[predecessor_id].allow_not_applicable:
-                issues.append(f"PREDECESSOR_NOT_APPLICABLE_NOT_ALLOWED:{stage_id}:{predecessor_id}")
+            elif predecessor_id not in accepted_predecessors:
+                issues.append(f"PREDECESSOR_NOT_ACCEPTED:{stage_id}:{predecessor_id}")
 
-        if (
-            receipt.status is StageStatus.SUCCESS
-            and len(issues) == issues_before_stage
+        stage_accepted = (
+            len(issues) == issues_before_stage
             and stage_id not in invalid_stage_ids
-        ):
-            completed.append(stage_id)
+            and (
+                receipt.status is StageStatus.SUCCESS
+                or (
+                    receipt.status is StageStatus.NOT_APPLICABLE
+                    and spec.allow_not_applicable
+                )
+            )
+        )
+        if stage_accepted:
+            accepted_predecessors.add(stage_id)
+            if receipt.status is StageStatus.SUCCESS:
+                completed.append(stage_id)
 
     out_of_scope = set(by_stage) - set(in_scope)
     if out_of_scope:
