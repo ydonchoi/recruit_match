@@ -157,6 +157,11 @@ def resolve_compensation(
     ):
         if quote is None:
             continue
+        if not isinstance(quote, CompensationQuote):
+            return CompensationEvidence(
+                CompensationTier.UNKNOWN, None, None, confidence="UNKNOWN",
+                reason=f"COMPENSATION_QUOTE_INVALID:{tier.value}",
+            )
         if quote.verification is not VerificationState.VERIFIED:
             return CompensationEvidence(
                 CompensationTier.UNKNOWN, None, None, confidence="UNKNOWN",
@@ -229,6 +234,17 @@ class RankingCandidate:
     career_education_fit: float | None
     total_score: float | None
     location_priority: int | None
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.opportunity_id, str) or not self.opportunity_id.strip():
+            raise ValueError("OPPORTUNITY_ID_REQUIRED")
+        if not isinstance(self.eligibility, EligibilityState):
+            raise ValueError("INVALID_ELIGIBILITY_STATE")
+        for name, value in (("job_fit", self.job_fit), ("career_education_fit", self.career_education_fit)):
+            if value is not None and (not isfinite(value) or not 0.0 <= value <= 100.0):
+                raise ValueError(f"INVALID_RANKING_DIMENSION:{name}")
+        if self.total_score is not None and not isfinite(self.total_score):
+            raise ValueError("INVALID_TOTAL_SCORE")
 
 
 def rank_candidates(candidates: Sequence[RankingCandidate], *, limit: int = 50) -> tuple[RankingCandidate, ...]:
