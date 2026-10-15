@@ -156,6 +156,15 @@ class AssessmentContractTests(unittest.TestCase):
         self.assertEqual([item.opportunity_id for item in result], ["b", "a", "c"])
         self.assertEqual(len(result), 3)
 
+    def test_malformed_compensation_quote_fails_closed(self):
+        result = resolve_compensation(official=("100-120", "official-ref"))
+        self.assertEqual(result.tier, CompensationTier.UNKNOWN)
+        self.assertIn("COMPENSATION_QUOTE_INVALID", result.reason)
+
+    def test_non_finite_ranking_score_is_rejected(self):
+        with self.assertRaisesRegex(ValueError, "INVALID_RANKING_DIMENSION:job_fit"):
+            RankingCandidate("opp", EligibilityState.PASS, float("nan"), 80, 70, 1)
+
     def test_limit_zero_returns_no_records(self):
         self.assertEqual(rank_candidates([], limit=0), ())
 
