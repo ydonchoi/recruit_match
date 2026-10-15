@@ -18,7 +18,9 @@ class CurrentnessState(StrEnum):
     UNKNOWN = "UNKNOWN"
     ACTIVE = "ACTIVE"
     URGENT = "URGENT"
+    CLOSING_SOON = "CLOSING_SOON"
     CLOSED = "CLOSED"
+    EXPIRED = "EXPIRED"
     ARCHIVED = "ARCHIVED"
 
 
