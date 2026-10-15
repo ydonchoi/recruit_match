@@ -6,7 +6,7 @@ Status: **PROPOSED; legacy architecture inventory is partial; not production val
 
 Review the entire legacy architecture before deciding the target data model or implementation sequence. Each legacy component must be assigned a documented disposition: KEEP, REFACTOR, REBUILD, RETIRE, or UNASSESSED. A source document or code file alone is not proof that a capability is operational.
 
-See [migration-map.md](migration-map.md) for the current source-backed inventory and known gaps, [pipeline-execution-trace.md](pipeline-execution-trace.md) for the partial stage trace, and [data-boundary-decision.md](data-boundary-decision.md) for persistence boundaries.
+See [migration-map.md](migration-map.md) for the current source-backed inventory and known gaps, [pipeline-execution-trace.md](pipeline-execution-trace.md) for the partial stage trace, and [data-boundary-decision.md](data-boundary-decision.md) for persistence boundaries, and [notion-schema-assessment.md](notion-schema-assessment.md) for the observed Notion data-source schema and adapter gaps.
 
 ## Provisional component boundaries
 
