@@ -100,3 +100,10 @@ This document does not claim:
 - `registry/candidate_vault.py` is an in-memory versioned Candidate Ground Truth store with approval-reference and authorization-verifier checks. The inspected implementation is not a durable secure storage solution; do not port real candidate payloads into the GitHub repository.
 - `search_agent/independent_validator.py` defines ACCEPT, REJECT, INCONCLUSIVE and ROLLBACK_REQUIRED. The independent nature of its utility signal still needs caller-level tracing and test evidence.
 - The source candidate-data audit dated 2026-10-10 is itself explicitly partial and leaves Git history, artifacts, caches, forks, external storage and repository access exposure unresolved. It recommends field-by-field minimization rather than bulk deletion.
+
+
+## Notion schema review result added 2026-10-15
+
+Schema metadata was inspected from the connected Notion workspace (no data rows queried). The canonical opportunity registry includes lifecycle/eligibility/recommendation/execution/revalidation fields and also `GitHub Source` / `Notion Sync State`. Separate Candidate Profile and Candidate Evidence data sources include candidate-linked fields such as name, preferences, compensation, capability, achievement and evidence. Data-source separation does not establish separate access permissions.
+
+**Disposition remains:** no GitHub registry CRUD/sync; Notion writes blocked until access, retention, field necessity and workflow review. The presence of legacy sync-related properties is not sufficient evidence to implement a GitHub mirror.
