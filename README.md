@@ -32,8 +32,12 @@ A clean, verification-first reimplementation of the recruitment matching system.
 ## Repository layout
 
 - `src/recruit_match/domain.py`: provisional domain types and fail-closed validation.
-- `tests/`: executable unit tests for the bootstrap domain.
-- `docs/migration-map.md`: source-backed, partial legacy architecture inventory and migration decisions to be completed.
+- `src/recruit_match/pipeline.py`: typed stage receipts and fail-closed bounded-run validation (not yet integrated into a runtime).
+- `tests/`: executable unit tests for domain and pipeline stage contracts; execution remains unverified.
+- `docs/migration-map.md`: source-backed legacy architecture inventory and migration decisions.
+- `docs/legacy-architecture-inventory.md`: tracked-tree inventory and component dispositions; full call graph remains partial.
+- `docs/target-architecture-and-migration-plan.md`: proposed target components and gated implementation order.
+- `docs/notion-schema-assessment.md`: observed Notion schema metadata and adapter gaps.
 - `docs/pipeline-execution-trace.md`: partial trace of legacy pipeline and selected implementation paths.
 - `docs/data-boundary-decision.md`: no-GitHub-registry-sync decision and data placement rules.
 - `docs/notion-schema-assessment.md`: actual Notion schema metadata review; writes remain blocked pending access and minimization review.
