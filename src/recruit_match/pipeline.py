@@ -23,6 +23,7 @@ class StageSpec:
     required: bool = True
     allow_not_applicable: bool = False
     predecessors: tuple[str, ...] = ()
+    evidence_required: bool = False
 
 
 @dataclass(frozen=True, slots=True)
@@ -143,6 +144,8 @@ def validate_run(contract: RunContract, receipts: Iterable[StageReceipt]) -> Run
             issues.append(f"STAGE_TERMINAL_NOT_SUCCESS:{stage_id}:{receipt.status.value}")
         if receipt.status is StageStatus.NOT_APPLICABLE and not spec.allow_not_applicable:
             issues.append(f"NOT_APPLICABLE_NOT_ALLOWED:{stage_id}")
+        if spec.evidence_required and not receipt.evidence_refs:
+            issues.append(f"STAGE_EVIDENCE_MISSING:{stage_id}")
 
         declared_predecessors = set(spec.predecessors)
         observed_predecessors = set(receipt.predecessor_stage_ids)
