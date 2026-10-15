@@ -88,6 +88,21 @@ class PipelineContractTests(unittest.TestCase):
         self.assertFalse(result.valid)
         self.assertIn("NOT_APPLICABLE_NOT_ALLOWED:discover", result.issues)
 
+    def test_stage_spec_rejects_non_boolean_policy_flags(self):
+        with self.assertRaisesRegex(ValueError, "INVALID_STAGE_POLICY_FLAG"):
+            StageSpec("discover", required="yes")
+
+    def test_stage_receipt_rejects_empty_evidence_reference(self):
+        with self.assertRaisesRegex(ValueError, "INVALID_EVIDENCE_REFS"):
+            StageReceipt(
+                run_id="run-synthetic-001", stage_id="discover",
+                status=StageStatus.SUCCESS, attempt=1, evidence_refs=("",),
+            )
+
+    def test_run_contract_rejects_untyped_stages(self):
+        with self.assertRaisesRegex(ValueError, "INVALID_RUN_STAGES"):
+            RunContract("run-synthetic-001", ("discover",))
+
     def test_non_success_requires_reason(self):
         with self.assertRaisesRegex(ValueError, "NON_SUCCESS_REQUIRES_REASON"):
             StageReceipt(
