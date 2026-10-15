@@ -1,6 +1,6 @@
 # Target Architecture and Migration Plan
 
-- Status: **DESIGN PROPOSAL — NOT IMPLEMENTED**
+- Status: **DESIGN PROPOSAL + PARTIAL CONTRACT IMPLEMENTATION — EXTERNAL INTEGRATION NOT IMPLEMENTED**
 - Date: 2026-10-15
 - Decision scope: rebuild `ydonchoi/recruit_match` from a clean repository without copying candidate records.
 
@@ -54,7 +54,7 @@ Every stage should accept a typed input and return:
 
 No mandatory stage may return `SKIPPED`, `ASSUMED_COMPLETE`, `IMPLICIT_PASS`, or `UNCHECKED`. Partial runs are allowed only when the run contract declares its bounded scope and completion condition.
 
-See [adapter-contracts.md](adapter-contracts.md) for the explicit provider boundary and integration acceptance criteria.
+See [adapter-contracts.md](adapter-contracts.md) for the explicit provider boundary and integration acceptance criteria. The public `run_analysis(...)` entry point exists, but live providers are not configured.
 
 ## Persistence boundary
 
@@ -95,7 +95,7 @@ See [adapter-contracts.md](adapter-contracts.md) for the explicit provider bound
 
 - Added an in-memory bounded runner (`src/recruit_match/runner.py`) over the stage contract. It invokes injected handlers sequentially and stops after an invalid/non-success stage. It does not itself connect live search, Notion or any external mutation.
 - Added a policy-gated attachment boundary (`src/recruit_match/attachments.py`) with allowlist, DNS-pinned numeric socket connection, TLS hostname verification, redirect checks, robots, size, MIME/signature and receipt checks. Parser isolation and live adversarial network testing remain unimplemented; source implementation is not production verification.
-- Added `pyproject.toml` and a GitHub Actions unit-test workflow. One hundred and one test functions are authored across eight files. No usable test output exists: the observed Actions run failed before exposing steps or logs. See [delivery-evidence-ledger.md](delivery-evidence-ledger.md).
+- Added `pyproject.toml` and a GitHub Actions unit-test workflow. One hundred and two test functions are authored across eight files. No usable test output exists: the observed Actions run failed before exposing steps or logs. See [delivery-evidence-ledger.md](delivery-evidence-ledger.md).
 
 ## Explicit non-goals
 
