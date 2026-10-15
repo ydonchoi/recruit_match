@@ -38,9 +38,10 @@ The four test files contain **33 declared test functions** by source inspection.
 
 - Local test command documented: `PYTHONPATH=src python -m unittest discover -s tests -v`.
 - Local execution in this session: **NOT PERFORMED**.
-- GitHub Actions workflow run for the target snapshot: **NO RUN OBSERVED**.
-- CI status checks for the target snapshot: **NO STATUS CHECKS OBSERVED**.
-- Test pass/fail count: **UNKNOWN**.
+- GitHub Actions workflow run observed for commit `48595a9c7ac133694f20ff794d056b467f1be648`: [run 38714021019](https://github.com/ydonchoi/recruit_match/actions/runs/38714021019), conclusion `failure`.
+- The job reports `runner_id=0`, an empty runner name, and an empty step list; the log endpoint returned no downloadable log. The failure occurred before any test-step evidence was available. It is **not evidence that unit assertions failed**, and it is not a passing test run.
+- CI status checks: the combined commit-status endpoint returned no status entries; the Actions check-run itself is failed.
+- Test pass/fail count: **UNKNOWN** (no test command output or executed steps available).
 - End-to-end trigger-to-result test: **NOT PERFORMED**.
 - Live search connectivity and production transport behavior: **UNVERIFIED**.
 - Live Notion writes, durable persistence, concurrency and recovery: **NOT IMPLEMENTED / UNVERIFIED**.
@@ -54,6 +55,10 @@ The four test files contain **33 declared test functions** by source inspection.
 4. Integrate the runner with explicit search, evidence, assessment and recommendation handlers; no live handler graph is established yet.
 5. Decide and approve the private canonical data store, field minimization, access control, retention and deletion semantics before enabling writes.
 6. Complete the source call graph and audit relevant callers, test fixtures, CI workflows and sensitive-data paths.
+
+## Follow-up run observation
+
+The workflow was triggered by the pull request, but GitHub reported the job as failed before exposing any steps or logs. Given the current execution restriction, treat this as an **environment/runner availability blocker unless further evidence shows otherwise**. Do not diagnose it as a source-code test failure or claim the suite passed. Retry only when an execution environment is available.
 
 ## Interpretation
 
