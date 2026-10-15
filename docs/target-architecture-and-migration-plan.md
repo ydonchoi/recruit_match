@@ -89,6 +89,12 @@ No mandatory stage may return `SKIPPED`, `ASSUMED_COMPLETE`, `IMPLICIT_PASS`, or
 - **Gate 7 — persistence and lifecycle:** idempotency, concurrency, duplicate handling, reconciliation and deletion/retention tests.
 - **Gate 8 — end-to-end verification:** execute tests, inspect logs, validate synthetic traces, and record gaps. No merge without actual evidence.
 
+## Implementation status update (2026-10-15)
+
+- Added the first in-memory bounded runner (`src/recruit_match/runner.py`) over the stage contract. It invokes injected handlers sequentially and stops after an invalid/non-success stage. It does not itself connect live search, Notion or any external mutation.
+- Added an attachment retrieval boundary (`src/recruit_match/attachments.py`) with explicit allowlist, URL, DNS, robots, manual redirect, size, MIME/signature and receipt contracts. Production transport/IP pinning, bounded robots retrieval, parser isolation and live adversarial network testing remain unimplemented.
+- Added `pyproject.toml` and a future GitHub Actions unit-test workflow. Neither the local tests nor the workflow have been executed in this session.
+
 ## Explicit non-goals
 
 - Copying the legacy repository tree or candidate-related Markdown/CSV/JSON.
