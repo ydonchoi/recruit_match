@@ -1,6 +1,7 @@
 import unittest
 
 from recruit_match.assessment import (
+    CompensationQuote,
     CompensationTier,
     DuplicateState,
     EvidenceDomain,
@@ -25,14 +26,18 @@ class AssessmentContractTests(unittest.TestCase):
 
     def test_critical_failure_cannot_be_offset_by_other_passes(self):
         checks = [
-            RequirementCheck("degree", True, RequirementStatus.PASS),
+            RequirementCheck("degree", True, RequirementStatus.PASS,
+                             (EvidenceDomain.CANDIDATE, EvidenceDomain.RECRUITMENT),
+                             ("candidate-degree-ref", "official-degree-requirement-ref")),
             RequirementCheck("license", True, RequirementStatus.FAIL),
             RequirementCheck("nice-to-have", False, RequirementStatus.PASS),
         ]
         self.assertEqual(evaluate_eligibility(checks), EligibilityState.FAIL)
 
     def test_unknown_critical_requirement_is_unknown(self):
-        checks = [RequirementCheck("degree", True, RequirementStatus.PASS),
+        checks = [RequirementCheck("degree", True, RequirementStatus.PASS,
+                                   (EvidenceDomain.CANDIDATE, EvidenceDomain.RECRUITMENT),
+                                   ("candidate-degree-ref", "official-degree-requirement-ref")),
                   RequirementCheck("work-auth", True, RequirementStatus.UNKNOWN)]
         self.assertEqual(evaluate_eligibility(checks), EligibilityState.UNKNOWN)
 
@@ -56,12 +61,27 @@ class AssessmentContractTests(unittest.TestCase):
 
     def test_official_compensation_has_precedence(self):
         result = resolve_compensation(
-            official=("100-120", "official-posting#salary"),
-            institution_table=("90-110", "institution-table#row-1"),
-            estimate=("80-100", "estimate#1", ("regional benchmark",)),
+            official=CompensationQuote("100-120", "official-posting#salary", VerificationState.VERIFIED),
+            institution_table=CompensationQuote("90-110", "institution-table#row-1", VerificationState.VERIFIED),
+            estimate=CompensationQuote("80-100", "estimate#1", VerificationState.VERIFIED, ("regional benchmark",)),
         )
         self.assertEqual(result.tier, CompensationTier.OFFICIAL)
         self.assertEqual(result.confidence, "HIGH")
+
+    def test_unverified_official_compensation_does_not_get_promoted(self):
+        result = resolve_compensation(
+            official=CompensationQuote("100-120", "official-posting#salary", VerificationState.UNKNOWN),
+            institution_table=CompensationQuote("90-110", "institution-table#row-1", VerificationState.VERIFIED),
+        )
+        self.assertEqual(result.tier, CompensationTier.UNKNOWN)
+        self.assertIn("COMPENSATION_SOURCE_NOT_VERIFIED", result.reason)
+
+    def test_critical_pass_without_both_evidence_domains_is_unknown(self):
+        result = evaluate_eligibility([
+            RequirementCheck("degree", True, RequirementStatus.PASS,
+                             (EvidenceDomain.CANDIDATE,), ("candidate-degree-ref",))
+        ])
+        self.assertEqual(result, EligibilityState.UNKNOWN)
 
     def test_non_finite_weights_are_rejected(self):
         dimensions = FitDimensions(100, 80, 60, 40)
@@ -69,7 +89,7 @@ class AssessmentContractTests(unittest.TestCase):
             weighted_fit_score(dimensions, (0.5, float("nan"), 0.2, 0.1))
 
     def test_estimate_requires_source_and_assumptions(self):
-        result = resolve_compensation(estimate=("80-100", "", ()))
+        result = resolve_compensation(estimate=CompensationQuote("80-100", "", VerificationState.VERIFIED, ()))
         self.assertEqual(result.tier, CompensationTier.UNKNOWN)
 
     def test_recommendation_requires_all_explicit_gates(self):
