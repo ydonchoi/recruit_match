@@ -92,6 +92,13 @@ class PipelineContractTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "INVALID_STAGE_POLICY_FLAG"):
             StageSpec("discover", required="yes")
 
+    def test_stage_receipt_rejects_non_string_reason(self):
+        with self.assertRaisesRegex(ValueError, "INVALID_STAGE_REASON"):
+            StageReceipt(
+                run_id="run-synthetic-001", stage_id="discover",
+                status=StageStatus.FAILED, attempt=1, reason=123,
+            )
+
     def test_stage_receipt_rejects_empty_evidence_reference(self):
         with self.assertRaisesRegex(ValueError, "INVALID_EVIDENCE_REFS"):
             StageReceipt(
