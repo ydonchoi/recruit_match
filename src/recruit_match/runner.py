@@ -135,6 +135,19 @@ def execute_pipeline(
             )
             break
 
+        if spec.evidence_required and not result.evidence_refs:
+            receipts.append(
+                StageReceipt(
+                    run_id=contract.run_id,
+                    stage_id=stage_id,
+                    status=StageStatus.FAILED,
+                    attempt=1,
+                    predecessor_stage_ids=spec.predecessors,
+                    reason="STAGE_EVIDENCE_MISSING",
+                )
+            )
+            break
+
         try:
             receipt = StageReceipt(
                 run_id=contract.run_id,
