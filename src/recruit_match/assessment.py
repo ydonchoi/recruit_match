@@ -156,6 +156,18 @@ class CompensationQuote:
     verification: VerificationState
     assumptions: tuple[str, ...] = ()
 
+    def __post_init__(self) -> None:
+        if not isinstance(self.amount_or_range, str) or not self.amount_or_range.strip():
+            raise ValueError("COMPENSATION_AMOUNT_REQUIRED")
+        if not isinstance(self.source_ref, str) or not self.source_ref.strip():
+            raise ValueError("COMPENSATION_SOURCE_REF_REQUIRED")
+        if not isinstance(self.verification, VerificationState):
+            raise ValueError("INVALID_COMPENSATION_VERIFICATION")
+        if not isinstance(self.assumptions, tuple) or any(
+            not isinstance(item, str) or not item.strip() for item in self.assumptions
+        ):
+            raise ValueError("INVALID_COMPENSATION_ASSUMPTIONS")
+
 
 @dataclass(frozen=True, slots=True)
 class CompensationEvidence:
@@ -223,6 +235,22 @@ class RecommendationInputs:
     privacy_review: VerificationState
     provenance: VerificationState
     schema_validation: VerificationState
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.eligibility, EligibilityState):
+            raise ValueError("INVALID_RECOMMENDATION_ELIGIBILITY")
+        for name, value in (
+            ("source_verification", self.source_verification),
+            ("privacy_review", self.privacy_review),
+            ("provenance", self.provenance),
+            ("schema_validation", self.schema_validation),
+        ):
+            if not isinstance(value, VerificationState):
+                raise ValueError(f"INVALID_RECOMMENDATION_GATE:{name}")
+        if not isinstance(self.duplicate_state, DuplicateState):
+            raise ValueError("INVALID_RECOMMENDATION_DUPLICATE_STATE")
+        if not isinstance(self.currentness, str) or not self.currentness.strip():
+            raise ValueError("INVALID_RECOMMENDATION_CURRENTNESS")
 
 
 def decide_recommendation(value: RecommendationInputs) -> RecommendationState:
