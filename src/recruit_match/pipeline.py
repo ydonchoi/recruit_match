@@ -128,6 +128,8 @@ def validate_run(contract: RunContract, receipts: Iterable[StageReceipt]) -> Run
                 issues.append(f"MISSING_TERMINAL_RECEIPT:{stage_id}")
             continue
 
+        if receipt.status is StageStatus.FAILED or receipt.status is StageStatus.BLOCKED:
+            issues.append(f"STAGE_TERMINAL_NOT_SUCCESS:{stage_id}:{receipt.status.value}")
         if receipt.status is StageStatus.NOT_APPLICABLE and not spec.allow_not_applicable:
             issues.append(f"NOT_APPLICABLE_NOT_ALLOWED:{stage_id}")
 
@@ -140,7 +142,10 @@ def validate_run(contract: RunContract, receipts: Iterable[StageReceipt]) -> Run
             predecessor = by_stage.get(predecessor_id)
             if predecessor is None:
                 issues.append(f"PREDECESSOR_RECEIPT_MISSING:{stage_id}:{predecessor_id}")
-            elif predecessor.status not in (StageStatus.SUCCESS, StageStatus.NOT_APPLICABLE):
+            elif predecessor.status is not StageStatus.SUCCESS and not (
+                predecessor.status is StageStatus.NOT_APPLICABLE
+                and specs[predecessor_id].allow_not_applicable
+            ):
                 issues.append(f"PREDECESSOR_NOT_TERMINALLY_ACCEPTABLE:{stage_id}:{predecessor_id}")
             elif predecessor.status is StageStatus.NOT_APPLICABLE and not specs[predecessor_id].allow_not_applicable:
                 issues.append(f"PREDECESSOR_NOT_APPLICABLE_NOT_ALLOWED:{stage_id}:{predecessor_id}")
