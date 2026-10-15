@@ -20,10 +20,10 @@
 | Artifact | Git blob SHA | Evidence status |
 |---|---|---|
 | `src/recruit_match/domain.py` | `bbc45b509e0a69bc05df69e2f194ccd412a21333` | PRESENT / SOURCE-REVIEWED |
-| `src/recruit_match/assessment.py` | `7f897ea6ecb7d43f12aa44ed34be6fc4afb400a9` | PRESENT / SOURCE-REVIEWED; strict input checks, hard eligibility exclusion |
-| `src/recruit_match/assessment_handlers.py` | `0ab1edfe6493a6b0959d8fb519d84e131c772dc5` | PRESENT / SOURCE-REVIEWED; recommendation gates derived from upstream context |
+| `src/recruit_match/assessment.py` | `d23603540e82ad986e748ed2d06e66afe1f7ef68` | PRESENT / SOURCE-REVIEWED; strict input checks, hard eligibility exclusion |
+| `src/recruit_match/assessment_handlers.py` | `0781f62f5207ae12d7fb84aa296eccfcaea184d7` | PRESENT / SOURCE-REVIEWED; recommendation gates derived from upstream context |
 | `src/recruit_match/pipeline.py` | `546cfa02c479c4fcf55089e4d5a22be5ad101ffb` | PRESENT / SOURCE-REVIEWED; strict stage and receipt contracts |
-| `src/recruit_match/runner.py` | `35c0aa85deb40e3d76ec8623be61d28976e600eb` | PRESENT / SOURCE-REVIEWED; malformed handler output fails closed |
+| `src/recruit_match/runner.py` | `99773eaf48e374a9e630f3821444158071160eb5` | PRESENT / SOURCE-REVIEWED; malformed handler output fails closed |
 | `src/recruit_match/workflow.py` | `c6f4c6e01cec500a287dd5d2383f5463b373d582` | PRESENT / 18-stage contract; real adapters not configured |
 | `src/recruit_match/application.py` | `8d0318d8689b28ba7655d7d692c9f8c03cb11147` | PRESENT / SOURCE-REVIEWED; injectable full/bounded entry point |
 | `src/recruit_match/attachments.py` | `17c472e472ceb659a0c4a5b8a71bb7f4cd2daa39` | PRESENT / SOURCE-REVIEWED; DNS-pinned default transport, execution unverified |
@@ -38,14 +38,14 @@
 | Test file | Git blob SHA | Test functions |
 |---|---|---:|
 | `tests/test_domain.py` | `c5b3b041d846f6dd6020b3fb1e225dc8ae2754d6` | 11 |
-| `tests/test_assessment.py` | `c1c0f667e64fef2769eafdce6a4fe3aeb1794385` | 27 |
-| `tests/test_pipeline.py` | `62d14422235b296b9c127982edc35ce072b0cd5e` | 15 |
+| `tests/test_assessment.py` | `5b536f0afa27e7d61663c2f502911f4b65094fe9` | 29 |
+| `tests/test_pipeline.py` | `6b521e1e3b97a49f0fb618b22c2147c73f7393b3` | 15 |
 | `tests/test_runner.py` | `fb93138298d67d0581e4e15e1aa35a89cd3e5508` | 8 |
 | `tests/test_attachments.py` | `e69624413501faef696a88b600c3c5fc2757794b` | 19 |
 | `tests/test_workflow.py` | `f950dca294dd0e1af8d2e58105eee36814b4caf0` | 10 |
-| `tests/test_assessment_handlers.py` | `9874983de7e67e5c68217fce497a721af9347573` | 8 |
+| `tests/test_assessment_handlers.py` | `89e8b7164112d85767bbef7fa813be8b83078676` | 9 |
 | `tests/test_application.py` | `b525c98df09b67f8397c5e92f9045197ee9a93c9` | 4 |
-| **Total** | | **102** |
+| **Total** | | **108** |
 
 This is a count of declared test functions by source inspection, not a count of passing tests.
 
@@ -54,7 +54,7 @@ This is a count of declared test functions by source inspection, not a count of 
 - Documented test command: `PYTHONPATH=src python -m unittest discover -s tests -v`.
 - Local execution of that command: **NOT PERFORMED**.
 - A separate browser-shell execution attempt could not start a clone because that environment has no `git` executable. The Python test command was not reached; this is not a test result.
-- GitHub Actions attempts repeatedly fail before exposing test steps. The latest observed run is [38717929730](https://github.com/ydonchoi/recruit_match/actions/runs/38717929730), for head `8ebba4d76e72bf36108de7219a43565e30ce69f1). Its job reports `runner_id=0`, empty runner name and no steps. The same pattern is present in the immediately preceding attempts.
+- GitHub Actions attempts repeatedly fail before exposing test steps. The latest observed run is [38718031834](https://github.com/ydonchoi/recruit_match/actions/runs/38717929730), for head `8ebba4d76e72bf36108de7219a43565e30ce69f1). Its job reports `runner_id=0`, empty runner name and no steps. The same pattern is present in the immediately preceding attempts.
 - The observed pattern is consistent with runner initialization unavailability, but the exact infrastructure cause is not confirmed by logs.
 - No test assertion output is available. Test pass/fail count: **UNKNOWN**.
 - The synthetic full-workflow test calls the public `run_analysis` entry point, but it has **not been executed**.
@@ -72,7 +72,7 @@ This is a count of declared test functions by source inspection, not a count of 
 
 ## Remaining merge/integration gates
 
-1. Execute all 102 authored tests and retain actual output.
+1. Execute all 108 authored tests and retain actual output.
 2. Exercise the DNS-pinned transport with TLS hostname mismatch, controlled redirects, IPv4/IPv6, DNS changes and proxy configuration.
 3. Implement and authorize actual external stage adapters; verify each adapter's source identity, observation time, access basis and evidence receipts.
 4. Execute the synthetic full workflow through `run_analysis`, then integration tests with controlled adapters.
