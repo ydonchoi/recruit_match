@@ -81,6 +81,16 @@ class DomainValidationTests(unittest.TestCase):
         self.assertEqual(record.eligibility, EligibilityState.FAIL)
         self.assertEqual(record.recommendation, RecommendationState.RECOMMENDED)
 
+    def test_invalid_enum_values_are_reported(self):
+        record = self.make_record(source_verification="VERIFIED")
+        issues = validate_record(record)
+        self.assertIn("INVALID_ENUM_VALUE", {issue.code for issue in issues})
+
+    def test_non_https_source_url_is_rejected(self):
+        record = self.make_record(source_url="http://example.com/jobs/1")
+        issues = validate_record(record)
+        self.assertIn("SOURCE_URL_NOT_HTTPS", {issue.code for issue in issues})
+
     def test_sync_state_is_not_part_of_the_domain_record(self):
         fields = set(OpportunityRecord.__dataclass_fields__)
         self.assertNotIn("sync_state", fields)
