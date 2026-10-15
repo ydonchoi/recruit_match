@@ -88,7 +88,7 @@ This inventory did **not** copy candidate records, personal details, ranking res
 2. Make missing provenance, privacy review, schema validation, duplicate resolution, currentness and scores explicit UNKNOWN/unverified states.
 3. Define adapter interfaces separately from domain logic; keep search, Notion, file retrieval and user decisions injectable and permission-gated.
 4. Resolve private canonical persistence, field minimization, access control, retention and deletion semantics before implementing writes.
-5. Close attachment DNS-rebinding risk by pinning connections to validated public addresses while preserving TLS hostname validation; test redirect hops, timeout, size overflow, MIME/signature mismatch, IPv4/IPv6 and DNS changes.
+5. Attachment transport now pins the default socket connection to validated public addresses while preserving TLS hostname validation; successful execution and adversarial network tests are still required before production use.
 6. Separate recommendation from Registry persistence and from application execution.
 7. Use synthetic-only fixtures, run tests in an environment with execution available, and attach real outputs before promoting the PR.
 
@@ -96,5 +96,5 @@ This inventory did **not** copy candidate records, personal details, ranking res
 
 - Tracked path inventory: **verified for source tree SHA `89899ee3b0719d73f36311004ac32f87e8a78dee`** (`truncated=false`, 1,059 paths).
 - Selected code findings: **source-observed** from files named above; not all paths were reviewed.
-- Test execution: **no usable test output** in this session. Seventy-one test functions are authored. An Actions run failed before exposing steps/logs; test assertion outcomes remain unknown.
+- Test execution: **no usable test output** in this session. Seventy-four test functions are authored. An Actions run failed before exposing steps/logs; test assertion outcomes remain unknown.
 - Full call graph, live search connectivity, live Notion writes, access control, data erasure, and production readiness: **unverified**.
