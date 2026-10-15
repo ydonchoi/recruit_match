@@ -60,6 +60,32 @@ These are code changes, not verified fixes. No runtime result is claimed.
 6. **Legacy caller tracing remains partial.** The 1,059 tracked-path inventory is not equivalent to a complete semantic audit. Each important entry point, caller/callee path, side effect, test and workflow still needs evidence.
 7. **Test coverage is not test execution.** The added test cases have not been run. Syntax, import compatibility, actual socket/TLS behavior and full-workflow behavior remain unknown.
 
+## Legacy call-path audit: additional code-observed findings
+
+The following path was observed in `search_agent/orchestrator.py`; it is a concrete call path, not proof that every configured external dependency is live or authorized:
+
+`SearchAgentOrchestrator.execute_request`
+→ `AdaptiveSearchPlanner.plan`
+→ injected `search_executor(query)`
+→ `SearchRuntime.execute`
+→ `SourceAcquisition.acquire` / resolver / assessor
+→ `_to_assessment` and `assess_result`
+→ `RegistryWriterRuntime.execute`
+→ save registry result
+→ enroll in `UserRegistry` when status is `READY_TO_MUTATE`
+→ collect utility and record feedback
+→ `SearchScreeningLoop.evaluate_and_adapt`
+→ save metric update / validation.
+
+This path reveals several migration-critical details:
+
+1. **Success-shaped defaults propagate across boundaries.** `SearchRuntime.execute` uses `getattr(resolved, "decision_source_verified", True)`, `getattr(assessment, "privacy_ok", True)`, and `getattr(assessment, "schema_ok", True)`. `SearchAgentOrchestrator._to_assessment` repeats the same default-true pattern. Missing fields can therefore be interpreted as affirmative decisions. The target's explicit UNKNOWN/blocked contracts should not reproduce this behavior.
+2. **The result assessor hardcodes source availability.** `assess_result` sets `source_available="PASS"` without receiving an explicit acquisition-status argument. A successful function call and non-empty reference are not, by themselves, proof of source availability/authority.
+3. **Currentness vocabulary is inconsistent.** The legacy result assessor treats ACTIVE/URGENT as PASS, CLOSED/ARCHIVED as FAIL, and all other values as UNKNOWN. In particular, CLOSING_SOON is not accepted there even though the writer gate accepts it; EXPIRED is not explicitly terminal. The target enum alignment fixes only the target-side vocabulary; legacy semantics remain a migration concern.
+4. **Observed utility is not a bounded quality score.** `IndependentUtilityCollector.collect` computes `(new_opportunities + assessed_opportunities) / max(1, unique_opportunities)`. Its `duplicate_count` and `noise_count` inputs do not affect the result, and the existing utility runner expects a value of 1.25 for one synthetic case. This may be an intentional throughput signal, but it should not be interpreted as a normalized quality metric without an explicit definition and calibration.
+5. **The adaptation validator does not directly gate on assessment-quality regression.** `MetricEngine.update_criteria` can propose an update for assessment-quality degradation, but `SearchScreeningLoop` builds `ValidationInput` from baseline utility, recent utility, and independent utility only. A utility improvement can therefore be accepted without the validator directly considering the separate assessment-quality regression criterion. This is a source-level concern; no execution reproduction was performed.
+6. **Registry mutation is inside the search request orchestration path.** The orchestrator builds a proposal with `approval_required=False`, calls the writer, then enrolls when the returned status is `READY_TO_MUTATE`. The target intentionally does not wire live writes into its analysis path; keep discovery, assessment, recommendation, human approval, and external mutation as separate capabilities.
+
 ## Next static-only work
 
 1. Complete a legacy entry-point and caller/callee matrix for each runtime subsystem and workflow.
