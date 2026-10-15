@@ -5,6 +5,7 @@ from recruit_match.assessment import (
     RequirementCheck, RequirementStatus, VerificationState,
 )
 from recruit_match.assessment import EvidenceDomain
+from recruit_match.application import run_analysis
 from recruit_match.domain import EligibilityState, RecommendationState
 from recruit_match.pipeline import RunContract
 from recruit_match.runner import StageExecution, execute_pipeline
@@ -91,7 +92,6 @@ class WorkflowContractTests(unittest.TestCase):
                     stage_outputs.get(stage_id, {}),
                     evidence_refs=(f"synthetic:{stage_id}:evidence",) if stage_id in EVIDENCE_REQUIRED_STAGES else (),
                 )
-        handlers = compose_analysis_handlers(external)
         initial_context = {
             "requirement_checks": [RequirementCheck(
                 "degree", True, RequirementStatus.PASS,
@@ -105,7 +105,7 @@ class WorkflowContractTests(unittest.TestCase):
             },
             "ranking_candidates": [RankingCandidate("synthetic-opp-1", EligibilityState.PASS, 90, 80, 88, 1)],
         }
-        result = execute_pipeline(contract, handlers, initial_context)
+        result = run_analysis("synthetic-e2e", external, initial_context)
         self.assertTrue(result.validation.valid, result.validation.issues)
         self.assertEqual(result.context["eligibility"], EligibilityState.PASS)
         self.assertEqual(result.context["recommendation"], RecommendationState.RECOMMENDED)
