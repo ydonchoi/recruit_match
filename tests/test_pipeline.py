@@ -108,6 +108,16 @@ class PipelineContractTests(unittest.TestCase):
         self.assertFalse(result.valid)
         self.assertIn("STAGE_TERMINAL_NOT_SUCCESS:assess:FAILED", result.issues)
 
+    def test_not_applicable_requires_evidence_reference(self):
+        with self.assertRaisesRegex(ValueError, "NOT_APPLICABLE_REQUIRES_EVIDENCE"):
+            StageReceipt(
+                run_id="run-synthetic-001",
+                stage_id="discover",
+                status=StageStatus.NOT_APPLICABLE,
+                attempt=1,
+                reason="no source configured",
+            )
+
     def test_duplicate_receipt_fails(self):
         result = validate_run(
             self.contract,
