@@ -34,7 +34,7 @@ A clean, verification-first reimplementation of the recruitment matching system.
 - **End-to-end runtime integration:** not implemented
 - **Notion writes:** not implemented
 - **GitHub Registry CRUD/sync:** excluded from the default target
-- **Tests:** 56 test functions are authored across five test files; execution and results are unverified
+- **Tests:** 71 test functions are authored across seven test files; execution and results are unverified
 - **GitHub Actions:** run 38714021019 failed before any step/log was exposed; this is not a test assertion result, and test state remains unknown
 
 ## Repository layout
@@ -43,6 +43,8 @@ A clean, verification-first reimplementation of the recruitment matching system.
 - `src/recruit_match/assessment.py`: pure evidence-gated eligibility, fit scoring, compensation tiering, recommendation and no-padding ranking contracts; not yet wired into the runner.
 - `src/recruit_match/pipeline.py`: typed stage receipts and fail-closed bounded-run validation.
 - `src/recruit_match/runner.py`: injected, in-memory bounded pipeline runner; no production handlers or persistence are configured.
+- `src/recruit_match/workflow.py`: canonical 18-stage analysis contract with explicit bounded-run scope.
+- `src/recruit_match/assessment_handlers.py`: fail-closed adapters that bind pure assessment functions to the runner; source/search stages still require external handlers.
 - `src/recruit_match/attachments.py`: public attachment fetch boundary with allowlist, DNS preflight, redirects, robots, time/size limits, MIME/signature checks and integrity receipt. It does not pin DNS results to the socket and is not production-ready.
 - `tests/`: synthetic unit tests for domain, stage contracts, runner behavior and attachment safety boundaries.
 - `pyproject.toml`: minimal Python package metadata.
