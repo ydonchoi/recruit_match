@@ -1,4 +1,4 @@
-"""Small, explicit domain model. Unknown values are represented, never promoted."""
+"""Provisional domain contracts; independent of Notion/GitHub schemas."""
 
 from __future__ import annotations
 
@@ -11,6 +11,33 @@ class LifecycleState(StrEnum):
     ACTIVE = "ACTIVE"
     ARCHIVED = "ARCHIVED"
     ON_HOLD = "ON_HOLD"
+
+
+class CurrentnessState(StrEnum):
+    UNKNOWN = "UNKNOWN"
+    ACTIVE = "ACTIVE"
+    URGENT = "URGENT"
+    CLOSED = "CLOSED"
+    ARCHIVED = "ARCHIVED"
+
+
+class SourceVerificationState(StrEnum):
+    UNKNOWN = "UNKNOWN"
+    VERIFIED = "VERIFIED"
+    FAILED = "FAILED"
+
+
+class EligibilityState(StrEnum):
+    UNKNOWN = "UNKNOWN"
+    PASS = "PASS"
+    FAIL = "FAIL"
+
+
+class RecommendationState(StrEnum):
+    UNKNOWN = "UNKNOWN"
+    RECOMMENDED = "RECOMMENDED"
+    NEEDS_REVIEW = "NEEDS_REVIEW"
+    NOT_RECOMMENDED = "NOT_RECOMMENDED"
 
 
 class ApplicationOutcome(StrEnum):
@@ -29,28 +56,24 @@ class ExecutionReadiness(StrEnum):
     READY = "READY"
 
 
-class SyncState(StrEnum):
-    NOT_CONFIGURED = "NOT_CONFIGURED"
-    PENDING = "PENDING"
-    SYNCED = "SYNCED"
-    RETRYABLE_FAILURE = "RETRYABLE_FAILURE"
-    PERMANENT_FAILURE = "PERMANENT_FAILURE"
-
-
 @dataclass(frozen=True, slots=True)
 class OpportunityRecord:
-    """Domain record independent of any persistence or Notion schema."""
+    """Provisional opportunity domain record; contains no candidate profile data."""
 
     registry_id: str
     opportunity_id: str
     organization: str
     position: str
+    recruitment_cycle: str | None = None
+    posting_id: str | None = None
     source_url: str | None = None
-    source_verified: bool = False
+    source_verification: SourceVerificationState = SourceVerificationState.UNKNOWN
+    currentness: CurrentnessState = CurrentnessState.UNKNOWN
     lifecycle_state: LifecycleState = LifecycleState.UNKNOWN
+    eligibility: EligibilityState = EligibilityState.UNKNOWN
+    recommendation: RecommendationState = RecommendationState.UNKNOWN
     application_outcome: ApplicationOutcome = ApplicationOutcome.UNKNOWN
     execution_readiness: ExecutionReadiness = ExecutionReadiness.UNKNOWN
-    sync_state: SyncState = SyncState.NOT_CONFIGURED
 
 
 @dataclass(frozen=True, slots=True)
@@ -80,12 +103,12 @@ def validate_record(record: OpportunityRecord) -> list[ValidationIssue]:
                 )
             )
 
-    if record.source_verified and not record.source_url:
+    if record.source_verification is SourceVerificationState.VERIFIED and not record.source_url:
         issues.append(
             ValidationIssue(
                 code="SOURCE_VERIFICATION_WITHOUT_SOURCE",
                 field="source_url",
-                message="source_verified cannot be true when source_url is absent",
+                message="source verification cannot be VERIFIED when source_url is absent",
             )
         )
 
