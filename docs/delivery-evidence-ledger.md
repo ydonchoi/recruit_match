@@ -41,12 +41,18 @@ The five test files contain **56 declared test functions** by source inspection.
 - Local execution in this session: **NOT PERFORMED**.
 - Actions run observed on earlier PR head `48595a9c7ac133694f20ff794d056b467f1be648`: [run 38714021019](https://github.com/ydonchoi/recruit_match/actions/runs/38714021019), conclusion `failure`.
 - That job reported `runner_id=0`, an empty runner name, an empty step list, and no downloadable job log. The failure occurred before any test-step evidence was available. It is **not evidence that unit assertions failed**, and it is not a passing test run.
-- Actions run for current snapshot `990bc890e51ec4c50deded1405c9b93f0e47f7fe`: **none observed**.
+- At snapshot `990bc890e51ec4c50deded1405c9b93f0e47f7fe`: no run was observed. A later workflow attempt for commit `67c9e1432e6e8a233d9aa374e050ff6bc9680c73` is now observed: [run 38714612584](https://github.com/ydonchoi/recruit_match/actions/runs/38714612584), conclusion `failure`; the job again reports `runner_id=0`, empty runner name and no steps. This still provides no test assertion output.
 - Test pass/fail count: **UNKNOWN** (no test command output or executed steps available).
 - End-to-end trigger-to-result test: **NOT PERFORMED**.
 - Live search connectivity and production transport behavior: **UNVERIFIED**.
 - Live Notion writes, durable persistence, concurrency and recovery: **NOT IMPLEMENTED / UNVERIFIED**.
 - Candidate-data deletion from legacy Git history, forks, caches or external stores: **NOT PERFORMED / UNVERIFIED**.
+
+## Latest CI observation
+
+- Latest observed run: [38714612584](https://github.com/ydonchoi/recruit_match/actions/runs/38714612584), tied to commit `67c9e1432e6e8a233d9aa374e050ff6bc9680c73`.
+- Job state: completed/failure; `runner_id=0`; empty runner name; empty step list; no usable logs exposed.
+- Interpretation remains: execution environment/runner unavailable or failed before step initialization. Source test results remain unknown.
 
 ## Known blockers before merge or integration
 
