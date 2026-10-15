@@ -154,6 +154,10 @@ class AssessmentContractTests(unittest.TestCase):
                 schema_validation=VerificationState.VERIFIED,
             )
 
+    def test_recommendation_rejects_wrong_input_object(self):
+        with self.assertRaisesRegex(ValueError, "INVALID_RECOMMENDATION_INPUTS"):
+            decide_recommendation({"eligibility": EligibilityState.PASS})
+
     def test_recommendation_requires_all_explicit_gates(self):
         result = decide_recommendation(RecommendationInputs(
             eligibility=EligibilityState.PASS,
