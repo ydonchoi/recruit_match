@@ -69,20 +69,54 @@ class AssessmentHandlerTests(unittest.TestCase):
         self.assertTrue(result.validation.valid)
         self.assertEqual(len(result.context["ranked_candidates"]), 1)
 
+    def test_missing_recommendation_gate_blocks_stage(self):
+        result = self.run_one("recommendation", {
+            "eligibility": EligibilityState.PASS,
+            "source_verification_state": VerificationState.VERIFIED,
+            "currentness_state": "ACTIVE",
+            "duplicate_state": DuplicateState.RESOLVED,
+            "privacy_review_state": VerificationState.UNKNOWN,
+            "provenance_state": VerificationState.VERIFIED,
+        })
+        self.assertFalse(result.validation.valid)
+        self.assertEqual(result.receipts[0].status, StageStatus.BLOCKED)
+        self.assertIn("schema_validation_state", result.receipts[0].reason)
+
     def test_unknown_recommendation_gate_produces_review_state(self):
         result = self.run_one("recommendation", {
-            "recommendation_inputs": RecommendationInputs(
-                eligibility=EligibilityState.PASS,
-                source_verification=VerificationState.VERIFIED,
-                currentness="ACTIVE",
-                duplicate_state=DuplicateState.RESOLVED,
-                privacy_review=VerificationState.UNKNOWN,
-                provenance=VerificationState.VERIFIED,
-                schema_validation=VerificationState.VERIFIED,
-            )
+            "eligibility": EligibilityState.PASS,
+            "source_verification_state": VerificationState.VERIFIED,
+            "currentness_state": "ACTIVE",
+            "duplicate_state": DuplicateState.RESOLVED,
+            "privacy_review_state": VerificationState.UNKNOWN,
+            "provenance_state": VerificationState.VERIFIED,
+            "schema_validation_state": VerificationState.VERIFIED,
         })
         self.assertTrue(result.validation.valid)
         self.assertEqual(result.context["recommendation"], RecommendationState.NEEDS_REVIEW)
+
+    def test_critical_eligibility_failure_propagates_to_recommendation(self):
+        from recruit_match.assessment import EvidenceDomain
+        contract = RunContract("synthetic-run", (
+            StageSpec("eligibility"),
+            StageSpec("recommendation", predecessors=("eligibility",)),
+        ))
+        result = execute_pipeline(contract, self.handlers, {
+            "requirement_checks": [RequirementCheck(
+                "mandatory-license", True, RequirementStatus.FAIL,
+                (EvidenceDomain.CANDIDATE, EvidenceDomain.RECRUITMENT),
+                ("synthetic:candidate-license", "synthetic:official-license-requirement"),
+            )],
+            "source_verification_state": VerificationState.VERIFIED,
+            "currentness_state": "ACTIVE",
+            "duplicate_state": DuplicateState.RESOLVED,
+            "privacy_review_state": VerificationState.VERIFIED,
+            "provenance_state": VerificationState.VERIFIED,
+            "schema_validation_state": VerificationState.VERIFIED,
+        })
+        self.assertTrue(result.validation.valid)
+        self.assertEqual(result.context["eligibility"], EligibilityState.FAIL)
+        self.assertEqual(result.context["recommendation"], RecommendationState.NOT_RECOMMENDED)
 
 
 if __name__ == "__main__":
