@@ -63,6 +63,11 @@ class AssessmentContractTests(unittest.TestCase):
         self.assertEqual(result.tier, CompensationTier.OFFICIAL)
         self.assertEqual(result.confidence, "HIGH")
 
+    def test_non_finite_weights_are_rejected(self):
+        dimensions = FitDimensions(100, 80, 60, 40)
+        with self.assertRaisesRegex(ValueError, "INVALID_FIT_WEIGHTS"):
+            weighted_fit_score(dimensions, (0.5, float("nan"), 0.2, 0.1))
+
     def test_estimate_requires_source_and_assumptions(self):
         result = resolve_compensation(estimate=("80-100", "", ()))
         self.assertEqual(result.tier, CompensationTier.UNKNOWN)
@@ -78,6 +83,18 @@ class AssessmentContractTests(unittest.TestCase):
             schema_validation=VerificationState.VERIFIED,
         ))
         self.assertEqual(result, RecommendationState.RECOMMENDED)
+
+    def test_failed_provenance_blocks_recommendation(self):
+        result = decide_recommendation(RecommendationInputs(
+            eligibility=EligibilityState.PASS,
+            source_verification=VerificationState.VERIFIED,
+            currentness="ACTIVE",
+            duplicate_state=DuplicateState.RESOLVED,
+            privacy_review=VerificationState.VERIFIED,
+            provenance=VerificationState.FAILED,
+            schema_validation=VerificationState.VERIFIED,
+        ))
+        self.assertEqual(result, RecommendationState.NOT_RECOMMENDED)
 
     def test_unknown_gate_never_becomes_recommendation(self):
         result = decide_recommendation(RecommendationInputs(
