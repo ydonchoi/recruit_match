@@ -93,7 +93,7 @@ No mandatory stage may return `SKIPPED`, `ASSUMED_COMPLETE`, `IMPLICIT_PASS`, or
 
 - Added an in-memory bounded runner (`src/recruit_match/runner.py`) over the stage contract. It invokes injected handlers sequentially and stops after an invalid/non-success stage. It does not itself connect live search, Notion or any external mutation.
 - Added a urllib-based attachment retrieval boundary (`src/recruit_match/attachments.py`) with allowlist, URL, DNS preflight, redirect, robots, size, MIME/signature and receipt checks. **DNS results are not pinned to the actual socket connection**, so production use remains blocked until the transport is hardened. Parser isolation and live adversarial network testing also remain unimplemented.
-- Added `pyproject.toml` and a GitHub Actions unit-test workflow. Fifty-six test functions are authored across five files. No usable test output exists: the observed Actions run failed before exposing steps or logs. See [delivery-evidence-ledger.md](delivery-evidence-ledger.md).
+- Added `pyproject.toml` and a GitHub Actions unit-test workflow. Seventy-one test functions are authored across seven files. No usable test output exists: the observed Actions run failed before exposing steps or logs. See [delivery-evidence-ledger.md](delivery-evidence-ledger.md).
 
 ## Explicit non-goals
 
