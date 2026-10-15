@@ -67,3 +67,26 @@ This decision applies to the new repository. It does not delete records from the
 - Tests use synthetic records and check privacy boundaries.
 - Notion writes remain blocked until schema/access review is recorded.
 - Any proposed exception requires an explicit decision record, data-minimization assessment, access design and tests proving sensitive candidate data is not copied to GitHub.
+
+
+## Existing Notion schema inspected (metadata only; no rows queried)
+
+The connected Notion workspace exposes a database named **개인 채용 Registry — Canonical** and these related data sources:
+
+- **Canonical opportunity Registry** (`collection://382f5aa7-302a-45aa-ae94-e87513fb94e1`): includes `Opportunity ID`, `Organization`, `Position`, `Posting ID`, `Recruitment Cycle`, `Lifecycle State`, `Eligibility`, `Score`, `Promotion State`, `Recommendation`, `Execution Readiness`, `Execution State`, `Revalidation Status`, `Evidence Readiness`, `Decision Source`, `GitHub Source`, and `Notion Sync State`, among other properties.
+- **00 Candidate Profile Registry** (`collection://df5197c8-fbab-4397-8bff-16e17dbb7f2c`): includes `Candidate ID`, `Name`, `Preferred Region`, `Minimum Compensation`, `Target Compensation`, `Verification Status`, `Version`, `Source Reference`, and `Last Verified`.
+- **05 Candidate Evidence Registry** (`collection://d1de2d7e-abb5-477e-b0ae-6c747ec58fad`): includes `Candidate ID`, `Capability`, `Achievement`, `Evidence`, `Source`, `Source Type`, `Verification Status`, `Evidence Status`, `Version`, and verification time.
+- **07 Job Candidate Registry** (`collection://2ace59d2-8af0-4886-8ce1-0de8dc3d65b4`): includes job/posting-oriented fields such as `Job ID`, `Position`, `Source URL`, `Mandatory Result`, `Decision Score`, `Compensation M`, and `Region`.
+
+### What this establishes
+
+- The workspace already models the opportunity registry separately from candidate profile and candidate evidence data at the data-source level.
+- The canonical opportunity schema still has `GitHub Source` and `Notion Sync State` properties. Their existence does **not** prove that a GitHub sync workflow is required or currently operational; they may be legacy compatibility fields and should not drive implementation by themselves.
+- Candidate Profile and Candidate Evidence schemas contain personal/candidate-linked fields. Separate databases do not prove separate permissions or safe access boundaries.
+- The schemas use several plain-text state fields as well as select/date/URL properties. A schema contract must specify allowed values and UNKNOWN semantics instead of trusting field types alone.
+
+### Decision based on this review
+
+Do not implement GitHub Registry CRUD or GitHub registry sync. The current Notion schema provides a plausible canonical private registry shape, but it is not enough to authorize live writes: workspace/database permissions, field-level necessity, retention/deletion, exact relations, and operational workflows remain unverified. Keep the Notion adapter blocked until these are reviewed.
+
+Only schema metadata was inspected; no database rows or candidate record contents were queried as part of this schema review.
