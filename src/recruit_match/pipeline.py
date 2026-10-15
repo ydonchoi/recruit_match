@@ -42,6 +42,8 @@ class StageReceipt:
             raise ValueError("RUN_ID_REQUIRED")
         if not self.stage_id.strip():
             raise ValueError("STAGE_ID_REQUIRED")
+        if not isinstance(self.status, StageStatus):
+            raise ValueError("INVALID_STAGE_STATUS")
         if self.attempt < 1:
             raise ValueError("ATTEMPT_MUST_BE_POSITIVE")
         if self.status in (StageStatus.FAILED, StageStatus.BLOCKED) and not (
