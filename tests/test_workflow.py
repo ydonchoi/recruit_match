@@ -5,6 +5,7 @@ from recruit_match.workflow import (
     ANALYSIS_STAGE_IDS,
     ATTACHMENT_OPTIONAL_STAGES,
     build_analysis_contract,
+    compose_analysis_handlers,
 )
 
 
@@ -31,6 +32,14 @@ class WorkflowContractTests(unittest.TestCase):
             contract.in_scope_stage_ids,
             ANALYSIS_STAGE_IDS[: ANALYSIS_STAGE_IDS.index("source_verification") + 1],
         )
+
+    def test_unknown_external_handler_name_is_rejected(self):
+        with self.assertRaisesRegex(ValueError, "UNKNOWN_ANALYSIS_HANDLER"):
+            compose_analysis_handlers({"not_a_stage": lambda context: None})
+
+    def test_assessment_handlers_cannot_be_overridden(self):
+        with self.assertRaisesRegex(ValueError, "ASSESSMENT_HANDLER_OVERRIDE_FORBIDDEN"):
+            compose_analysis_handlers({"eligibility": lambda context: None})
 
     def test_unknown_boundary_is_rejected(self):
         with self.assertRaisesRegex(ValueError, "BOUNDARY_NOT_IN_RUN_SCOPE"):
