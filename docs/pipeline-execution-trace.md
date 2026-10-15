@@ -22,6 +22,8 @@ The source architecture expands this into access governance; candidate ground tr
 | Component | Code observed | Remaining verification |
 |---|---|---|
 | Search policy (`search_agent/search_policy.py`) | Explicit source, location, fit, currentness and urgency priorities | Actual callers, policy enforcement and live source adapters |
+| Search matrix (`search_agent/search_matrix.py`) | Candidate-evidence-driven search combinations, stable IDs, learned/search expansion axes | Determine exactly which candidate facts enter query generation, how those facts are minimized, and which orchestration paths invoke the planner |
+| Search runtime (`search_agent/runtime.py`) | Calls `source_acquisition.acquire`, `resolver.resolve`, `assessor.assess`, stores run and emits traces; can persist search-axis learning | Default values `decision_source_verified=True`, `privacy_ok=True`, and `schema_ok=True` are success-shaped when upstream fields are absent; confirm caller contracts and remove unsafe defaults in any rebuilt path |
 | Randomized simulation (`search_agent/search_simulation.py`) | Seeded shuffle, iterations, source rotation, deterministic probe IDs | Simulation is not evidence of actual external search; trace the adapter boundary |
 | Top-50 (`search_agent/top50.py`) | Sorts by eligibility category, fit, preference fit, location priority and score; does not pad results | Input construction, score provenance, UNKNOWN behavior in all downstream paths |
 | Compensation (`registry/compensation_resolution.py`) | Official → institution table → public benchmark → estimate → UNKNOWN; estimate confidence LOW | Source validation, time/currency normalization, assumptions and threshold logic |
@@ -30,6 +32,7 @@ The source architecture expands this into access governance; candidate ground tr
 | Writer runtime (`registry/writer_runtime.py`) | Assess → approval when needed → external mutation → local result-store write | Mutation-before-acknowledgement creates a failure window; concurrency/replay safety unproven |
 | Notion adapter (`registry/notion_registry.py`) | Maps records to Notion properties; query, upsert, hydration and analysis projection | One query is capped at 10; upsert updates first match; missing states default to success-shaped values; some quality flags are hardcoded true |
 | Safety gate (`tools/recruitment_safety_check.py`) | Static text-presence check only; no network or shell execution | It references v5.4.20 while v5.4.25 is active; text presence is not semantic/runtime safety |
+| Notion adapter tests (`tests/test_notion_registry.py`) | Fake-transport tests cover create, update, projection, and hydration behavior | Existing tests encode create/update persistence expectations but do not establish privacy approval, schema suitability, real API correctness, pagination edge cases, or safe concurrency |
 | CI workflows | Syntax, contract, safety, registry, search and execution test commands are defined | Active instruction reports five workflow failures in PR #153; current run results and full logs not verified here |
 
 ## Invariants to preserve
@@ -43,6 +46,10 @@ The source architecture expands this into access governance; candidate ground tr
 - Registry promotion ≠ GitHub commit; PR merge ≠ application execution.
 - Attachment discovery, fetch, extraction, atomization and evidence consolidation are separate states.
 - Bounded runs cannot be represented as completed full runs.
+
+## Runtime boundary finding
+
+The inspected `search_agent/runtime.py` constructs an `Opportunity` with `decision_source_verified=True`, `privacy_ok=True`, and `schema_ok=True` as defaults when upstream objects omit those fields. This can turn missing evidence into success-shaped values at that boundary. A replacement runtime must preserve explicit UNKNOWN/unverified states and derive privacy/schema verification from actual checks, not defaults. This is a code-observed risk, not proof that every upstream path currently omits those fields.
 
 ## Persistence decision
 
