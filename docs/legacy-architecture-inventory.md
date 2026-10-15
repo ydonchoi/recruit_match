@@ -60,8 +60,8 @@ Total tracked paths: **1,059**. File extension inventory: 831 Markdown, 162 Pyth
 4. **Volatile state:** `MemoryStore` and `SearchMemory` use in-process dictionaries/lists. Restart recovery, multi-process consistency and durable idempotency are not established.
 5. **Writer mutation:** a result can be externally mutated before its local result is stored; the failure/reconciliation window and concurrency behavior are unproven.
 6. **Attachment byte limit:** `crawl/fetch.py` reads at most the remaining configured byte budget. When the budget is exhausted, it calls `read(0)` and may return a truncated artifact as if it were complete, instead of detecting an over-limit body. The robots.txt fetch has no explicit timeout in the inspected implementation. These are code-review findings, not runtime reproductions.
-7. **Policy-version drift:** `tools/recruitment_safety_check.py` references v5.4.20 while the active instruction is v5.4.25; text-presence checks are not semantic or runtime safety proofs.
-8. **Notion mapping gap:** the legacy adapter maps only a subset of the observed opportunity schema and has known first-match, pagination and success-default hazards. Do not port it wholesale.
+8. **Policy-version drift:** `tools/recruitment_safety_check.py` references v5.4.20 while the active instruction is v5.4.25; text-presence checks are not semantic or runtime safety proofs.
+9. **Notion mapping gap:** the legacy adapter maps only a subset of the observed opportunity schema and has known first-match, pagination and success-default hazards. Do not port it wholesale.
 
 ## New-repository implementation started
 
