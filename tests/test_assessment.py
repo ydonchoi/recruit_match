@@ -21,6 +21,15 @@ from recruit_match.domain import CurrentnessState, EligibilityState, Recommendat
 
 
 class AssessmentContractTests(unittest.TestCase):
+    def test_invalid_requirement_collection_fails_closed(self):
+        with self.assertRaisesRegex(ValueError, "INVALID_REQUIREMENT_COLLECTION"):
+            evaluate_eligibility(None)
+
+    def test_duplicate_requirement_ids_are_rejected(self):
+        check = RequirementCheck("degree", True, RequirementStatus.UNKNOWN)
+        with self.assertRaisesRegex(ValueError, "DUPLICATE_REQUIREMENT_ID"):
+            evaluate_eligibility([check, check])
+
     def test_empty_critical_requirements_never_pass(self):
         self.assertEqual(evaluate_eligibility([]), EligibilityState.UNKNOWN)
 
@@ -233,6 +242,23 @@ class AssessmentContractTests(unittest.TestCase):
         ]
         result = rank_candidates(candidates, limit=50)
         self.assertEqual([item.opportunity_id for item in result], ["pass", "unknown"])
+
+    def test_duplicate_opportunity_ids_are_rejected(self):
+        candidate = RankingCandidate("same-id", EligibilityState.PASS, 80, 70, 75, 1)
+        with self.assertRaisesRegex(ValueError, "DUPLICATE_OPPORTUNITY_ID_IN_RANKING"):
+            rank_candidates([candidate, candidate])
+
+    def test_currentness_must_use_canonical_enum(self):
+        with self.assertRaisesRegex(ValueError, "INVALID_RECOMMENDATION_CURRENTNESS"):
+            RecommendationInputs(
+                eligibility=EligibilityState.PASS,
+                source_verification=VerificationState.VERIFIED,
+                currentness="ACTIVE",
+                duplicate_state=DuplicateState.RESOLVED,
+                privacy_review=VerificationState.VERIFIED,
+                provenance=VerificationState.VERIFIED,
+                schema_validation=VerificationState.VERIFIED,
+            )
 
     def test_limit_zero_returns_no_records(self):
         self.assertEqual(rank_candidates([], limit=0), ())
