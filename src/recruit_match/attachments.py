@@ -7,16 +7,18 @@ supply an explicit non-empty host allowlist and an affirmative policy decision.
 from __future__ import annotations
 
 import hashlib
+import http.client
 import ipaddress
 import socket
+import ssl
 import time
 import urllib.error
 import urllib.robotparser
 from dataclasses import dataclass
 from email.message import Message
 from typing import Callable
-from urllib.parse import urljoin, urlparse
-from urllib.request import HTTPRedirectHandler, Request, build_opener
+from urllib.parse import urlparse
+from urllib.request import HTTPRedirectHandler, HTTPSHandler, ProxyHandler, Request, build_opener
 
 
 class AttachmentFetchError(RuntimeError):
@@ -88,6 +90,39 @@ class PublicURLPolicy:
         self.allowed_hosts = frozenset(host.lower().rstrip(".") for host in allowed_hosts)
         self.resolver = resolver
 
+    def public_addresses(self, host: str, port: int = 443) -> tuple[str, ...]:
+        """Resolve and validate addresses that the transport may connect to.
+
+        The returned numeric IPs are passed directly to socket.create_connection;
+        the hostname is retained separately for HTTP Host, TLS SNI and certificate
+        hostname verification.
+        """
+        normalized = host.strip("[]").lower().rstrip(".")
+        if normalized == "localhost" or normalized.endswith(".localhost") or normalized.endswith(".local"):
+            raise AttachmentFetchError("NONPUBLIC_HOST_FORBIDDEN")
+        try:
+            literal = ipaddress.ip_address(normalized)
+        except ValueError:
+            literal = None
+        if literal is not None:
+            if not _is_public_address(str(literal)):
+                raise AttachmentFetchError("NONPUBLIC_ADDRESS_FORBIDDEN")
+            return (str(literal),)
+        try:
+            answers = self.resolver(normalized, port)
+        except (OSError, socket.gaierror) as exc:
+            raise AttachmentFetchError("DNS_RESOLUTION_FAILED") from exc
+        addresses = {
+            answer[4][0].split("%", 1)[0]
+            for answer in answers
+            if answer and len(answer) > 4 and isinstance(answer[4][0], str)
+        }
+        if not addresses:
+            raise AttachmentFetchError("DNS_NO_ADDRESSES")
+        if any(not _is_public_address(address) for address in addresses):
+            raise AttachmentFetchError("NONPUBLIC_DNS_TARGET_FORBIDDEN")
+        return tuple(sorted(addresses, key=lambda item: (ipaddress.ip_address(item).version, item)))
+
     def validate(self, url: str) -> None:
         try:
             parsed = urlparse(url)
@@ -103,25 +138,61 @@ class PublicURLPolicy:
         host = parsed.hostname.lower().rstrip(".")
         if not self.allowed_hosts or host not in self.allowed_hosts:
             raise AttachmentFetchError("HOST_NOT_ALLOWLISTED")
-        if host == "localhost" or host.endswith(".localhost") or host.endswith(".local"):
-            raise AttachmentFetchError("NONPUBLIC_HOST_FORBIDDEN")
-        try:
-            literal = ipaddress.ip_address(host)
-        except ValueError:
-            literal = None
-        if literal is not None:
-            if not _is_public_address(str(literal)):
-                raise AttachmentFetchError("NONPUBLIC_ADDRESS_FORBIDDEN")
-            return
-        try:
-            answers = self.resolver(host, 443)
-        except (OSError, socket.gaierror) as exc:
-            raise AttachmentFetchError("DNS_RESOLUTION_FAILED") from exc
-        addresses = {answer[4][0] for answer in answers if answer and len(answer) > 4}
-        if not addresses:
-            raise AttachmentFetchError("DNS_NO_ADDRESSES")
-        if any(not _is_public_address(address) for address in addresses):
-            raise AttachmentFetchError("NONPUBLIC_DNS_TARGET_FORBIDDEN")
+        self.public_addresses(host, port or 443)
+
+
+class _PinnedHTTPSConnection(http.client.HTTPSConnection):
+    """Connect to a validated numeric IP while verifying TLS for the URL host."""
+
+    def __init__(self, host: str, *, policy: PublicURLPolicy, **kwargs) -> None:
+        self._public_url_policy = policy
+        super().__init__(host, **kwargs)
+
+    def connect(self) -> None:
+        if self._tunnel_host:
+            raise OSError("HTTPS_PROXY_TUNNEL_DISABLED")
+        addresses = self._public_url_policy.public_addresses(self.host, self.port or 443)
+        last_error: OSError | None = None
+        for address in addresses:
+            raw_socket = None
+            try:
+                raw_socket = socket.create_connection(
+                    (address, self.port or 443),
+                    self.timeout,
+                    self.source_address,
+                )
+                # Keep self.host as the original DNS name: this preserves TLS SNI
+                # and certificate hostname verification despite the pinned socket IP.
+                self.sock = self._context.wrap_socket(raw_socket, server_hostname=self.host)
+                return
+            except ssl.SSLError:
+                if raw_socket is not None:
+                    raw_socket.close()
+                raise
+            except OSError as exc:
+                last_error = exc
+                if raw_socket is not None:
+                    raw_socket.close()
+        if last_error is not None:
+            raise last_error
+        raise OSError("NO_VALIDATED_PUBLIC_ADDRESS")
+
+
+class _PinnedHTTPSHandler(HTTPSHandler):
+    def __init__(self, policy: PublicURLPolicy) -> None:
+        super().__init__(context=ssl.create_default_context())
+        self.policy = policy
+
+    def https_open(self, req):
+        connection_factory = lambda host, **kwargs: _PinnedHTTPSConnection(
+            host, policy=self.policy, **kwargs
+        )
+        return self.do_open(
+            connection_factory,
+            req,
+            context=self._context,
+            check_hostname=self._check_hostname,
+        )
 
 
 class _PolicyRedirectHandler(HTTPRedirectHandler):
@@ -187,7 +258,13 @@ class SafeAttachmentFetcher:
         self.policy = policy
         self.limits = limits
         self.url_policy = PublicURLPolicy(policy.allowed_hosts, resolver)
-        self.opener = opener or build_opener(_PolicyRedirectHandler(self.url_policy))
+        # Disable environment proxies: a proxy would resolve/connect independently
+        # and bypass the numeric-IP pinning performed by _PinnedHTTPSConnection.
+        self.opener = opener or build_opener(
+            ProxyHandler({}),
+            _PolicyRedirectHandler(self.url_policy),
+            _PinnedHTTPSHandler(self.url_policy),
+        )
 
     def _open(self, url: str, accept: str):
         request = Request(
