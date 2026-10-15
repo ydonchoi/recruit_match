@@ -12,6 +12,7 @@ from recruit_match.pipeline import StageStatus
 from recruit_match.workflow import (
     ANALYSIS_STAGE_IDS,
     ATTACHMENT_OPTIONAL_STAGES,
+    EVIDENCE_REQUIRED_STAGES,
     build_analysis_contract,
     compose_analysis_handlers,
 )
@@ -28,6 +29,13 @@ class WorkflowContractTests(unittest.TestCase):
         for index, stage in enumerate(contract.stages):
             expected = () if index == 0 else (contract.stages[index - 1].stage_id,)
             self.assertEqual(stage.predecessors, expected)
+
+    def test_source_and_provenance_stages_require_evidence(self):
+        contract = build_analysis_contract("synthetic-run")
+        configured = {stage.stage_id for stage in contract.stages if stage.evidence_required}
+        self.assertEqual(configured, set(EVIDENCE_REQUIRED_STAGES))
+        self.assertIn("source_verification", configured)
+        self.assertIn("recruitment_evidence", configured)
 
     def test_only_attachment_stages_allow_not_applicable(self):
         contract = build_analysis_contract("synthetic-run")
@@ -75,7 +83,9 @@ class WorkflowContractTests(unittest.TestCase):
                     "recruitment_evidence": {"provenance_state": VerificationState.VERIFIED},
                 }
                 external[stage_id] = lambda context, stage_id=stage_id: StageExecution(
-                    StageStatus.SUCCESS, stage_outputs.get(stage_id, {})
+                    StageStatus.SUCCESS,
+                    stage_outputs.get(stage_id, {}),
+                    evidence_refs=(f"synthetic:{stage_id}:evidence",) if stage_id in EVIDENCE_REQUIRED_STAGES else (),
                 )
         handlers = compose_analysis_handlers(external)
         initial_context = {
