@@ -3,7 +3,7 @@
 - Snapshot date: 2026-10-15
 - Target repository: `ydonchoi/recruit_match` (private)
 - Target branch: `bootstrap/verification-first-architecture`
-- Target branch head at this ledger snapshot: `d61fecdd6287d839debfd7d4ac8fdbcab55b8500`
+- Target branch head before this ledger update: `b22cd04b4714a0b975d84541c895df1347a3fe63`
 - Legacy source revision: `ydonchoi/recruitment_matching@89899ee3b0719d73f36311004ac32f87e8a78dee`
 - PR: [#1](https://github.com/ydonchoi/recruit_match/pull/1), Draft, not merged
 
@@ -31,7 +31,7 @@
 | `docs/architecture.md` | `50d7d8ea2d73b9e3b9e97dbb217f9b74fa0c6aa1` | PRESENT / architecture status updated |
 | `docs/legacy-architecture-inventory.md` | `aba47610afa4586f4da68c6020b12b8db011fa1a` | PRESENT / complete tracked-path inventory, partial call graph |
 | `docs/target-architecture-and-migration-plan.md` | `1166785636961e63e8c6e7dbabde5e8fa5b4704b` | PRESENT / partial implementation status |
-| `docs/static-review-and-migration-status.md` | `bf8b1ab52ec7fd794cb2e6ba3e8a28c4965ac219` | PRESENT / static findings, migration disposition, residual risks; no execution claimed |
+| `docs/static-review-and-migration-status.md` | `e19e03761991549ac105fa017598335da809ac3c` | PRESENT / static findings, migration disposition, legacy call-path and metric risks; no execution claimed |
 | `.github/workflows/unit-tests.yml` | `29b5c93e607bd3d26aa1a5395fe7a7d5d0510bc6` | PRESENT / workflow definition only |
 
 ## Authored test inventory
