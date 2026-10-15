@@ -57,6 +57,23 @@ class AssessmentContractTests(unittest.TestCase):
         )
         self.assertEqual(len(check.evidence_domains), 2)
 
+    def test_boolean_fit_dimension_is_rejected(self):
+        with self.assertRaisesRegex(ValueError, "FIT_SCORE_OUT_OF_RANGE:job_fit"):
+            FitDimensions(True, 80, 70, 60)
+
+    def test_boolean_fit_weight_is_rejected(self):
+        dimensions = FitDimensions(100, 80, 60, 40)
+        with self.assertRaisesRegex(ValueError, "INVALID_FIT_WEIGHTS"):
+            weighted_fit_score(dimensions, (True, 0.2, 0.3, 0.4))
+
+    def test_boolean_rank_limit_is_rejected(self):
+        with self.assertRaisesRegex(ValueError, "RANK_LIMIT_MUST_BE_NONNEGATIVE_INTEGER"):
+            rank_candidates([], limit=True)
+
+    def test_invalid_location_priority_is_rejected(self):
+        with self.assertRaisesRegex(ValueError, "INVALID_LOCATION_PRIORITY"):
+            RankingCandidate("opp", EligibilityState.PASS, 80, 70, 75, True)
+
     def test_fit_score_remains_unknown_when_a_dimension_is_missing(self):
         dimensions = FitDimensions(90, 80, None, 70)
         self.assertIsNone(weighted_fit_score(dimensions, (0.4, 0.3, 0.2, 0.1)))
