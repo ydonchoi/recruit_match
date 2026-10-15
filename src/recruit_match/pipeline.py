@@ -108,6 +108,7 @@ def validate_run(contract: RunContract, receipts: Iterable[StageReceipt]) -> Run
     issues: list[str] = []
     receipt_list = tuple(receipts)
     by_stage: dict[str, StageReceipt] = {}
+    invalid_stage_ids: set[str] = set()
 
     for receipt in receipt_list:
         if receipt.run_id != contract.run_id:
@@ -115,6 +116,7 @@ def validate_run(contract: RunContract, receipts: Iterable[StageReceipt]) -> Run
             continue
         if receipt.stage_id in by_stage:
             issues.append(f"DUPLICATE_TERMINAL_RECEIPT:{receipt.stage_id}")
+            invalid_stage_ids.add(receipt.stage_id)
             continue
         by_stage[receipt.stage_id] = receipt
 
@@ -153,7 +155,11 @@ def validate_run(contract: RunContract, receipts: Iterable[StageReceipt]) -> Run
             elif predecessor.status is StageStatus.NOT_APPLICABLE and not specs[predecessor_id].allow_not_applicable:
                 issues.append(f"PREDECESSOR_NOT_APPLICABLE_NOT_ALLOWED:{stage_id}:{predecessor_id}")
 
-        if receipt.status is StageStatus.SUCCESS and len(issues) == issues_before_stage:
+        if (
+            receipt.status is StageStatus.SUCCESS
+            and len(issues) == issues_before_stage
+            and stage_id not in invalid_stage_ids
+        ):
             completed.append(stage_id)
 
     out_of_scope = set(by_stage) - set(in_scope)
