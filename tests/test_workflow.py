@@ -6,7 +6,7 @@ from recruit_match.assessment import (
 )
 from recruit_match.assessment import EvidenceDomain
 from recruit_match.application import run_analysis
-from recruit_match.domain import EligibilityState, RecommendationState
+from recruit_match.domain import CurrentnessState, EligibilityState, RecommendationState
 from recruit_match.pipeline import RunContract
 from recruit_match.runner import StageExecution, execute_pipeline
 from recruit_match.pipeline import StageStatus
@@ -84,7 +84,7 @@ class WorkflowContractTests(unittest.TestCase):
                     },
                     "identity_resolution": {"duplicate_state": DuplicateState.RESOLVED},
                     "source_verification": {"source_verification_state": VerificationState.VERIFIED},
-                    "currentness_verification": {"currentness_state": "ACTIVE"},
+                    "currentness_verification": {"currentness_state": CurrentnessState.ACTIVE},
                     "recruitment_evidence": {"provenance_state": VerificationState.VERIFIED},
                 }
                 external[stage_id] = lambda context, stage_id=stage_id: StageExecution(
