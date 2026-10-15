@@ -41,6 +41,8 @@ A clean, verification-first reimplementation of the recruitment matching system.
 - `docs/pipeline-execution-trace.md`: partial trace of legacy pipeline and selected implementation paths.
 - `docs/data-boundary-decision.md`: no-GitHub-registry-sync decision and data placement rules.
 - `docs/notion-schema-assessment.md`: actual Notion schema metadata review; writes remain blocked pending access and minimization review.
+- `docs/legacy-architecture-inventory.md`: 1,059-path tracked-tree inventory and migration dispositions.
+- `docs/target-architecture-and-migration-plan.md`: proposed component architecture and gated implementation order.
 - `docs/architecture.md`: target boundaries and intended event path.
 - `docs/verification-policy.md`: verification statuses and evidence rules.
 - `docs/data-model.md`: provisional state model.
