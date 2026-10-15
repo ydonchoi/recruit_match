@@ -6,7 +6,7 @@ Status: **PROPOSED; legacy architecture inventory is partial; not production val
 
 Review the entire legacy architecture before deciding the target data model or implementation sequence. Each legacy component must be assigned a documented disposition: KEEP, REFACTOR, REBUILD, RETIRE, or UNASSESSED. A source document or code file alone is not proof that a capability is operational.
 
-See [migration-map.md](migration-map.md) for the current source-backed inventory and known gaps.
+See [migration-map.md](migration-map.md) for the current source-backed inventory and known gaps, [pipeline-execution-trace.md](pipeline-execution-trace.md) for the partial stage trace, and [data-boundary-decision.md](data-boundary-decision.md) for persistence boundaries.
 
 ## Provisional component boundaries
 
@@ -18,11 +18,15 @@ See [migration-map.md](migration-map.md) for the current source-backed inventory
 - **Registry/write governance:** explicit eligibility, approval, mutation intent, idempotency, and result evidence.
 - **Persistence:** durable state and transaction boundaries to be selected after failure-mode analysis.
 - **Outbox/worker:** planned asynchronous delivery; durable before acknowledgement, replayable after restart.
-- **Adapters:** Notion and GitHub integrations translate external schemas and surface errors.
+- **Adapters:** Notion is a candidate future persistence adapter, blocked pending schema/access review. GitHub registry CRUD and registry-sync adapters are out of scope by default; GitHub hosts code and sanitized engineering artifacts only.
 - **Human decision/execution boundary:** automated analysis must not silently become a human decision or application submission.
 - **Verification ledger:** planned record of test executions, external mutations, retries, and reconciliation outcomes.
 
 These are target boundaries, not a claim that the full pipeline is implemented.
+
+## Registry and GitHub boundary
+
+GitHub registry create/update/delete and registry-sync are not part of the default target architecture. The analysis pipeline and logical Registry domain may remain, but persistence belongs in an approved private store. Notion is a candidate store only after schema, access, retention and field-minimization review. See [data-boundary-decision.md](data-boundary-decision.md).
 
 ## Intended event path (provisional)
 
