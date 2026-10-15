@@ -6,7 +6,7 @@ external systems.
 """
 from __future__ import annotations
 
-from collections.abc import Mapping, Sequence
+from collections.abc import Mapping
 from typing import Any
 
 from .assessment import (
@@ -23,6 +23,7 @@ from .assessment import (
     resolve_compensation,
     weighted_fit_score,
 )
+from .domain import EligibilityState
 from .pipeline import StageStatus
 from .runner import StageExecution
 
