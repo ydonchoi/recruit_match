@@ -23,7 +23,7 @@ from .assessment import (
     resolve_compensation,
     weighted_fit_score,
 )
-from .domain import EligibilityState
+from .domain import CurrentnessState, EligibilityState
 from .pipeline import StageStatus
 from .runner import StageExecution
 
@@ -130,7 +130,7 @@ def build_assessment_handlers() -> dict[str, Any]:
             return _blocked("VERIFICATION_GATE_TYPE_INVALID")
         if not isinstance(duplicate_state, DuplicateState):
             return _blocked("DUPLICATE_STATE_INVALID")
-        if not isinstance(currentness_state, str):
+        if not isinstance(currentness_state, CurrentnessState):
             return _blocked("CURRENTNESS_STATE_INVALID")
 
         value = RecommendationInputs(
