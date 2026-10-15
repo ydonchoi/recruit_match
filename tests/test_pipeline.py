@@ -106,6 +106,10 @@ class PipelineContractTests(unittest.TestCase):
                 status=StageStatus.SUCCESS, attempt=1, evidence_refs=("",),
             )
 
+    def test_run_contract_rejects_empty_stage_list(self):
+        with self.assertRaisesRegex(ValueError, "RUN_REQUIRES_AT_LEAST_ONE_STAGE"):
+            RunContract("run-synthetic-001", ())
+
     def test_run_contract_rejects_untyped_stages(self):
         with self.assertRaisesRegex(ValueError, "INVALID_RUN_STAGES"):
             RunContract("run-synthetic-001", ("discover",))
