@@ -2,7 +2,7 @@ import unittest
 
 from recruit_match.assessment import (
     CompensationQuote, DuplicateState, FitDimensions, RankingCandidate,
-    RecommendationInputs, RequirementCheck, RequirementStatus, VerificationState,
+    RequirementCheck, RequirementStatus, VerificationState,
 )
 from recruit_match.assessment import EvidenceDomain
 from recruit_match.domain import EligibilityState, RecommendationState
@@ -64,7 +64,19 @@ class WorkflowContractTests(unittest.TestCase):
                     reason="synthetic posting has no attachment",
                 )
             else:
-                external[stage_id] = lambda context: StageExecution(StageStatus.SUCCESS, {})
+                stage_outputs = {
+                    "candidate_context": {
+                        "privacy_review_state": VerificationState.VERIFIED,
+                        "schema_validation_state": VerificationState.VERIFIED,
+                    },
+                    "identity_resolution": {"duplicate_state": DuplicateState.RESOLVED},
+                    "source_verification": {"source_verification_state": VerificationState.VERIFIED},
+                    "currentness_verification": {"currentness_state": "ACTIVE"},
+                    "recruitment_evidence": {"provenance_state": VerificationState.VERIFIED},
+                }
+                external[stage_id] = lambda context, stage_id=stage_id: StageExecution(
+                    StageStatus.SUCCESS, stage_outputs.get(stage_id, {})
+                )
         handlers = compose_analysis_handlers(external)
         initial_context = {
             "requirement_checks": [RequirementCheck(
@@ -78,15 +90,6 @@ class WorkflowContractTests(unittest.TestCase):
                 "official": CompensationQuote("100-120", "synthetic:posting-salary", VerificationState.VERIFIED)
             },
             "ranking_candidates": [RankingCandidate("synthetic-opp-1", EligibilityState.PASS, 90, 80, 88, 1)],
-            "recommendation_inputs": RecommendationInputs(
-                eligibility=EligibilityState.PASS,
-                source_verification=VerificationState.VERIFIED,
-                currentness="ACTIVE",
-                duplicate_state=DuplicateState.RESOLVED,
-                privacy_review=VerificationState.VERIFIED,
-                provenance=VerificationState.VERIFIED,
-                schema_validation=VerificationState.VERIFIED,
-            ),
         }
         result = execute_pipeline(contract, handlers, initial_context)
         self.assertTrue(result.validation.valid, result.validation.issues)
