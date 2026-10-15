@@ -33,6 +33,7 @@ class PipelineContractTests(unittest.TestCase):
             attempt=1,
             predecessor_stage_ids=predecessors,
             reason=kwargs.get("reason"),
+            evidence_refs=kwargs.get("evidence_refs", ()),
         )
 
     def test_complete_chain_is_valid(self):
@@ -117,6 +118,25 @@ class PipelineContractTests(unittest.TestCase):
                 attempt=1,
                 reason="no source configured",
             )
+
+    def test_evidence_required_stage_rejects_missing_evidence(self):
+        contract = RunContract("run-synthetic-001", (StageSpec("discover", evidence_required=True),))
+        receipt = StageReceipt(
+            run_id="run-synthetic-001", stage_id="discover", status=StageStatus.SUCCESS,
+            attempt=1,
+        )
+        result = validate_run(contract, [receipt])
+        self.assertFalse(result.valid)
+        self.assertIn("STAGE_EVIDENCE_MISSING:discover", result.issues)
+
+    def test_evidence_required_stage_accepts_evidence_reference(self):
+        contract = RunContract("run-synthetic-001", (StageSpec("discover", evidence_required=True),))
+        receipt = StageReceipt(
+            run_id="run-synthetic-001", stage_id="discover", status=StageStatus.SUCCESS,
+            attempt=1, evidence_refs=("synthetic:source-receipt",),
+        )
+        result = validate_run(contract, [receipt])
+        self.assertTrue(result.valid, result.issues)
 
     def test_duplicate_receipt_fails(self):
         result = validate_run(
