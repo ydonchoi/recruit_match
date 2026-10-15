@@ -34,6 +34,8 @@ A clean, verification-first reimplementation of the recruitment matching system.
 - `src/recruit_match/domain.py`: provisional domain types and fail-closed validation.
 - `tests/`: executable unit tests for the bootstrap domain.
 - `docs/migration-map.md`: source-backed, partial legacy architecture inventory and migration decisions to be completed.
+- `docs/pipeline-execution-trace.md`: partial trace of legacy pipeline and selected implementation paths.
+- `docs/data-boundary-decision.md`: no-GitHub-registry-sync decision and data placement rules.
 - `docs/architecture.md`: target boundaries and intended event path.
 - `docs/verification-policy.md`: verification statuses and evidence rules.
 - `docs/data-model.md`: provisional state model.
