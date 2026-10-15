@@ -126,8 +126,14 @@ def validate_record(record: OpportunityRecord) -> list[ValidationIssue]:
     if record.source_url is not None:
         try:
             parsed = urlsplit(record.source_url)
-            valid_https = parsed.scheme.lower() == "https" and bool(parsed.hostname)
-        except (AttributeError, ValueError):
+            valid_https = (
+                parsed.scheme.lower() == "https"
+                and bool(parsed.hostname)
+                and parsed.username is None
+                and parsed.password is None
+                and parsed.port in (None, 443)
+            )
+        except (AttributeError, TypeError, ValueError):
             valid_https = False
         if not valid_https:
             issues.append(
