@@ -34,6 +34,19 @@ ANALYSIS_STAGE_IDS = (
 )
 
 ATTACHMENT_OPTIONAL_STAGES = frozenset({"attachment_fetch", "attachment_inspection"})
+EVIDENCE_REQUIRED_STAGES = frozenset({
+    "candidate_context",
+    "discovery",
+    "identity_resolution",
+    "source_verification",
+    "currentness_verification",
+    "attachment_policy",
+    "attachment_fetch",
+    "attachment_inspection",
+    "recruitment_evidence",
+    "candidate_evidence_resolution",
+    "revalidation",
+})
 
 
 def build_analysis_contract(run_id: str, *, bounded_through: str | None = None) -> RunContract:
@@ -48,6 +61,7 @@ def build_analysis_contract(run_id: str, *, bounded_through: str | None = None) 
                 required=True,
                 allow_not_applicable=stage_id in ATTACHMENT_OPTIONAL_STAGES,
                 predecessors=predecessors,
+                evidence_required=stage_id in EVIDENCE_REQUIRED_STAGES,
             )
         )
         previous = stage_id
