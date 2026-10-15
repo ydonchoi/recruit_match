@@ -75,17 +75,25 @@ def evaluate_eligibility(requirements: Iterable[RequirementCheck]) -> Eligibilit
     critical = tuple(item for item in checks if item.critical)
     if not critical:
         return EligibilityState.UNKNOWN
-    for item in critical:
-        if item.status is RequirementStatus.UNKNOWN:
-            return EligibilityState.UNKNOWN
-        if (
-            not item.evidence_refs
-            or any(not isinstance(ref, str) or not ref.strip() for ref in item.evidence_refs)
-            or not {EvidenceDomain.CANDIDATE, EvidenceDomain.RECRUITMENT}.issubset(set(item.evidence_domains))
-        ):
-            return EligibilityState.UNKNOWN
-    if any(item.status is RequirementStatus.FAIL for item in critical):
+    required_domains = {EvidenceDomain.CANDIDATE, EvidenceDomain.RECRUITMENT}
+
+    def has_decision_evidence(item: RequirementCheck) -> bool:
+        return bool(item.evidence_refs) and required_domains.issubset(set(item.evidence_domains))
+
+    # A documented critical failure is decisive even if another requirement is
+    # unknown. A failure without adequate evidence is not a confirmed failure.
+    if any(
+        item.status is RequirementStatus.FAIL and has_decision_evidence(item)
+        for item in critical
+    ):
         return EligibilityState.FAIL
+
+    if any(
+        item.status is RequirementStatus.UNKNOWN or not has_decision_evidence(item)
+        for item in critical
+    ):
+        return EligibilityState.UNKNOWN
+
     return EligibilityState.PASS
 
 
