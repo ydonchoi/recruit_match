@@ -96,5 +96,5 @@ This inventory did **not** copy candidate records, personal details, ranking res
 
 - Tracked path inventory: **verified for source tree SHA `89899ee3b0719d73f36311004ac32f87e8a78dee`** (`truncated=false`, 1,059 paths).
 - Selected code findings: **source-observed** from files named above; not all paths were reviewed.
-- Test execution: **no usable test output** in this session. Seventy-four test functions are authored. An Actions run failed before exposing steps/logs; test assertion outcomes remain unknown.
+- Test execution: **no usable test output** in this session. Seventy-six test functions are authored. An Actions run failed before exposing steps/logs; test assertion outcomes remain unknown.
 - Full call graph, live search connectivity, live Notion writes, access control, data erasure, and production readiness: **unverified**.
