@@ -74,6 +74,21 @@ class PipelineRunnerTests(unittest.TestCase):
         self.assertEqual(calls, [])
         self.assertEqual(result.receipts[0].status, StageStatus.BLOCKED)
 
+    def test_not_applicable_without_permission_does_not_execute_downstream(self):
+        calls = []
+        result = execute_pipeline(
+            self.contract,
+            {
+                "discover": lambda context: StageExecution(
+                    StageStatus.NOT_APPLICABLE, {}, reason="no source configured"
+                ),
+                "verify": lambda context: (calls.append("verify") or StageExecution(StageStatus.SUCCESS, {})),
+            },
+        )
+        self.assertFalse(result.validation.valid)
+        self.assertEqual(calls, [])
+        self.assertIn("NOT_APPLICABLE_NOT_ALLOWED:discover", result.validation.issues)
+
     def test_bounded_run_does_not_claim_later_stages(self):
         bounded = RunContract(
             run_id="synthetic-run",
