@@ -2,10 +2,13 @@ import unittest
 
 from recruit_match.domain import (
     ApplicationOutcome,
+    CurrentnessState,
+    EligibilityState,
     ExecutionReadiness,
     LifecycleState,
     OpportunityRecord,
-    SyncState,
+    RecommendationState,
+    SourceVerificationState,
     validate_record,
 )
 
@@ -13,16 +16,20 @@ from recruit_match.domain import (
 class DomainValidationTests(unittest.TestCase):
     def make_record(self, **overrides):
         values = {
-            "registry_id": "reg-001",
-            "opportunity_id": "opp-001",
+            "registry_id": "reg-synthetic-001",
+            "opportunity_id": "opp-synthetic-001",
             "organization": "Example Corp",
             "position": "Research Engineer",
+            "recruitment_cycle": "cycle-synthetic-001",
+            "posting_id": "posting-synthetic-001",
             "source_url": "https://example.com/jobs/1",
-            "source_verified": True,
+            "source_verification": SourceVerificationState.VERIFIED,
+            "currentness": CurrentnessState.ACTIVE,
             "lifecycle_state": LifecycleState.ACTIVE,
+            "eligibility": EligibilityState.UNKNOWN,
+            "recommendation": RecommendationState.UNKNOWN,
             "application_outcome": ApplicationOutcome.NOT_APPLIED,
-            "execution_readiness": ExecutionReadiness.READY,
-            "sync_state": SyncState.PENDING,
+            "execution_readiness": ExecutionReadiness.UNKNOWN,
         }
         values.update(overrides)
         return OpportunityRecord(**values)
@@ -35,15 +42,13 @@ class DomainValidationTests(unittest.TestCase):
         issues = validate_record(record)
         self.assertIn("LIFECYCLE_UNKNOWN", {issue.code for issue in issues})
 
-    def test_source_presence_does_not_equal_source_verification(self):
-        record = self.make_record(
-            source_url="https://example.com/jobs/1", source_verified=False
-        )
+    def test_source_url_does_not_equal_source_verification(self):
+        record = self.make_record(source_verification=SourceVerificationState.UNKNOWN)
         self.assertEqual(validate_record(record), [])
-        self.assertFalse(record.source_verified)
+        self.assertEqual(record.source_verification, SourceVerificationState.UNKNOWN)
 
     def test_verification_without_source_is_rejected(self):
-        record = self.make_record(source_url=None, source_verified=True)
+        record = self.make_record(source_url=None, source_verification=SourceVerificationState.VERIFIED)
         issues = validate_record(record)
         self.assertIn(
             "SOURCE_VERIFICATION_WITHOUT_SOURCE",
@@ -67,6 +72,18 @@ class DomainValidationTests(unittest.TestCase):
         )
         self.assertEqual(record.application_outcome, ApplicationOutcome.REJECTED)
         self.assertEqual(record.execution_readiness, ExecutionReadiness.READY)
+
+    def test_eligibility_and_recommendation_are_independent(self):
+        record = self.make_record(
+            eligibility=EligibilityState.FAIL,
+            recommendation=RecommendationState.RECOMMENDED,
+        )
+        self.assertEqual(record.eligibility, EligibilityState.FAIL)
+        self.assertEqual(record.recommendation, RecommendationState.RECOMMENDED)
+
+    def test_sync_state_is_not_part_of_the_domain_record(self):
+        fields = set(OpportunityRecord.__dataclass_fields__)
+        self.assertNotIn("sync_state", fields)
 
 
 if __name__ == "__main__":
