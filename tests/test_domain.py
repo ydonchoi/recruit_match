@@ -108,6 +108,10 @@ class DomainValidationTests(unittest.TestCase):
         issues = validate_record(None)
         self.assertEqual([issue.code for issue in issues], ["INVALID_RECORD_TYPE"])
 
+    def test_currentness_supports_closing_soon_and_expired(self):
+        self.assertEqual(CurrentnessState.CLOSING_SOON.value, "CLOSING_SOON")
+        self.assertEqual(CurrentnessState.EXPIRED.value, "EXPIRED")
+
     def test_sync_state_is_not_part_of_the_domain_record(self):
         fields = set(OpportunityRecord.__dataclass_fields__)
         self.assertNotIn("sync_state", fields)
