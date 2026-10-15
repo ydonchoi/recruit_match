@@ -39,7 +39,7 @@ Request / User Intent
   -> Application readiness/outcome feedback (no automatic submission)
 ```
 
-The sequence is a target contract, not a claim that the current code is connected end to end.
+The sequence is a target contract. The current code now exposes `run_analysis(...)` through `src/recruit_match/application.py` and can execute a synthetic workflow when handlers are injected; no real external adapters or persistence are configured, and that synthetic test has not been executed.
 
 ## Stage envelope
 
@@ -53,6 +53,8 @@ Every stage should accept a typed input and return:
 - predecessor IDs and downstream eligibility decision
 
 No mandatory stage may return `SKIPPED`, `ASSUMED_COMPLETE`, `IMPLICIT_PASS`, or `UNCHECKED`. Partial runs are allowed only when the run contract declares its bounded scope and completion condition.
+
+See [adapter-contracts.md](adapter-contracts.md) for the explicit provider boundary and integration acceptance criteria.
 
 ## Persistence boundary
 
@@ -93,7 +95,7 @@ No mandatory stage may return `SKIPPED`, `ASSUMED_COMPLETE`, `IMPLICIT_PASS`, or
 
 - Added an in-memory bounded runner (`src/recruit_match/runner.py`) over the stage contract. It invokes injected handlers sequentially and stops after an invalid/non-success stage. It does not itself connect live search, Notion or any external mutation.
 - Added a policy-gated attachment boundary (`src/recruit_match/attachments.py`) with allowlist, DNS-pinned numeric socket connection, TLS hostname verification, redirect checks, robots, size, MIME/signature and receipt checks. Parser isolation and live adversarial network testing remain unimplemented; source implementation is not production verification.
-- Added `pyproject.toml` and a GitHub Actions unit-test workflow. Eighty-four test functions are authored across seven files. No usable test output exists: the observed Actions run failed before exposing steps or logs. See [delivery-evidence-ledger.md](delivery-evidence-ledger.md).
+- Added `pyproject.toml` and a GitHub Actions unit-test workflow. One hundred and one test functions are authored across eight files. No usable test output exists: the observed Actions run failed before exposing steps or logs. See [delivery-evidence-ledger.md](delivery-evidence-ledger.md).
 
 ## Explicit non-goals
 
