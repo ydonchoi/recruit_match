@@ -27,22 +27,24 @@ A clean, verification-first reimplementation of the recruitment matching system.
 
 ## Current status
 
-- **Stage:** architecture discovery and initial contract implementation
+- **Stage:** architecture discovery, typed contracts and injectable application entry point
 - **Legacy tracked-tree inventory:** complete for the recorded source revision; full call graph and full file-content review remain partial
 - **In-memory stage runner:** implemented as an injectable contract runner; no production handler graph is configured
 - **Attachment retrieval:** default transport now connects to a validated numeric IP while retaining TLS hostname verification; execution evidence and live network security remain unverified
-- **End-to-end runtime integration:** not implemented
+- **Application entry point:** `src/recruit_match/application.py` executes the declared workflow through injected handlers; real external adapters are not configured
 - **Notion writes:** not implemented
 - **GitHub Registry CRUD/sync:** excluded from the default target
-- **Tests:** 84 test functions are authored across seven test files; execution and results are unverified
-- **GitHub Actions:** prior runs failed before any step/log was exposed; the exact infrastructure cause is unconfirmed, and test state remains unknown
+- **Tests:** 101 test functions are authored across eight test files; execution and results are unverified
+- **GitHub Actions:** the latest run failed before any step/log was exposed (`runner_id=0`, no runner name); the exact infrastructure cause is unconfirmed, and test state remains unknown
 
 ## Repository layout
 
 - `src/recruit_match/domain.py`: provisional opportunity domain types and fail-closed validation.
 - `src/recruit_match/assessment.py`: pure evidence-gated eligibility, fit scoring, compensation tiering, recommendation and no-padding ranking contracts.
 - `src/recruit_match/pipeline.py`: typed stage receipts, fail-closed bounded-run validation and configurable evidence-reference requirements.
-- `src/recruit_match/runner.py`: injected, in-memory bounded pipeline runner; no production handlers or persistence are configured.
+- `src/recruit_match/runner.py`: injected, in-memory bounded pipeline runner with strict receipt-shape validation; no production handlers or persistence are configured.
+- `src/recruit_match/application.py`: explicit public entry point for full or bounded runs; missing external adapters fail closed.
+- `docs/adapter-contracts.md`: required external adapter contracts and live-integration acceptance gate.
 - `src/recruit_match/workflow.py`: canonical 18-stage analysis contract with explicit bounded-run scope and evidence requirements for source/provenance stages.
 - `src/recruit_match/assessment_handlers.py`: fail-closed adapters that bind pure assessment functions to the runner; recommendation gates are derived from upstream stage outputs rather than a separately supplied aggregate.
 - `src/recruit_match/attachments.py`: public attachment fetch boundary with allowlist, DNS-pinned HTTPS transport, TLS hostname verification, redirects, robots, time/size limits, MIME/signature checks and integrity receipt. It is not production-ready until tests and adversarial network checks execute successfully.
