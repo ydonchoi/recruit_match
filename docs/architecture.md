@@ -6,7 +6,7 @@ Status: **PROPOSED; legacy architecture inventory is partial; not production val
 
 Review the entire legacy architecture before deciding the target data model or implementation sequence. Each legacy component must be assigned a documented disposition: KEEP, REFACTOR, REBUILD, RETIRE, or UNASSESSED. A source document or code file alone is not proof that a capability is operational.
 
-See [migration-map.md](migration-map.md) for the current source-backed inventory and known gaps, [pipeline-execution-trace.md](pipeline-execution-trace.md) for the partial stage trace, and [data-boundary-decision.md](data-boundary-decision.md) for persistence boundaries, and [notion-schema-assessment.md](notion-schema-assessment.md) for the observed Notion data-source schema and adapter gaps.
+See [migration-map.md](migration-map.md) for the migration inventory, [legacy-architecture-inventory.md](legacy-architecture-inventory.md) for the tracked-tree classification, [target-architecture-and-migration-plan.md](target-architecture-and-migration-plan.md) for the proposed target, [pipeline-execution-trace.md](pipeline-execution-trace.md) for the partial call-path trace, [data-boundary-decision.md](data-boundary-decision.md) for the privacy boundary, and [notion-schema-assessment.md](notion-schema-assessment.md) for the observed Notion schema.
 
 ## Provisional component boundaries
 
@@ -22,7 +22,7 @@ See [migration-map.md](migration-map.md) for the current source-backed inventory
 - **Human decision/execution boundary:** automated analysis must not silently become a human decision or application submission.
 - **Verification ledger:** planned record of test executions, external mutations, retries, and reconciliation outcomes.
 
-These are target boundaries, not a claim that the full pipeline is implemented.
+These are target boundaries, not a claim that the full pipeline is implemented. The first typed stage contract is in [`src/recruit_match/pipeline.py`](../src/recruit_match/pipeline.py); it is not yet wired into an executable end-to-end pipeline.
 
 ## Registry and GitHub boundary
 
