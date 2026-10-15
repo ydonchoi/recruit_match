@@ -30,22 +30,22 @@ A clean, verification-first reimplementation of the recruitment matching system.
 - **Stage:** architecture discovery and initial contract implementation
 - **Legacy tracked-tree inventory:** complete for the recorded source revision; full call graph and full file-content review remain partial
 - **In-memory stage runner:** implemented as an injectable contract runner; no production handler graph is configured
-- **Attachment retrieval:** source-level policy boundary implemented; DNS pinning and live network security remain unresolved
+- **Attachment retrieval:** default transport now connects to a validated numeric IP while retaining TLS hostname verification; execution evidence and live network security remain unverified
 - **End-to-end runtime integration:** not implemented
 - **Notion writes:** not implemented
 - **GitHub Registry CRUD/sync:** excluded from the default target
-- **Tests:** 71 test functions are authored across seven test files; execution and results are unverified
-- **GitHub Actions:** run 38714021019 failed before any step/log was exposed; this is not a test assertion result, and test state remains unknown
+- **Tests:** 74 test functions are authored across seven test files; execution and results are unverified
+- **GitHub Actions:** prior runs failed before any step/log was exposed; the exact infrastructure cause is unconfirmed, and test state remains unknown
 
 ## Repository layout
 
 - `src/recruit_match/domain.py`: provisional opportunity domain types and fail-closed validation.
-- `src/recruit_match/assessment.py`: pure evidence-gated eligibility, fit scoring, compensation tiering, recommendation and no-padding ranking contracts; not yet wired into the runner.
+- `src/recruit_match/assessment.py`: pure evidence-gated eligibility, fit scoring, compensation tiering, recommendation and no-padding ranking contracts.
 - `src/recruit_match/pipeline.py`: typed stage receipts and fail-closed bounded-run validation.
 - `src/recruit_match/runner.py`: injected, in-memory bounded pipeline runner; no production handlers or persistence are configured.
 - `src/recruit_match/workflow.py`: canonical 18-stage analysis contract with explicit bounded-run scope.
 - `src/recruit_match/assessment_handlers.py`: fail-closed adapters that bind pure assessment functions to the runner; source/search stages still require external handlers.
-- `src/recruit_match/attachments.py`: public attachment fetch boundary with allowlist, DNS preflight, redirects, robots, time/size limits, MIME/signature checks and integrity receipt. It does not pin DNS results to the socket and is not production-ready.
+- `src/recruit_match/attachments.py`: public attachment fetch boundary with allowlist, DNS-pinned HTTPS transport, TLS hostname verification, redirects, robots, time/size limits, MIME/signature checks and integrity receipt. It is not production-ready until tests and adversarial network checks execute successfully.
 - `tests/`: synthetic unit tests for domain, stage contracts, runner behavior and attachment safety boundaries.
 - `pyproject.toml`: minimal Python package metadata.
 - `.github/workflows/unit-tests.yml`: CI definition for later execution; no run is claimed.
