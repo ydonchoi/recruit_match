@@ -43,8 +43,8 @@
 | `tests/test_pipeline.py` | `cf45abcc382306e69bd43f51dc87716c71b76b3a` | 16 |
 | `tests/test_runner.py` | `16454356b842d8127b7e27b53d849d161140178a` | 12 |
 | `tests/test_attachments.py` | `fed630df097903273229d1ca29bf7b63030c1c19` | 22 |
-| `tests/test_workflow.py` | `f950dca294dd0e1af8d2e58105eee36814b4caf0` | 10 |
-| `tests/test_assessment_handlers.py` | `89e8b7164112d85767bbef7fa813be8b83078676` | 9 |
+| `tests/test_workflow.py` | `42aa6a5a64f2d49eea1a4df6fe0ea6959bdbfd1d` | 10 |
+| `tests/test_assessment_handlers.py` | `4b925b009e484b7c657619f3aa976b0eda2b765d` | 9 |
 | `tests/test_application.py` | `b525c98df09b67f8397c5e92f9045197ee9a93c9` | 4 |
 | **Total** | | **121** |
 
