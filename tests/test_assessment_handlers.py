@@ -13,7 +13,7 @@ from recruit_match.assessment import (
     VerificationState,
 )
 from recruit_match.assessment_handlers import build_assessment_handlers
-from recruit_match.domain import RecommendationState
+from recruit_match.domain import CurrentnessState, RecommendationState
 from recruit_match.pipeline import RunContract, StageSpec, StageStatus
 from recruit_match.runner import execute_pipeline, StageExecution
 
@@ -82,7 +82,7 @@ class AssessmentHandlerTests(unittest.TestCase):
         result = self.run_one("recommendation", {
             "eligibility": EligibilityState.PASS,
             "source_verification_state": VerificationState.VERIFIED,
-            "currentness_state": "ACTIVE",
+            "currentness_state": CurrentnessState.ACTIVE,
             "duplicate_state": DuplicateState.RESOLVED,
             "privacy_review_state": VerificationState.UNKNOWN,
             "provenance_state": VerificationState.VERIFIED,
@@ -95,7 +95,7 @@ class AssessmentHandlerTests(unittest.TestCase):
         result = self.run_one("recommendation", {
             "eligibility": EligibilityState.PASS,
             "source_verification_state": VerificationState.VERIFIED,
-            "currentness_state": "ACTIVE",
+            "currentness_state": CurrentnessState.ACTIVE,
             "duplicate_state": DuplicateState.RESOLVED,
             "privacy_review_state": VerificationState.UNKNOWN,
             "provenance_state": VerificationState.VERIFIED,
@@ -117,7 +117,7 @@ class AssessmentHandlerTests(unittest.TestCase):
                 ("synthetic:candidate-license", "synthetic:official-license-requirement"),
             )],
             "source_verification_state": VerificationState.VERIFIED,
-            "currentness_state": "ACTIVE",
+            "currentness_state": CurrentnessState.ACTIVE,
             "duplicate_state": DuplicateState.RESOLVED,
             "privacy_review_state": VerificationState.VERIFIED,
             "provenance_state": VerificationState.VERIFIED,
