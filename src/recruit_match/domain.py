@@ -87,6 +87,13 @@ class ValidationIssue:
 def validate_record(record: OpportunityRecord) -> list[ValidationIssue]:
     """Return all detected issues; never infer validity from field presence alone."""
 
+    if not isinstance(record, OpportunityRecord):
+        return [ValidationIssue(
+            code="INVALID_RECORD_TYPE",
+            field="record",
+            message="record must be an OpportunityRecord",
+        )]
+
     issues: list[ValidationIssue] = []
     required_text = {
         "registry_id": record.registry_id,
@@ -103,6 +110,15 @@ def validate_record(record: OpportunityRecord) -> list[ValidationIssue]:
                     message=f"{field} must be a non-empty string",
                 )
             )
+
+    for field in ("recruitment_cycle", "posting_id"):
+        value = getattr(record, field)
+        if value is not None and (not isinstance(value, str) or not value.strip()):
+            issues.append(ValidationIssue(
+                code="INVALID_OPTIONAL_TEXT",
+                field=field,
+                message=f"{field} must be None or a non-empty string",
+            ))
 
     enum_fields = {
         "source_verification": (record.source_verification, SourceVerificationState),
