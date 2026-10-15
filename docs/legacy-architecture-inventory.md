@@ -67,14 +67,14 @@ Total tracked paths: **1,059**. File extension inventory: 831 Markdown, 162 Pyth
 
 - `src/recruit_match/pipeline.py` now defines a typed stage receipt, explicit bounded-run contract, predecessor list, and fail-closed validator. It rejects missing required receipts, duplicate receipts, unapproved NOT_APPLICABLE, FAILED/BLOCKED stages, predecessor mismatches, run ID mismatches and out-of-scope receipts.
 - `src/recruit_match/runner.py` executes injected handlers in order, passes context in memory, stops on failures/blocks, and sanitizes handler exceptions. It does not provide durable persistence or production integrations.
-- `src/recruit_match/attachments.py` implements a urllib-based public URL policy boundary, DNS preflight, policy-checked redirects, bounded robots/attachment reads, PDF/ZIP MIME/signature checks, and SHA-256 receipts. **It does not pin validated DNS addresses to the socket connection**, so DNS rebinding remains a production blocker. No live network behavior was tested.
+- `src/recruit_match/attachments.py` now connects the default transport to a numeric public IP validated at connection time and retains the original hostname for TLS SNI/certificate verification. Environment proxy discovery is disabled by default. This is source-level evidence only; the new transport tests are authored but not executed, and live network behavior remains unverified.
 - `docs/attachment-retrieval-boundary.md` records the remaining security work.
 - `src/recruit_match/domain.py` now keeps lifecycle, currentness, source verification, eligibility, recommendation, execution readiness and application outcome separate. GitHub sync state has been removed from the domain record because GitHub registry sync is out of scope by default.
 - `src/recruit_match/assessment.py` adds pure contracts for critical eligibility, optional fit dimensions, compensation evidence tiers, fail-closed recommendation and deterministic no-padding ranking.
 - `src/recruit_match/assessment_handlers.py` binds these functions to the runner; missing inputs produce BLOCKED receipts rather than silent defaults.
 - `src/recruit_match/workflow.py` declares the canonical 18-stage analysis path and composes protected assessment handlers with injected external handlers. The full path has a synthetic contract test, but it has not been executed.
-- Seven test files contain 71 declared test functions; none has a usable execution result in this session. The assessment layer explicitly requires candidate and recruitment evidence references before a critical requirement can pass, and source verification before compensation values can be accepted.
-- The stage validator is integrated into the injected in-memory runner, but the runner is not connected to production search/evidence/assessment handlers. Thirty-three test functions are present across four test files; they have not been executed in this session.
+- Seven test files contain 76 declared test functions; none has a usable execution result in this session. The assessment layer explicitly requires candidate and recruitment evidence references before a critical requirement can pass, and source verification before compensation values can be accepted.
+- The stage validator is integrated into the injected in-memory runner, but the runner is not connected to production search/evidence handlers. Seventy-six test functions are present across seven test files; they have not been executed in an environment that returned usable output.
 
 ## Candidate-data boundary
 
