@@ -33,6 +33,7 @@ A clean, verification-first reimplementation of the recruitment matching system.
 
 - `src/recruit_match/domain.py`: provisional domain types and fail-closed validation.
 - `src/recruit_match/pipeline.py`: typed stage receipts and fail-closed bounded-run validation (not yet integrated into a runtime).
+- `.gitignore`: default exclusions for local candidate data, credentials, raw source documents and generated run artifacts; this is a guardrail, not a security boundary.
 - `tests/`: executable unit tests for domain and pipeline stage contracts; execution remains unverified.
 - `docs/migration-map.md`: source-backed legacy architecture inventory and migration decisions.
 - `docs/legacy-architecture-inventory.md`: tracked-tree inventory and component dispositions; full call graph remains partial.
