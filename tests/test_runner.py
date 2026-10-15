@@ -27,6 +27,26 @@ class PipelineRunnerTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "INITIAL_CONTEXT_KEYS_MUST_BE_STRINGS"):
             execute_pipeline(self.contract, {}, initial_context={1: "value"})
 
+    def test_handler_cannot_mutate_shared_nested_context_in_place(self):
+        initial = {"items": ["original"]}
+        def mutate(context):
+            context["items"].append("handler-mutation")
+            return StageExecution(StageStatus.SUCCESS, {"observed": tuple(context["items"])})
+        result = execute_pipeline(
+            RunContract("isolation-run", (StageSpec("mutate"), StageSpec("observe", predecessors=("mutate",)))),
+            {
+                "mutate": mutate,
+                "observe": lambda context: StageExecution(
+                    StageStatus.SUCCESS, {"observed_after": tuple(context["items"])}
+                ),
+            },
+            initial,
+        )
+        self.assertEqual(initial["items"], ["original"])
+        self.assertEqual(result.context["items"], ["original"])
+        self.assertEqual(result.context["observed"], ("original", "handler-mutation"))
+        self.assertEqual(result.context["observed_after"], ("original",))
+
     def test_successful_handlers_run_in_order_and_pass_context(self):
         calls = []
         def discover(context):
