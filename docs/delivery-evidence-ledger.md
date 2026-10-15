@@ -3,7 +3,7 @@
 - Snapshot date: 2026-10-15
 - Target repository: `ydonchoi/recruit_match` (private)
 - Target branch: `bootstrap/verification-first-architecture`
-- Target branch head before this ledger update: `b22cd04b4714a0b975d84541c895df1347a3fe63`
+- Target branch head before this ledger update: `b4ae150b5235433c8a328d618f3e43da48269dc8`
 - Legacy source revision: `ydonchoi/recruitment_matching@89899ee3b0719d73f36311004ac32f87e8a78dee`
 - PR: [#1](https://github.com/ydonchoi/recruit_match/pull/1), Draft, not merged
 
