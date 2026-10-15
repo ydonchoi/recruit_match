@@ -53,6 +53,10 @@ class WorkflowContractTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "UNKNOWN_ANALYSIS_HANDLER"):
             compose_analysis_handlers({"not_a_stage": lambda context: None})
 
+    def test_non_callable_external_handler_is_rejected(self):
+        with self.assertRaisesRegex(ValueError, "EXTERNAL_HANDLER_NOT_CALLABLE"):
+            compose_analysis_handlers({"discovery": "not-callable"})
+
     def test_assessment_handlers_cannot_be_overridden(self):
         with self.assertRaisesRegex(ValueError, "ASSESSMENT_HANDLER_OVERRIDE_FORBIDDEN"):
             compose_analysis_handlers({"eligibility": lambda context: None})
