@@ -6,6 +6,9 @@ adapter, or end-to-end runtime has been configured.
 """
 from __future__ import annotations
 
+from collections.abc import Mapping
+from typing import Any
+
 from .pipeline import RunContract, StageSpec
 
 
@@ -53,3 +56,23 @@ def build_analysis_contract(run_id: str, *, bounded_through: str | None = None) 
         stages=tuple(specs),
         bounded_through=bounded_through,
     )
+
+
+
+def compose_analysis_handlers(external_handlers: Mapping[str, Any]) -> dict[str, Any]:
+    """Combine approved external stage handlers with protected pure assessment handlers.
+
+    Unknown stage names and attempts to override assessment handlers are rejected.
+    Missing external handlers remain missing so the runner blocks at the first
+    required unconfigured stage rather than silently skipping it.
+    """
+    from .assessment_handlers import build_assessment_handlers
+
+    builtins = build_assessment_handlers()
+    unknown = set(external_handlers) - set(ANALYSIS_STAGE_IDS)
+    if unknown:
+        raise ValueError(f"UNKNOWN_ANALYSIS_HANDLER:{','.join(sorted(unknown))}")
+    overridden = set(external_handlers) & set(builtins)
+    if overridden:
+        raise ValueError(f"ASSESSMENT_HANDLER_OVERRIDE_FORBIDDEN:{','.join(sorted(overridden))}")
+    return {**external_handlers, **builtins}
