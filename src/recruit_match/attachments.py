@@ -9,6 +9,7 @@ from __future__ import annotations
 import hashlib
 import http.client
 import ipaddress
+import math
 import socket
 import ssl
 import time
@@ -40,10 +41,21 @@ class AttachmentLimits:
     robots_max_bytes: int = 256 * 1024
 
     def __post_init__(self) -> None:
-        if self.timeout_seconds <= 0:
-            raise ValueError("TIMEOUT_MUST_BE_POSITIVE")
-        if self.max_bytes <= 0 or self.robots_max_bytes <= 0:
-            raise ValueError("BYTE_LIMIT_MUST_BE_POSITIVE")
+        if (
+            not isinstance(self.timeout_seconds, (int, float))
+            or not math.isfinite(self.timeout_seconds)
+            or self.timeout_seconds <= 0
+        ):
+            raise ValueError("TIMEOUT_MUST_BE_FINITE_AND_POSITIVE")
+        if (
+            not isinstance(self.max_bytes, int)
+            or isinstance(self.max_bytes, bool)
+            or not isinstance(self.robots_max_bytes, int)
+            or isinstance(self.robots_max_bytes, bool)
+            or self.max_bytes <= 0
+            or self.robots_max_bytes <= 0
+        ):
+            raise ValueError("BYTE_LIMIT_MUST_BE_POSITIVE_INTEGER")
 
 
 @dataclass(frozen=True, slots=True)
@@ -110,7 +122,7 @@ class PublicURLPolicy:
             return (str(literal),)
         try:
             answers = self.resolver(normalized, port)
-        except (OSError, socket.gaierror) as exc:
+        except (OSError, UnicodeError) as exc:
             raise AttachmentFetchError("DNS_RESOLUTION_FAILED") from exc
         addresses = {
             answer[4][0].split("%", 1)[0]
