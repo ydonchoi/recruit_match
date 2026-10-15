@@ -53,12 +53,20 @@ class RequirementCheck:
     evidence_refs: tuple[str, ...] = ()
 
     def __post_init__(self) -> None:
-        if not self.requirement_id.strip():
+        if not isinstance(self.requirement_id, str) or not self.requirement_id.strip():
             raise ValueError("REQUIREMENT_ID_REQUIRED")
+        if not isinstance(self.critical, bool):
+            raise ValueError("INVALID_CRITICAL_FLAG")
         if not isinstance(self.status, RequirementStatus):
             raise ValueError("INVALID_REQUIREMENT_STATUS")
-        if any(not isinstance(item, EvidenceDomain) for item in self.evidence_domains):
+        if not isinstance(self.evidence_domains, tuple) or any(
+            not isinstance(item, EvidenceDomain) for item in self.evidence_domains
+        ):
             raise ValueError("INVALID_EVIDENCE_DOMAIN")
+        if not isinstance(self.evidence_refs, tuple) or any(
+            not isinstance(ref, str) or not ref.strip() for ref in self.evidence_refs
+        ):
+            raise ValueError("INVALID_EVIDENCE_REFERENCE")
 
 
 def evaluate_eligibility(requirements: Iterable[RequirementCheck]) -> EligibilityState:
@@ -95,7 +103,12 @@ class FitDimensions:
             ("preference_fit", self.preference_fit),
             ("location_fit", self.location_fit),
         ):
-            if value is not None and not 0.0 <= value <= 100.0:
+            if value is not None and (
+                isinstance(value, bool)
+                or not isinstance(value, (int, float))
+                or not isfinite(value)
+                or not 0.0 <= value <= 100.0
+            ):
                 raise ValueError(f"FIT_SCORE_OUT_OF_RANGE:{name}")
 
 
@@ -104,6 +117,21 @@ def weighted_fit_score(
     weights: tuple[float, float, float, float],
 ) -> float | None:
     """Return a weighted score only when all dimensions and weights are known."""
+    if not isinstance(dimensions, FitDimensions):
+        raise ValueError("INVALID_FIT_DIMENSIONS")
+    if not isinstance(weights, (tuple, list)) or len(weights) != 4:
+        raise ValueError("INVALID_FIT_WEIGHTS")
+    if any(
+        isinstance(weight, bool)
+        or not isinstance(weight, (int, float))
+        or not isfinite(weight)
+        or weight < 0
+        for weight in weights
+    ):
+        raise ValueError("INVALID_FIT_WEIGHTS")
+    total_weight = sum(weights)
+    if total_weight <= 0 or not isfinite(total_weight):
+        raise ValueError("INVALID_FIT_WEIGHTS")
     values = (
         dimensions.job_fit,
         dimensions.career_education_fit,
@@ -112,8 +140,6 @@ def weighted_fit_score(
     )
     if any(value is None for value in values):
         return None
-    if len(weights) != 4 or any(not isfinite(weight) or weight < 0 for weight in weights) or sum(weights) <= 0:
-        raise ValueError("INVALID_FIT_WEIGHTS")
     total_weight = sum(weights)
     if not isfinite(total_weight):
         raise ValueError("INVALID_FIT_WEIGHTS")
@@ -240,17 +266,37 @@ class RankingCandidate:
             raise ValueError("OPPORTUNITY_ID_REQUIRED")
         if not isinstance(self.eligibility, EligibilityState):
             raise ValueError("INVALID_ELIGIBILITY_STATE")
-        for name, value in (("job_fit", self.job_fit), ("career_education_fit", self.career_education_fit)):
-            if value is not None and (not isfinite(value) or not 0.0 <= value <= 100.0):
+        for name, value in (
+            ("job_fit", self.job_fit),
+            ("career_education_fit", self.career_education_fit),
+        ):
+            if value is not None and (
+                isinstance(value, bool)
+                or not isinstance(value, (int, float))
+                or not isfinite(value)
+                or not 0.0 <= value <= 100.0
+            ):
                 raise ValueError(f"INVALID_RANKING_DIMENSION:{name}")
-        if self.total_score is not None and not isfinite(self.total_score):
+        if self.total_score is not None and (
+            isinstance(self.total_score, bool)
+            or not isinstance(self.total_score, (int, float))
+            or not isfinite(self.total_score)
+        ):
             raise ValueError("INVALID_TOTAL_SCORE")
+        if self.location_priority is not None and (
+            not isinstance(self.location_priority, int) or isinstance(self.location_priority, bool)
+        ):
+            raise ValueError("INVALID_LOCATION_PRIORITY")
 
 
 def rank_candidates(candidates: Sequence[RankingCandidate], *, limit: int = 50) -> tuple[RankingCandidate, ...]:
     """Rank only supplied records; never pad and never coerce missing scores to zero."""
-    if limit < 0:
-        raise ValueError("RANK_LIMIT_MUST_BE_NONNEGATIVE")
+    if not isinstance(limit, int) or isinstance(limit, bool) or limit < 0:
+        raise ValueError("RANK_LIMIT_MUST_BE_NONNEGATIVE_INTEGER")
+    if not isinstance(candidates, (tuple, list)) or any(
+        not isinstance(candidate, RankingCandidate) for candidate in candidates
+    ):
+        raise ValueError("INVALID_RANKING_CANDIDATES")
 
     eligibility_order = {
         EligibilityState.PASS: 0,
