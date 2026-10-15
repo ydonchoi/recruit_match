@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import StrEnum
+from urllib.parse import urlsplit
 
 
 class LifecycleState(StrEnum):
@@ -94,12 +95,46 @@ def validate_record(record: OpportunityRecord) -> list[ValidationIssue]:
         "position": record.position,
     }
     for field, value in required_text.items():
-        if not value.strip():
+        if not isinstance(value, str) or not value.strip():
             issues.append(
                 ValidationIssue(
                     code="REQUIRED_FIELD_MISSING",
                     field=field,
                     message=f"{field} must be a non-empty string",
+                )
+            )
+
+    enum_fields = {
+        "source_verification": (record.source_verification, SourceVerificationState),
+        "currentness": (record.currentness, CurrentnessState),
+        "lifecycle_state": (record.lifecycle_state, LifecycleState),
+        "eligibility": (record.eligibility, EligibilityState),
+        "recommendation": (record.recommendation, RecommendationState),
+        "application_outcome": (record.application_outcome, ApplicationOutcome),
+        "execution_readiness": (record.execution_readiness, ExecutionReadiness),
+    }
+    for field, (value, expected_type) in enum_fields.items():
+        if not isinstance(value, expected_type):
+            issues.append(
+                ValidationIssue(
+                    code="INVALID_ENUM_VALUE",
+                    field=field,
+                    message=f"{field} must use {expected_type.__name__}",
+                )
+            )
+
+    if record.source_url is not None:
+        try:
+            parsed = urlsplit(record.source_url)
+            valid_https = parsed.scheme.lower() == "https" and bool(parsed.hostname)
+        except (AttributeError, ValueError):
+            valid_https = False
+        if not valid_https:
+            issues.append(
+                ValidationIssue(
+                    code="SOURCE_URL_NOT_HTTPS",
+                    field="source_url",
+                    message="source_url must be a valid HTTPS URL",
                 )
             )
 
