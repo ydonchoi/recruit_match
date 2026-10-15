@@ -61,6 +61,14 @@ class FakeOpener:
 
 
 class AttachmentSafetyTests(unittest.TestCase):
+    def test_non_finite_timeout_is_rejected(self):
+        with self.assertRaisesRegex(ValueError, "TIMEOUT_MUST_BE_FINITE_AND_POSITIVE"):
+            AttachmentLimits(timeout_seconds=float("inf"))
+
+    def test_non_integer_byte_limit_is_rejected(self):
+        with self.assertRaisesRegex(ValueError, "BYTE_LIMIT_MUST_BE_POSITIVE_INTEGER"):
+            AttachmentLimits(max_bytes=1.5)
+
     def test_requires_https(self):
         policy = PublicURLPolicy(frozenset({"jobs.example.test"}), resolver_public)
         with self.assertRaisesRegex(AttachmentFetchError, "HTTPS_URL_REQUIRED"):
