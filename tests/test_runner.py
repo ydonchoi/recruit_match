@@ -89,6 +89,17 @@ class PipelineRunnerTests(unittest.TestCase):
         self.assertEqual(calls, [])
         self.assertIn("NOT_APPLICABLE_NOT_ALLOWED:discover", result.validation.issues)
 
+    def test_evidence_required_stage_fails_closed_without_refs(self):
+        contract = RunContract("synthetic-evidence", (StageSpec("source", evidence_required=True),))
+        result = execute_pipeline(
+            contract,
+            {"source": lambda context: StageExecution(StageStatus.SUCCESS, {"source": "present"})},
+        )
+        self.assertFalse(result.validation.valid)
+        self.assertEqual(result.receipts[0].status, StageStatus.FAILED)
+        self.assertEqual(result.receipts[0].reason, "STAGE_EVIDENCE_MISSING")
+        self.assertNotIn("source", result.context)
+
     def test_bounded_run_does_not_claim_later_stages(self):
         bounded = RunContract(
             run_id="synthetic-run",
