@@ -29,10 +29,16 @@ class AssessmentContractTests(unittest.TestCase):
             RequirementCheck("degree", True, RequirementStatus.PASS,
                              (EvidenceDomain.CANDIDATE, EvidenceDomain.RECRUITMENT),
                              ("candidate-degree-ref", "official-degree-requirement-ref")),
-            RequirementCheck("license", True, RequirementStatus.FAIL),
+            RequirementCheck("license", True, RequirementStatus.FAIL,
+                             (EvidenceDomain.CANDIDATE, EvidenceDomain.RECRUITMENT),
+                             ("candidate-license-status-ref", "official-license-requirement-ref")),
             RequirementCheck("nice-to-have", False, RequirementStatus.PASS),
         ]
         self.assertEqual(evaluate_eligibility(checks), EligibilityState.FAIL)
+
+    def test_fail_without_evidence_is_not_a_confirmed_failure(self):
+        checks = [RequirementCheck("license", True, RequirementStatus.FAIL)]
+        self.assertEqual(evaluate_eligibility(checks), EligibilityState.UNKNOWN)
 
     def test_unknown_critical_requirement_is_unknown(self):
         checks = [RequirementCheck("degree", True, RequirementStatus.PASS,
