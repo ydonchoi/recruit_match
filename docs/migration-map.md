@@ -91,3 +91,12 @@ This document does not claim:
 - Preserve the logical Registry concept only if the end-to-end pipeline requires a durable opportunity lifecycle. Do not assume a particular backend before the schema review.
 - Candidate-specific records, personal data, assessment outputs and sensitive source material are not permitted in GitHub. Any legacy cleanup is a separate, scoped task; no historical deletion is claimed.
 - The data-boundary decision is recorded in [data-boundary-decision.md](data-boundary-decision.md), and the partial runtime trace in [pipeline-execution-trace.md](pipeline-execution-trace.md).
+
+
+## Additional source-code observations added 2026-10-15
+
+- `search_agent/source_acquisition.py` checks that source ID, URL, type, acquisition time and content identity are present. This is a provenance completeness check, not source-authority or access-policy verification.
+- `search_agent/platform_registry.py` initializes nine platform descriptors as enabled while `policy_status` defaults to `REVIEW_REQUIRED`. A rebuilt system must gate actual adapter use on authorization and policy state, not descriptor enablement alone.
+- `registry/candidate_vault.py` is an in-memory versioned Candidate Ground Truth store with approval-reference and authorization-verifier checks. The inspected implementation is not a durable secure storage solution; do not port real candidate payloads into the GitHub repository.
+- `search_agent/independent_validator.py` defines ACCEPT, REJECT, INCONCLUSIVE and ROLLBACK_REQUIRED. The independent nature of its utility signal still needs caller-level tracing and test evidence.
+- The source candidate-data audit dated 2026-10-10 is itself explicitly partial and leaves Git history, artifacts, caches, forks, external storage and repository access exposure unresolved. It recommends field-by-field minimization rather than bulk deletion.
