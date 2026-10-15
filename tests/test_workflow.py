@@ -1,6 +1,14 @@
 import unittest
 
+from recruit_match.assessment import (
+    CompensationQuote, DuplicateState, FitDimensions, RankingCandidate,
+    RecommendationInputs, RequirementCheck, RequirementStatus, VerificationState,
+)
+from recruit_match.assessment import EvidenceDomain
+from recruit_match.domain import EligibilityState, RecommendationState
 from recruit_match.pipeline import RunContract
+from recruit_match.runner import StageExecution, execute_pipeline
+from recruit_match.pipeline import StageStatus
 from recruit_match.workflow import (
     ANALYSIS_STAGE_IDS,
     ATTACHMENT_OPTIONAL_STAGES,
@@ -40,6 +48,52 @@ class WorkflowContractTests(unittest.TestCase):
     def test_assessment_handlers_cannot_be_overridden(self):
         with self.assertRaisesRegex(ValueError, "ASSESSMENT_HANDLER_OVERRIDE_FORBIDDEN"):
             compose_analysis_handlers({"eligibility": lambda context: None})
+
+    def test_synthetic_full_analysis_contract_runs_with_injected_stubs(self):
+        contract = build_analysis_contract("synthetic-e2e")
+        builtins = {"eligibility", "fit_assessment", "compensation_resolution", "ranking", "recommendation"}
+        external = {}
+        for stage_id in ANALYSIS_STAGE_IDS:
+            if stage_id in builtins:
+                continue
+            if stage_id in ATTACHMENT_OPTIONAL_STAGES:
+                external[stage_id] = lambda context, stage_id=stage_id: StageExecution(
+                    StageStatus.NOT_APPLICABLE,
+                    {},
+                    evidence_refs=(f"synthetic:{stage_id}:no-attachment",),
+                    reason="synthetic posting has no attachment",
+                )
+            else:
+                external[stage_id] = lambda context: StageExecution(StageStatus.SUCCESS, {})
+        handlers = compose_analysis_handlers(external)
+        initial_context = {
+            "requirement_checks": [RequirementCheck(
+                "degree", True, RequirementStatus.PASS,
+                (EvidenceDomain.CANDIDATE, EvidenceDomain.RECRUITMENT),
+                ("synthetic:candidate-degree", "synthetic:posting-degree"),
+            )],
+            "fit_dimensions": FitDimensions(90, 80, 70, 60),
+            "fit_weights": (0.4, 0.3, 0.2, 0.1),
+            "compensation_quotes": {
+                "official": CompensationQuote("100-120", "synthetic:posting-salary", VerificationState.VERIFIED)
+            },
+            "ranking_candidates": [RankingCandidate("synthetic-opp-1", EligibilityState.PASS, 90, 80, 88, 1)],
+            "recommendation_inputs": RecommendationInputs(
+                eligibility=EligibilityState.PASS,
+                source_verification=VerificationState.VERIFIED,
+                currentness="ACTIVE",
+                duplicate_state=DuplicateState.RESOLVED,
+                privacy_review=VerificationState.VERIFIED,
+                provenance=VerificationState.VERIFIED,
+                schema_validation=VerificationState.VERIFIED,
+            ),
+        }
+        result = execute_pipeline(contract, handlers, initial_context)
+        self.assertTrue(result.validation.valid, result.validation.issues)
+        self.assertEqual(result.context["eligibility"], EligibilityState.PASS)
+        self.assertEqual(result.context["recommendation"], RecommendationState.RECOMMENDED)
+        self.assertEqual(len(result.context["ranked_candidates"]), 1)
+        self.assertEqual(len(result.receipts), len(ANALYSIS_STAGE_IDS))
 
     def test_unknown_boundary_is_rejected(self):
         with self.assertRaisesRegex(ValueError, "BOUNDARY_NOT_IN_RUN_SCOPE"):
