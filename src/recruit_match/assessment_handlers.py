@@ -88,7 +88,7 @@ def build_assessment_handlers() -> dict[str, Any]:
         if not isinstance(candidates, (tuple, list)) or any(not isinstance(item, RankingCandidate) for item in candidates):
             return _blocked("RANKING_CANDIDATES_INVALID")
         limit = context.get("ranking_limit", 50)
-        if not isinstance(limit, int):
+        if not isinstance(limit, int) or isinstance(limit, bool):
             return _blocked("RANKING_LIMIT_INVALID")
         try:
             ranked = rank_candidates(candidates, limit=limit)
