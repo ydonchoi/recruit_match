@@ -70,6 +70,8 @@ Total tracked paths: **1,059**. File extension inventory: 831 Markdown, 162 Pyth
 - `src/recruit_match/attachments.py` implements a urllib-based public URL policy boundary, DNS preflight, policy-checked redirects, bounded robots/attachment reads, PDF/ZIP MIME/signature checks, and SHA-256 receipts. **It does not pin validated DNS addresses to the socket connection**, so DNS rebinding remains a production blocker. No live network behavior was tested.
 - `docs/attachment-retrieval-boundary.md` records the remaining security work.
 - `src/recruit_match/domain.py` now keeps lifecycle, currentness, source verification, eligibility, recommendation, execution readiness and application outcome separate. GitHub sync state has been removed from the domain record because GitHub registry sync is out of scope by default.
+- `src/recruit_match/assessment.py` adds pure contracts for critical eligibility, optional fit dimensions, compensation evidence tiers, fail-closed recommendation and deterministic no-padding ranking. These functions are not yet wired into the runner.
+- Five test files contain 48 declared test functions; none has a usable execution result in this session.
 - The stage validator is integrated into the injected in-memory runner, but the runner is not connected to production search/evidence/assessment handlers. Thirty-three test functions are present across four test files; they have not been executed in this session.
 
 ## Candidate-data boundary
@@ -92,5 +94,5 @@ This inventory did **not** copy candidate records, personal details, ranking res
 
 - Tracked path inventory: **verified for source tree SHA `89899ee3b0719d73f36311004ac32f87e8a78dee`** (`truncated=false`, 1,059 paths).
 - Selected code findings: **source-observed** from files named above; not all paths were reviewed.
-- Test execution: **not performed** in this session. Thirty-three test functions are authored; the unit-test workflow is present but has no observed run.
+- Test execution: **no usable test output** in this session. Forty-eight test functions are authored. An Actions run failed before exposing steps/logs; test assertion outcomes remain unknown.
 - Full call graph, live search connectivity, live Notion writes, access control, data erasure, and production readiness: **unverified**.
