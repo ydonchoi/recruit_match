@@ -74,7 +74,7 @@ def build_analysis_contract(run_id: str, *, bounded_through: str | None = None) 
 
 
 def compose_analysis_handlers(external_handlers: Mapping[str, Any]) -> dict[str, Any]:
-    """Combine approved external stage handlers with protected pure assessment handlers.
+    """Combine explicitly supplied external stage handlers with protected assessment handlers.
 
     Unknown stage names and attempts to override assessment handlers are rejected.
     Missing external handlers remain missing so the runner blocks at the first
@@ -86,6 +86,9 @@ def compose_analysis_handlers(external_handlers: Mapping[str, Any]) -> dict[str,
     unknown = set(external_handlers) - set(ANALYSIS_STAGE_IDS)
     if unknown:
         raise ValueError(f"UNKNOWN_ANALYSIS_HANDLER:{','.join(sorted(unknown))}")
+    invalid = sorted(name for name, handler in external_handlers.items() if not callable(handler))
+    if invalid:
+        raise ValueError(f"EXTERNAL_HANDLER_NOT_CALLABLE:{','.join(invalid)}")
     overridden = set(external_handlers) & set(builtins)
     if overridden:
         raise ValueError(f"ASSESSMENT_HANDLER_OVERRIDE_FORBIDDEN:{','.join(sorted(overridden))}")
