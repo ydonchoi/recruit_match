@@ -34,17 +34,17 @@ A clean, verification-first reimplementation of the recruitment matching system.
 - **End-to-end runtime integration:** not implemented
 - **Notion writes:** not implemented
 - **GitHub Registry CRUD/sync:** excluded from the default target
-- **Tests:** 76 test functions are authored across seven test files; execution and results are unverified
+- **Tests:** 83 test functions are authored across seven test files; execution and results are unverified
 - **GitHub Actions:** prior runs failed before any step/log was exposed; the exact infrastructure cause is unconfirmed, and test state remains unknown
 
 ## Repository layout
 
 - `src/recruit_match/domain.py`: provisional opportunity domain types and fail-closed validation.
 - `src/recruit_match/assessment.py`: pure evidence-gated eligibility, fit scoring, compensation tiering, recommendation and no-padding ranking contracts.
-- `src/recruit_match/pipeline.py`: typed stage receipts and fail-closed bounded-run validation.
+- `src/recruit_match/pipeline.py`: typed stage receipts, fail-closed bounded-run validation and configurable evidence-reference requirements.
 - `src/recruit_match/runner.py`: injected, in-memory bounded pipeline runner; no production handlers or persistence are configured.
-- `src/recruit_match/workflow.py`: canonical 18-stage analysis contract with explicit bounded-run scope.
-- `src/recruit_match/assessment_handlers.py`: fail-closed adapters that bind pure assessment functions to the runner; source/search stages still require external handlers.
+- `src/recruit_match/workflow.py`: canonical 18-stage analysis contract with explicit bounded-run scope and evidence requirements for source/provenance stages.
+- `src/recruit_match/assessment_handlers.py`: fail-closed adapters that bind pure assessment functions to the runner; recommendation gates are derived from upstream stage outputs rather than a separately supplied aggregate.
 - `src/recruit_match/attachments.py`: public attachment fetch boundary with allowlist, DNS-pinned HTTPS transport, TLS hostname verification, redirects, robots, time/size limits, MIME/signature checks and integrity receipt. It is not production-ready until tests and adversarial network checks execute successfully.
 - `tests/`: synthetic unit tests for domain, stage contracts, runner behavior and attachment safety boundaries.
 - `pyproject.toml`: minimal Python package metadata.
