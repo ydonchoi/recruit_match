@@ -34,7 +34,7 @@ A clean, verification-first reimplementation of the recruitment matching system.
 - **End-to-end runtime integration:** not implemented
 - **Notion writes:** not implemented
 - **GitHub Registry CRUD/sync:** excluded from the default target
-- **Tests:** 74 test functions are authored across seven test files; execution and results are unverified
+- **Tests:** 76 test functions are authored across seven test files; execution and results are unverified
 - **GitHub Actions:** prior runs failed before any step/log was exposed; the exact infrastructure cause is unconfirmed, and test state remains unknown
 
 ## Repository layout
