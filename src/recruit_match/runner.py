@@ -7,6 +7,7 @@ stages were executed.
 """
 from __future__ import annotations
 
+from copy import deepcopy
 from dataclasses import dataclass
 from typing import Callable, Mapping, Any
 
@@ -65,7 +66,10 @@ def execute_pipeline(
         not isinstance(key, str) or not key.strip() for key in initial_context
     ):
         raise ValueError("INITIAL_CONTEXT_KEYS_MUST_BE_STRINGS")
-    context: dict[str, Any] = dict(initial_context) if initial_context is not None else {}
+    try:
+        context: dict[str, Any] = deepcopy(dict(initial_context)) if initial_context is not None else {}
+    except Exception as exc:
+        raise ValueError("INITIAL_CONTEXT_NOT_COPYABLE") from exc
     receipts: list[StageReceipt] = []
     by_id = {spec.stage_id: spec for spec in contract.stages}
 
@@ -127,7 +131,9 @@ def execute_pipeline(
             break
 
         try:
-            result = handler(dict(context))
+            # Isolate nested mutable values so a handler cannot mutate the
+            # runner's context by modifying a shallow-copied list/dict in place.
+            result = handler(deepcopy(context))
             if not isinstance(result, StageExecution):
                 raise TypeError("HANDLER_RESULT_MUST_BE_STAGE_EXECUTION")
             if not isinstance(result.status, StageStatus):
@@ -203,10 +209,10 @@ def execute_pipeline(
         receipts.append(receipt)
 
         if result.status is StageStatus.SUCCESS:
-            context.update(result.output)
+            context.update(deepcopy(dict(result.output)))
             continue
         if result.status is StageStatus.NOT_APPLICABLE and spec.allow_not_applicable:
-            context.update(result.output)
+            context.update(deepcopy(dict(result.output)))
             continue
         break
 
