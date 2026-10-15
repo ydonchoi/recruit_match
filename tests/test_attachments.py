@@ -107,6 +107,12 @@ class AttachmentSafetyTests(unittest.TestCase):
         with self.assertRaisesRegex(AttachmentFetchError, "DNS_NO_ADDRESSES"):
             policy.validate("https://jobs.example.test/a.pdf")
 
+    def test_malformed_dns_sockaddr_is_rejected(self):
+        malformed = lambda host, port: [(None, None, None, None, ())]
+        policy = PublicURLPolicy(frozenset({"jobs.example.test"}), malformed)
+        with self.assertRaisesRegex(AttachmentFetchError, "DNS_RESPONSE_MALFORMED"):
+            policy.validate("https://jobs.example.test/a.pdf")
+
     def test_credentials_in_url_are_rejected(self):
         policy = PublicURLPolicy(frozenset({"jobs.example.test"}), resolver_public)
         with self.assertRaisesRegex(AttachmentFetchError, "URL_CREDENTIALS_FORBIDDEN"):
