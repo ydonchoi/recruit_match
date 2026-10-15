@@ -94,6 +94,18 @@ class PipelineContractTests(unittest.TestCase):
                 attempt=1,
             )
 
+    def test_final_stage_failure_invalidates_run(self):
+        result = validate_run(
+            self.contract,
+            [
+                self.receipt("discover"),
+                self.receipt("verify"),
+                self.receipt("assess", StageStatus.FAILED, reason="assessment error"),
+            ],
+        )
+        self.assertFalse(result.valid)
+        self.assertIn("STAGE_TERMINAL_NOT_SUCCESS:assess:FAILED", result.issues)
+
     def test_duplicate_receipt_fails(self):
         result = validate_run(
             self.contract,
