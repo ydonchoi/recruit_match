@@ -67,16 +67,17 @@ def evaluate_eligibility(requirements: Iterable[RequirementCheck]) -> Eligibilit
     critical = tuple(item for item in checks if item.critical)
     if not critical:
         return EligibilityState.UNKNOWN
-    if any(item.status is RequirementStatus.FAIL for item in critical):
-        return EligibilityState.FAIL
     for item in critical:
         if item.status is RequirementStatus.UNKNOWN:
             return EligibilityState.UNKNOWN
-        if item.status is RequirementStatus.PASS and (
+        if (
             not item.evidence_refs
+            or any(not isinstance(ref, str) or not ref.strip() for ref in item.evidence_refs)
             or not {EvidenceDomain.CANDIDATE, EvidenceDomain.RECRUITMENT}.issubset(set(item.evidence_domains))
         ):
             return EligibilityState.UNKNOWN
+    if any(item.status is RequirementStatus.FAIL for item in critical):
+        return EligibilityState.FAIL
     return EligibilityState.PASS
 
 
@@ -114,7 +115,12 @@ def weighted_fit_score(
     if len(weights) != 4 or any(not isfinite(weight) or weight < 0 for weight in weights) or sum(weights) <= 0:
         raise ValueError("INVALID_FIT_WEIGHTS")
     total_weight = sum(weights)
-    return sum(value * weight for value, weight in zip(values, weights)) / total_weight
+    if not isfinite(total_weight):
+        raise ValueError("INVALID_FIT_WEIGHTS")
+    score = sum(value * weight for value, weight in zip(values, weights)) / total_weight
+    if not isfinite(score):
+        raise ValueError("INVALID_FIT_SCORE")
+    return score
 
 
 @dataclass(frozen=True, slots=True)
@@ -156,7 +162,12 @@ def resolve_compensation(
                 CompensationTier.UNKNOWN, None, None, confidence="UNKNOWN",
                 reason=f"COMPENSATION_SOURCE_NOT_VERIFIED:{tier.value}",
             )
-        if not quote.amount_or_range.strip() or not quote.source_ref.strip():
+        if (
+            not isinstance(quote.amount_or_range, str)
+            or not quote.amount_or_range.strip()
+            or not isinstance(quote.source_ref, str)
+            or not quote.source_ref.strip()
+        ):
             return CompensationEvidence(
                 CompensationTier.UNKNOWN, None, None, confidence="UNKNOWN",
                 reason=f"COMPENSATION_EVIDENCE_INCOMPLETE:{tier.value}",
