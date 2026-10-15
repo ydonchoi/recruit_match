@@ -73,7 +73,7 @@ Total tracked paths: **1,059**. File extension inventory: 831 Markdown, 162 Pyth
 - `src/recruit_match/assessment.py` adds pure contracts for critical eligibility, optional fit dimensions, compensation evidence tiers, fail-closed recommendation and deterministic no-padding ranking.
 - `src/recruit_match/assessment_handlers.py` binds these functions to the runner; missing inputs produce BLOCKED receipts rather than silent defaults. Recommendation inputs are derived from upstream outputs so a critical eligibility failure cannot be overwritten by an independently supplied aggregate.
 - `src/recruit_match/workflow.py` declares the canonical 18-stage analysis path, explicit evidence requirements for source/provenance stages, and composition of protected assessment handlers with injected external handlers. The full path has a synthetic contract test, but it has not been executed.
-- Seven test files contain 83 declared test functions; none has a usable execution result in this session. The 18-stage contract now declares evidence-required source/provenance stages; the runner fails such a stage when its receipt lacks evidence references. The assessment layer explicitly requires candidate and recruitment evidence references before a critical requirement can pass, and source verification before compensation values can be accepted.
+- Seven test files contain 84 declared test functions; none has a usable execution result in this session. The 18-stage contract now declares evidence-required source/provenance stages; the runner fails such a stage when its receipt lacks evidence references. The assessment layer explicitly requires candidate and recruitment evidence references before a critical requirement can pass, and source verification before compensation values can be accepted.
 - The stage validator is integrated into the injected in-memory runner, but the runner is not connected to production search/evidence handlers. Seventy-six test functions are present across seven test files; they have not been executed in an environment that returned usable output.
 
 ## Candidate-data boundary
@@ -96,5 +96,5 @@ This inventory did **not** copy candidate records, personal details, ranking res
 
 - Tracked path inventory: **verified for source tree SHA `89899ee3b0719d73f36311004ac32f87e8a78dee`** (`truncated=false`, 1,059 paths).
 - Selected code findings: **source-observed** from files named above; not all paths were reviewed.
-- Test execution: **no usable test output** in this session. Eighty-three test functions are authored. An Actions run failed before exposing steps/logs; test assertion outcomes remain unknown.
+- Test execution: **no usable test output** in this session. Eighty-four test functions are authored. An Actions run failed before exposing steps/logs; test assertion outcomes remain unknown.
 - Full call graph, live search connectivity, live Notion writes, access control, data erasure, and production readiness: **unverified**.

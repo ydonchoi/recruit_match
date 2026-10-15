@@ -3,7 +3,7 @@
 - Snapshot time: 2026-10-15
 - Target repository: `ydonchoi/recruit_match`
 - Target branch: `bootstrap/verification-first-architecture`
-- Target source snapshot before this ledger update: `f585cbf809321a20fc8e025f88d4186eb588bf16`
+- Target source snapshot before this ledger update: `918d3bd63fca575e25539618c30ee31ea7e9e302`
 - Legacy source snapshot: `ydonchoi/recruitment_matching@89899ee3b0719d73f36311004ac32f87e8a78dee`
 - PR: [#1](https://github.com/ydonchoi/recruit_match/pull/1), Draft, not merged
 
@@ -26,7 +26,7 @@ Blob SHA values are Git blob identifiers from the target snapshot tree. They ide
 | `src/recruit_match/assessment_handlers.py` | `0ab1edfe6493a6b0959d8fb519d84e131c772dc5` | PRESENT / SOURCE-REVIEWED; recommendation gates derived from upstream context |
 | `src/recruit_match/pipeline.py` | `daecba5b74738c4a5d2e2ffff2f632bf3f29248b` | PRESENT / SOURCE-REVIEWED; explicit evidence-required stage flag |
 | `src/recruit_match/runner.py` | `c7710783a25eb722fee1baf31b5072f758a62806` | PRESENT / SOURCE-REVIEWED; blocks evidence-required stages without refs |
-| `src/recruit_match/workflow.py` | `7c11910fdf081b0e3510d4c4ba1c5b0753e2f299` | PRESENT / 18-stage contract; external live adapters not configured |
+| `src/recruit_match/workflow.py` | `c6f4c6e01cec500a287dd5d2383f5463b373d582` | PRESENT / 18-stage contract; external live adapters not configured |
 | `src/recruit_match/attachments.py` | `b5426827cc929ba812c7b76c93b1d343729cda07` | PRESENT / SOURCE-REVIEWED; DNS-pinned default transport, execution unverified |
 | `tests/test_domain.py` | `c5b3b041d846f6dd6020b3fb1e225dc8ae2754d6` | PRESENT / 11 test functions authored |
 | `tests/test_assessment.py` | `cf3fd60834fbdf2429e4b5b4aceee436d2b91d8c` | PRESENT / 21 test functions authored |
@@ -34,23 +34,24 @@ Blob SHA values are Git blob identifiers from the target snapshot tree. They ide
 | `tests/test_pipeline.py` | `6844fbdbd757c7b70731f0cb8d4e0aa835bb55eb` | PRESENT / 11 test functions authored |
 | `tests/test_runner.py` | `f6eef13de79dc4c68ac7380500d0c09b5da3c9f1` | PRESENT / 7 test functions authored |
 | `tests/test_attachments.py` | `b10878fca3b84176ea9224419f0cc84945f069f5` | PRESENT / 16 test functions authored |
-| `tests/test_workflow.py` | `8b4441776022937cd387f66159b37cd4791f259b` | PRESENT / 9 test functions authored |
+| `tests/test_workflow.py` | `8930c7caa7c32dcb8c4dbfd100c736468aff125f` | PRESENT / 10 test functions authored |
 | `.github/workflows/unit-tests.yml` | `29b5c93e607bd3d26aa1a5395fe7a7d5d0510bc6` | PRESENT / workflow authored, no usable run |
 
-The seven test files contain **83 declared test functions** by source inspection. This is a count of test definitions, not a count of passing tests.
+The seven test files contain **84 declared test functions** by source inspection. This is a count of test definitions, not a count of passing tests.
 
 ## Execution evidence
 
 - Local test command documented: `PYTHONPATH=src python -m unittest discover -s tests -v`.
 - Local execution in this session: **NOT PERFORMED**.
-- Five Actions attempts were observed on earlier PR heads:
+- Six Actions attempts were observed on earlier PR heads:
   - [38714021019](https://github.com/ydonchoi/recruit_match/actions/runs/38714021019), head `48595a9c7ac133694f20ff794d056b467f1be648`, conclusion `failure`.
   - [38714612584](https://github.com/ydonchoi/recruit_match/actions/runs/38714612584), head `67c9e1432e6e8a233d9aa374e050ff6bc9680c73`, conclusion `failure`.
   - [38714988414](https://github.com/ydonchoi/recruit_match/actions/runs/38714988414), head `48b4e9dbc0081e3d6de36f7e1348673d8ca53c5c`, conclusion `failure`.
   - [38715035697](https://github.com/ydonchoi/recruit_match/actions/runs/38715035697), head `83d31005209ae09736fb9fc663969d03469343a9`, conclusion `failure`.
   - [38715712142](https://github.com/ydonchoi/recruit_match/actions/runs/38715712142), head `48e5c8d98710bc0a13b92b6c677927e9037d9f46`, conclusion `failure`.
 - The inspected jobs all failed before exposing any steps/logs and reported `runner_id=0` with an empty runner name. This is consistent with runner initialization unavailability, but the exact infrastructure cause is not confirmed by logs. These runs do not establish failed assertions and are not passing test runs.
-- Actions run for the then-current snapshot `f585cbf809321a20fc8e025f88d4186eb588bf16`: none observed.
+- [Run 38716289804](https://github.com/ydonchoi/recruit_match/actions/runs/38716289804), head `e68b9adcea9bddf74cb91933465c37037761afaa`, also failed before exposing steps/logs.
+- Actions run for current snapshot `918d3bd63fca575e25539618c30ee31ea7e9e302`: none observed at snapshot time.
 - Test pass/fail count: **UNKNOWN**.
 - End-to-end trigger-to-result test with real external adapters: **NOT PERFORMED**. A synthetic full-contract test is authored but not executed.
 - Live search connectivity and production transport behavior: **UNVERIFIED**.
