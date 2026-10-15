@@ -23,7 +23,7 @@
 | `src/recruit_match/assessment.py` | `41951b5d75a4af8130b9085d0cce8c9ae1131322` | PRESENT / SOURCE-REVIEWED; strict input checks, hard eligibility exclusion |
 | `src/recruit_match/assessment_handlers.py` | `0781f62f5207ae12d7fb84aa296eccfcaea184d7` | PRESENT / SOURCE-REVIEWED; recommendation gates derived from upstream context |
 | `src/recruit_match/pipeline.py` | `febb2053779d3a98610c607f2d03c94cbb009fb5` | PRESENT / SOURCE-REVIEWED; strict stage and receipt contracts |
-| `src/recruit_match/runner.py` | `99773eaf48e374a9e630f3821444158071160eb5` | PRESENT / SOURCE-REVIEWED; malformed handler output fails closed |
+| `src/recruit_match/runner.py` | `77d4503e62e1d728666177df53b846653bef3f2c` | PRESENT / SOURCE-REVIEWED; malformed handler output fails closed |
 | `src/recruit_match/workflow.py` | `c6f4c6e01cec500a287dd5d2383f5463b373d582` | PRESENT / 18-stage contract; real adapters not configured |
 | `src/recruit_match/application.py` | `8d0318d8689b28ba7655d7d692c9f8c03cb11147` | PRESENT / SOURCE-REVIEWED; injectable full/bounded entry point |
 | `src/recruit_match/attachments.py` | `17c472e472ceb659a0c4a5b8a71bb7f4cd2daa39` | PRESENT / SOURCE-REVIEWED; DNS-pinned default transport, execution unverified |
@@ -40,12 +40,12 @@
 | `tests/test_domain.py` | `a57504377c54b0de49f0df95fa47422d059e06da` | 13 |
 | `tests/test_assessment.py` | `dfaa63c275ed725ebe9f03092589ffcd8f3018ac` | 30 |
 | `tests/test_pipeline.py` | `cf45abcc382306e69bd43f51dc87716c71b76b3a` | 16 |
-| `tests/test_runner.py` | `6b521e1e3b97a49f0fb618b22c2147c73f7393b3` | 11 |
+| `tests/test_runner.py` | `16454356b842d8127b7e27b53d849d161140178a` | 12 |
 | `tests/test_attachments.py` | `e69624413501faef696a88b600c3c5fc2757794b` | 19 |
 | `tests/test_workflow.py` | `f950dca294dd0e1af8d2e58105eee36814b4caf0` | 10 |
 | `tests/test_assessment_handlers.py` | `89e8b7164112d85767bbef7fa813be8b83078676` | 9 |
 | `tests/test_application.py` | `b525c98df09b67f8397c5e92f9045197ee9a93c9` | 4 |
-| **Total** | | **112** |
+| **Total** | | **113** |
 
 This is a count of declared test functions by source inspection, not a count of passing tests.
 
@@ -54,7 +54,7 @@ This is a count of declared test functions by source inspection, not a count of 
 - Documented test command: `PYTHONPATH=src python -m unittest discover -s tests -v`.
 - Local execution of that command: **NOT PERFORMED**.
 - A separate browser-shell execution attempt could not start a clone because that environment has no `git` executable. The Python test command was not reached; this is not a test result.
-- GitHub Actions attempts repeatedly fail before exposing test steps. The latest observed run is [38718766912](https://github.com/ydonchoi/recruit_match/actions/runs/38718766912), for head `5750225dffdc2f0dec565bce8dbc9e7ec69c89f8`. Its job reports `runner_id=0`, empty runner name and no steps. The same pattern is present in the immediately preceding attempts.
+- GitHub Actions attempts repeatedly fail before exposing test steps. The latest observed run is [38718987417](https://github.com/ydonchoi/recruit_match/actions/runs/38718987417), for code-bearing head `54a298545bebfaf9a098e9aa923793a281d8672e`. Its job reports `runner_id=0`, empty runner name and no steps. The same pattern is present in the immediately preceding attempts.
 - The observed pattern is consistent with runner initialization unavailability, but the exact infrastructure cause is not confirmed by logs.
 - No test assertion output is available. Test pass/fail count: **UNKNOWN**.
 - The synthetic full-workflow test calls the public `run_analysis` entry point, but it has **not been executed**.
@@ -72,7 +72,7 @@ This is a count of declared test functions by source inspection, not a count of 
 
 ## Remaining merge/integration gates
 
-1. Execute all 112 authored tests and retain actual output.
+1. Execute all 113 authored tests and retain actual output.
 2. Exercise the DNS-pinned transport with TLS hostname mismatch, controlled redirects, IPv4/IPv6, DNS changes and proxy configuration.
 3. Implement and authorize actual external stage adapters; verify each adapter's source identity, observation time, access basis and evidence receipts.
 4. Execute the synthetic full workflow through `run_analysis`, then integration tests with controlled adapters.
