@@ -50,7 +50,22 @@ def execute_pipeline(
     it. Context is returned in memory only; callers are responsible for
     redaction and private persistence if they choose to persist anything.
     """
-    context: dict[str, Any] = dict(initial_context or {})
+    if not isinstance(contract, RunContract):
+        raise ValueError("INVALID_RUN_CONTRACT")
+    if not isinstance(handlers, Mapping):
+        raise ValueError("HANDLERS_MUST_BE_MAPPING")
+    if any(
+        not isinstance(name, str) or not name.strip() or not callable(handler)
+        for name, handler in handlers.items()
+    ):
+        raise ValueError("INVALID_HANDLER_REGISTRY")
+    if initial_context is not None and not isinstance(initial_context, Mapping):
+        raise ValueError("INITIAL_CONTEXT_MUST_BE_MAPPING")
+    if initial_context is not None and any(
+        not isinstance(key, str) or not key.strip() for key in initial_context
+    ):
+        raise ValueError("INITIAL_CONTEXT_KEYS_MUST_BE_STRINGS")
+    context: dict[str, Any] = dict(initial_context) if initial_context is not None else {}
     receipts: list[StageReceipt] = []
     by_id = {spec.stage_id: spec for spec in contract.stages}
 
