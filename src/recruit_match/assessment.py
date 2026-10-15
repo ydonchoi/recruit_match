@@ -7,6 +7,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import StrEnum
+from math import isfinite
 from typing import Iterable, Sequence
 
 from .domain import EligibilityState, RecommendationState
@@ -104,7 +105,7 @@ def weighted_fit_score(
     )
     if any(value is None for value in values):
         return None
-    if len(weights) != 4 or any(weight < 0 for weight in weights) or sum(weights) <= 0:
+    if len(weights) != 4 or any(not isfinite(weight) or weight < 0 for weight in weights) or sum(weights) <= 0:
         raise ValueError("INVALID_FIT_WEIGHTS")
     total_weight = sum(weights)
     return sum(value * weight for value, weight in zip(values, weights)) / total_weight
@@ -168,7 +169,7 @@ def decide_recommendation(value: RecommendationInputs) -> RecommendationState:
         return RecommendationState.NOT_RECOMMENDED
     if value.duplicate_state is DuplicateState.CONFLICT:
         return RecommendationState.NOT_RECOMMENDED
-    if value.source_verification is VerificationState.FAILED:
+    if value.source_verification is VerificationState.FAILED or value.provenance is VerificationState.FAILED:
         return RecommendationState.NOT_RECOMMENDED
     if value.privacy_review is VerificationState.FAILED or value.schema_validation is VerificationState.FAILED:
         return RecommendationState.NOT_RECOMMENDED
