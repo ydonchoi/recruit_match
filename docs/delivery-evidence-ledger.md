@@ -1,6 +1,6 @@
 # Delivery Evidence Ledger
 
-- Snapshot date: 2026-10-15
+- Snapshot date: 2026-10-19
 - Target repository: `ydonchoi/recruit_match` (private)
 - Target branch: `bootstrap/verification-first-architecture`
 - Target branch head before this ledger update: `9aa24e98f94e693fb36ee1aa480861d36c15f8c4`
@@ -48,7 +48,7 @@
 | `tests/test_assessment_handlers.py` | `4b925b009e484b7c657619f3aa976b0eda2b765d` | 9 |
 | `tests/test_application.py` | `b525c98df09b67f8397c5e92f9045197ee9a93c9` | 4 |
 | `tests/test_search_execution.py` | `8054cc3e1b66b37aa93a051da31baca39265b386` | 12 |
-| **Total** | | **133** |
+| **Total** | | **146** |
 
 This is a count of declared test functions by source inspection, not a count of passing tests.
 
@@ -71,7 +71,7 @@ This is a count of declared test functions by source inspection, not a count of 
 - Eligibility evaluation now rejects malformed collections and duplicate requirement IDs; a critical requirement needs both candidate and recruitment evidence domains plus at least two distinct evidence references before its status can decide eligibility.
 - Ranking rejects duplicate opportunity IDs rather than silently allowing ambiguous duplicate entries.
 - Attachment policy flags must be booleans; DNS resolver output is shape-validated and malformed socket-address tuples return a sanitized policy error.
-- Added eight test functions covering these boundaries. They are authored only; **not executed**. Current authored test count: 133.
+- Added eight test functions covering these boundaries. They are authored only; **not executed**. Current authored test count: 146.
 
 ## Search execution budget evidence (2026-10-19)
 
@@ -103,3 +103,11 @@ This is a count of declared test functions by source inspection, not a count of 
 ## Interpretation
 
 Repository content presence is not runtime evidence. Authored tests are not passing tests. A synthetic run would not establish live provider integration, privacy compliance, transport security or production readiness. Keep PR #1 in Draft until the merge gates are resolved or explicitly accepted with evidence by an authorized maintainer.
+
+
+## Search stage implementation addendum (2026-10-19)
+
+- `src/recruit_match/search_stage.py` defines injected `search_plan` and `discovery` stage handlers. It does not select a provider or planner by default.
+- `tests/test_search_stage.py` adds 12 test functions; `tests/test_runner.py` adds one test to preserve diagnostics from a blocked stage while still stopping downstream execution.
+- Current authored test inventory is 146 functions across ten test files. This count is based on source inspection; none of these tests is claimed to have run.
+- The search stage can be composed into `run_analysis()` by passing `build_search_handlers(...)` with the caller's request-scope and candidate-context handlers. Actual provider connectivity, provider-internal call counts, and runtime behavior remain unverified.
