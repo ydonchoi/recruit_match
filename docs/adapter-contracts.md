@@ -59,7 +59,7 @@ Each handler returns `StageExecution` with:
 - non-empty evidence references for stages declared `evidence_required`;
 - a reason for FAILED, BLOCKED, or NOT_APPLICABLE outcomes.
 
-The runner validates receipt shapes and stage prerequisites. A non-empty reference is only a pointer: it does not itself prove that the source is authoritative, current, authentic, or relevant. The adapter must make the verification result explicit in typed outputs and evidence metadata.
+The runner validates receipt shapes and stage prerequisites. Well-formed output from a non-successful stage is retained in the returned in-memory context for diagnostics, while downstream execution stops immediately; the run remains invalid. This allows a caller to inspect budget-skipped queries and partial-discovery receipts without treating them as a successful discovery. A non-empty reference is only a pointer: it does not itself prove that the source is authoritative, current, authentic, or relevant. The adapter must make the verification result explicit in typed outputs and evidence metadata.
 
 ## Provider authorization and security
 
