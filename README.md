@@ -14,6 +14,7 @@ A clean, verification-first reimplementation of the recruitment matching system.
 - Data boundary: [docs/data-boundary-decision.md](docs/data-boundary-decision.md)
 - Attachment retrieval limits: [docs/attachment-retrieval-boundary.md](docs/attachment-retrieval-boundary.md)
 - Verification evidence: [docs/delivery-evidence-ledger.md](docs/delivery-evidence-ledger.md)
+- Controlled ToolCall integration test procedure: [docs/tool-call-execution-runbook.md](docs/tool-call-execution-runbook.md)
 - Static review and migration status: [docs/static-review-and-migration-status.md](docs/static-review-and-migration-status.md)
 
 ## Verification principles
