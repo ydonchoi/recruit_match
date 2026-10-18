@@ -27,17 +27,14 @@ class AttachmentPolicyStatus(StrEnum):
     UNKNOWN = "UNKNOWN"
 
 
+@dataclass(frozen=True, slots=True)
 class AttachmentDiscoveryBatch:
     """Typed result from inspecting a verified official page for attachment links."""
 
-    __slots__ = ("source_result_ref", "complete", "candidates", "evidence_refs")
-
-    def __init__(self, source_result_ref: str, complete: bool, candidates: tuple, evidence_refs: tuple[str, ...]):
-        self.source_result_ref = source_result_ref
-        self.complete = complete
-        self.candidates = candidates
-        self.evidence_refs = evidence_refs
-        self.__post_init__()
+    source_result_ref: str
+    complete: bool
+    candidates: tuple[AttachmentCandidate, ...]
+    evidence_refs: tuple[str, ...]
 
     def __post_init__(self) -> None:
         if not isinstance(self.source_result_ref, str) or not self.source_result_ref.strip():
@@ -322,6 +319,10 @@ def build_attachment_policy_handler(
 
         seen_refs: set[str] = set()
         for candidate in candidates:
+            try:
+                candidate.__post_init__()
+            except Exception:
+                return StageExecution(StageStatus.BLOCKED, {}, reason="ATTACHMENT_CANDIDATE_INVALID")
             if candidate.attachment_ref in seen_refs:
                 return StageExecution(StageStatus.BLOCKED, {}, reason="DUPLICATE_ATTACHMENT_REF")
             seen_refs.add(candidate.attachment_ref)
@@ -475,8 +476,24 @@ def build_attachment_fetch_handler(
                     raise ValueError("ATTACHMENT_FINAL_URL_INVALID")
                 if final.hostname.lower().rstrip(".") not in allowed_hosts:
                     raise ValueError("ATTACHMENT_FINAL_HOST_NOT_ALLOWLISTED")
-                if not isinstance(raw.content, bytes) or len(raw.content) != raw.byte_size or raw.byte_size > decision.max_bytes:
+                if (
+                    not isinstance(raw.content, bytes)
+                    or not isinstance(raw.byte_size, int)
+                    or isinstance(raw.byte_size, bool)
+                    or len(raw.content) != raw.byte_size
+                    or raw.byte_size > decision.max_bytes
+                ):
                     raise ValueError("ATTACHMENT_CONTENT_SIZE_INVALID")
+                if (
+                    not isinstance(raw.retrieved_at_epoch, (int, float))
+                    or isinstance(raw.retrieved_at_epoch, bool)
+                    or not math.isfinite(raw.retrieved_at_epoch)
+                ):
+                    raise ValueError("ATTACHMENT_RETRIEVAL_TIMESTAMP_INVALID")
+                if not isinstance(raw.content_type, str) or not raw.content_type.strip():
+                    raise ValueError("ATTACHMENT_CONTENT_TYPE_INVALID")
+                if raw.media_kind not in {"pdf", "zip-container"}:
+                    raise ValueError("ATTACHMENT_MEDIA_KIND_INVALID")
                 digest = hashlib.sha256(raw.content).hexdigest()
                 if digest != raw.sha256:
                     raise ValueError("ATTACHMENT_CONTENT_HASH_MISMATCH")
