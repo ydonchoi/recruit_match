@@ -102,7 +102,7 @@ def build_source_verification_handler(
         preflight: list[tuple[Any, str, str]] = []
         seen_refs: set[str] = set()
         for item in discovered:
-            result_ref = _field(item, "result_ref")
+            result_ref = _field(item, "source_result_ref") or _field(item, "result_ref")
             source_url = _field(item, "source_url")
             if not isinstance(result_ref, str) or not result_ref.strip():
                 return StageExecution(StageStatus.BLOCKED, {}, reason="DISCOVERED_RESULT_REF_MISSING")
