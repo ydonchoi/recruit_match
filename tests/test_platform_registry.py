@@ -49,6 +49,14 @@ class PlatformRegistryTests(unittest.TestCase):
             get_platform("university_official_boards").discovery_url
         )
 
+    def test_jobs_ac_kr_is_selected_for_academic_research_and_global_roles(self):
+        source = get_platform("jobs_ac_kr")
+        self.assertEqual(source.name, "JOBS.ac.kr (잡스)")
+        self.assertEqual(source.homepage_url, "https://new.jobs.ac.kr/")
+        self.assertEqual(source.integration_status, "candidate_unverified")
+        selected = select_platforms(("university_faculty", "research"))
+        self.assertIn("jobs_ac_kr", {item.platform_id for item in selected})
+
     def test_category_selection_is_independent_of_search_matrix_shape(self):
         sources = select_platforms(("developer", "research"))
         ids = {source.platform_id for source in sources}
