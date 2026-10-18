@@ -40,7 +40,7 @@ This is a newly authored execution boundary, not evidence of live Search Agent a
 
 ## Search stage adapter behavior
 
-- The planner is injected and may return Search Matrix combinations directly or legacy-style plan objects with a nested `combination` attribute.
+- The planner is injected and may return Search Matrix combinations directly or legacy-style plan objects with a nested `combination` attribute. `build_adaptive_planner_callback(...)` explicitly adapts the legacy `AdaptiveSearchPlanner.plan(candidate_evidence, user_query)` interface using injected planner and candidate-evidence-provider objects; the request-scope handler must provide the query in context.
 - The plan handler rejects empty plans, malformed combinations, duplicate IDs, and plans exceeding the configured maximum; it does not silently truncate.
 - The discovery handler requires a run ID, provider ID, callable, and positive call budget. Provider responses must be sequences of normalized `SearchProviderHit` values.
 - Each result records provider ID, stable combination ID, provider result ID, title, source URL, observation time, SHA-256 of the query, and a run-scoped result reference.
@@ -89,7 +89,7 @@ handlers = build_tool_call_search_handlers(
 # Add request_scope and candidate_context handlers before calling run_analysis().
 ```
 
-The example is an interface sketch; it does not configure a real host tool, credentials, or network access. `tests/test_tool_call_adapter.py` contains 12 authored tests, but they have not been executed.
+The example is an interface sketch; it does not configure a real host tool, credentials, or network access. `tests/test_tool_call_adapter.py` contains 12 authored tests, but they have not been executed. `tests/test_search_stage.py` now also covers the explicit adaptive-planner bridge; its tests are authored, not executed.
 
 ## Receipt contract
 
