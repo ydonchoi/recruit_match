@@ -73,5 +73,5 @@ quotas, authentication, terms and access policies.
 ## Verification status
 
 Unit tests cover catalog uniqueness, metadata invariants, category filtering,
-public/university source selection and invalid input rejection. They are authored
+public/university source selection, JOBS.ac.kr academic/research filtering and invalid input rejection. They are authored
 but have not been executed in this change.
