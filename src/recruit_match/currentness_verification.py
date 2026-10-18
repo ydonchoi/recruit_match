@@ -15,6 +15,7 @@ from typing import Any
 from .domain import CurrentnessState
 from .pipeline import StageStatus
 from .runner import StageExecution
+from .source_verification import SourceAuthorityStatus, SourceVerificationReceipt
 
 
 @dataclass(frozen=True, slots=True)
@@ -106,10 +107,12 @@ def build_currentness_verification_handler(
         if not isinstance(source_receipts, Sequence) or isinstance(source_receipts, (str, bytes, bytearray, Mapping)):
             return StageExecution(StageStatus.BLOCKED, {}, reason="SOURCE_VERIFICATION_RECEIPTS_MISSING")
         verified_official_refs = {
-            _field(receipt, "source_result_ref")
+            receipt.source_result_ref
             for receipt in source_receipts
-            if str(_field(receipt, "status")) in {"VERIFIED_OFFICIAL", "SourceAuthorityStatus.VERIFIED_OFFICIAL"}
-            and _field(receipt, "evidence_refs")
+            if isinstance(receipt, SourceVerificationReceipt)
+            and receipt.status is SourceAuthorityStatus.VERIFIED_OFFICIAL
+            and isinstance(receipt.evidence_refs, tuple)
+            and receipt.evidence_refs
         }
         preflight: list[Any] = []
         seen_refs: set[str] = set()
