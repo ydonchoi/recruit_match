@@ -35,7 +35,7 @@ A clean, verification-first reimplementation of the recruitment matching system.
 - **Application entry point:** `src/recruit_match/application.py` executes the declared workflow through injected handlers; real external adapters are not configured
 - **Notion writes:** not implemented
 - **GitHub Registry CRUD/sync:** excluded from the default target
-- **Tests:** 146 test functions are authored across ten test files; execution and results are unverified
+- **Tests:** 158 test functions are authored across eleven test files; execution and results are unverified
 - **GitHub Actions:** the latest run failed before any step/log was exposed (`runner_id=0`, no runner name); the exact infrastructure cause is unconfirmed, and test state remains unknown
 
 ## Repository layout
@@ -47,11 +47,12 @@ A clean, verification-first reimplementation of the recruitment matching system.
 - `src/recruit_match/application.py`: explicit public entry point for full or bounded runs; missing external adapters fail closed.
 - `src/recruit_match/search_execution.py`: Search Matrix-shaped combination adapter, hard per-batch call budget, and per-query execution receipts; provider is still injected and no live search provider is configured.
 - `src/recruit_match/search_stage.py`: injected `search_plan` and `discovery` stage handlers with provider result normalization, observed timestamps, query hashes, invocation receipts, and explicit partial-run blocking.
+- `src/recruit_match/tool_call_adapter.py`: direct allowlisted host ToolCall dispatch with a hard dispatch budget, separate dispatch/response-validation states, ambiguous-outcome handling, and auditable receipts.
 - `docs/adapter-contracts.md`: required external adapter contracts and live-integration acceptance gate.
 - `src/recruit_match/workflow.py`: canonical 18-stage analysis contract with explicit bounded-run scope and evidence requirements for source/provenance stages.
 - `src/recruit_match/assessment_handlers.py`: fail-closed adapters that bind pure assessment functions to the runner; recommendation gates are derived from upstream stage outputs rather than a separately supplied aggregate.
 - `src/recruit_match/attachments.py`: public attachment fetch boundary with allowlist, DNS-pinned HTTPS transport, TLS hostname verification, redirects, robots, time/size limits, MIME/signature checks and integrity receipt. It is not production-ready until tests and adversarial network checks execute successfully.
-- `tests/`: synthetic unit tests for domain, stage contracts, runner behavior, attachment safety boundaries, and search call-budget/receipt contracts. Search adapter tests are authored but not executed.
+- `tests/`: synthetic unit tests for domain, stage contracts, runner behavior, attachment safety boundaries, search call-budget/receipt contracts, and direct ToolCall dispatch. All authored tests remain unexecuted.
 - `pyproject.toml`: minimal Python package metadata.
 - `.github/workflows/unit-tests.yml`: CI definition for later execution; no run is claimed.
 - `.gitignore`: excludes local candidate-data directories, credentials, raw source documents and generated run artifacts; this is a guardrail, not a security boundary.
