@@ -86,6 +86,20 @@ class AttachmentStageTests(unittest.TestCase):
         values.update(overrides)
         return AttachmentPolicyDecision(**values)
 
+    def policy_receipt(self, candidate, decision):
+        return AttachmentPolicyReceipt(
+            attachment_ref=candidate.attachment_ref,
+            source_result_ref=candidate.source_result_ref,
+            attachment_url=candidate.attachment_url,
+            status=AttachmentPolicyStatus.ALLOW,
+            policy_id=decision.policy_id,
+            allowed_hosts=decision.allowed_hosts,
+            max_bytes=decision.max_bytes,
+            timeout_seconds=decision.timeout_seconds,
+            robots_required=decision.robots_required,
+            evidence_refs=decision.evidence_refs,
+        )
+
     def context(self, candidates=None):
         return {
             "official_source_results": (self.source(),),
@@ -226,7 +240,7 @@ class AttachmentStageTests(unittest.TestCase):
         )
         fetched = fetch_handler({
             "approved_attachments": (approved,),
-            "attachment_policy_receipts": (),
+            "attachment_policy_receipts": (self.policy_receipt(candidate, decision),),
         })
         self.assertEqual(fetched.status, StageStatus.SUCCESS)
         self.assertEqual(stored, [content])
@@ -234,6 +248,21 @@ class AttachmentStageTests(unittest.TestCase):
         fetch_result = fetched.output["attachment_fetch_receipts"][0]
         self.assertEqual(fetch_result.content_ref, "private://attachment-1")
         self.assertFalse(hasattr(fetch_result, "content"))
+
+    def test_fetch_rejects_approved_attachment_without_matching_policy_receipt(self):
+        candidate = self.candidate()
+        decision = self.allow(candidate)
+        calls = []
+        result = build_attachment_fetch_handler(
+            fetcher_factory=lambda policy, limits: calls.append("fetch") or None,
+            content_sink=lambda item, receipt: "private://attachment",
+        )({
+            "approved_attachments": (ApprovedAttachment(candidate, decision),),
+            "attachment_policy_receipts": (),
+        })
+        self.assertEqual(result.status, StageStatus.BLOCKED)
+        self.assertEqual(result.reason, "ATTACHMENT_POLICY_RECEIPT_MISMATCH")
+        self.assertEqual(calls, [])
 
     def test_fetch_blocks_when_private_content_sink_fails(self):
         candidate = self.candidate()
