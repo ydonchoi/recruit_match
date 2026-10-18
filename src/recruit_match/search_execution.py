@@ -119,6 +119,43 @@ class SearchExecutionBatch:
 SearchCallable = Callable[[str], Sequence[Any]]
 
 
+def plans_from_combinations(combinations: Sequence[Any]) -> tuple[SearchQueryPlan, ...]:
+    """Adapt Search Matrix-like objects exposing combination_id and query.
+
+    This adapter deliberately does not import a provider or a legacy package.
+    It bridges the stable planner output shape to the explicit budgeted runner.
+    """
+    if not isinstance(combinations, Sequence) or isinstance(
+        combinations, (str, bytes, bytearray)
+    ):
+        raise ValueError("SEARCH_COMBINATIONS_MUST_BE_SEQUENCE")
+    plans = []
+    for ordinal, combination in enumerate(combinations):
+        combination_id = getattr(combination, "combination_id", None)
+        query = getattr(combination, "query", None)
+        try:
+            plans.append(SearchQueryPlan(ordinal, combination_id, query))
+        except (TypeError, ValueError) as exc:
+            raise ValueError(f"INVALID_SEARCH_COMBINATION_AT:{ordinal}") from exc
+    if len({p.combination_id for p in plans}) != len(plans):
+        raise ValueError("SEARCH_PLAN_DUPLICATE_COMBINATION")
+    return tuple(plans)
+
+
+def execute_search_combinations(
+    combinations: Sequence[Any],
+    search_callable: SearchCallable,
+    *,
+    max_calls: int,
+) -> SearchExecutionBatch:
+    """Convert Search Matrix combinations and execute within a hard call budget."""
+    return execute_search_plan(
+        plans_from_combinations(combinations),
+        search_callable,
+        max_calls=max_calls,
+    )
+
+
 def execute_search_plan(
     plans: Sequence[SearchQueryPlan],
     search_callable: SearchCallable,
