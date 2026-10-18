@@ -3,7 +3,7 @@
 - Snapshot date: 2026-10-15
 - Target repository: `ydonchoi/recruit_match` (private)
 - Target branch: `bootstrap/verification-first-architecture`
-- Target branch head before this ledger update: `6a7e8675dbb2313c1c9cc45b55afe0a18eafe039`
+- Target branch head before this ledger update: `13bb1c5eef03e6a8c52781ef5b10071d80deebea`
 - Legacy source revision: `ydonchoi/recruitment_matching@89899ee3b0719d73f36311004ac32f87e8a78dee`
 - PR: [#1](https://github.com/ydonchoi/recruit_match/pull/1), Draft, not merged
 
@@ -26,12 +26,13 @@
 | `src/recruit_match/runner.py` | `77d4503e62e1d728666177df53b846653bef3f2c` | PRESENT / SOURCE-REVIEWED; malformed handler output fails closed |
 | `src/recruit_match/workflow.py` | `c6f4c6e01cec500a287dd5d2383f5463b373d582` | PRESENT / 18-stage contract; real adapters not configured |
 | `src/recruit_match/application.py` | `8d0318d8689b28ba7655d7d692c9f8c03cb11147` | PRESENT / SOURCE-REVIEWED; injectable full/bounded entry point |
+| `src/recruit_match/search_execution.py` | `fd6cb37dd320e25faf3ca9a87b6b5f3cd36b79c6` | PRESENT / SOURCE-REVIEWED; Search Matrix-shaped plan adapter, hard callable-invocation budget, per-query in-memory receipts; no provider configured |
 | `src/recruit_match/attachments.py` | `9c0af749e909ec59e8bbcfd1a17fa3efbcb13359` | PRESENT / SOURCE-REVIEWED; typed policy flags and malformed DNS responses rejected; transport execution unverified |
-| `docs/adapter-contracts.md` | `c02c1695de8595f8a6b0dad1d624a960d52d7fb7` | PRESENT / defines adapter responsibilities and acceptance gate |
+| `docs/adapter-contracts.md` | `f5f17770095edd341b972fa6ad93019cfbd6515d` | PRESENT / defines adapter responsibilities, search-call budget and receipt invariants |
 | `docs/architecture.md` | `50d7d8ea2d73b9e3b9e97dbb217f9b74fa0c6aa1` | PRESENT / architecture status updated |
 | `docs/legacy-architecture-inventory.md` | `aba47610afa4586f4da68c6020b12b8db011fa1a` | PRESENT / complete tracked-path inventory, partial call graph |
 | `docs/target-architecture-and-migration-plan.md` | `1166785636961e63e8c6e7dbabde5e8fa5b4704b` | PRESENT / partial implementation status |
-| `docs/static-review-and-migration-status.md` | `e19e03761991549ac105fa017598335da809ac3c` | PRESENT / static findings, migration disposition, legacy call-path and metric risks; no execution claimed |
+| `docs/static-review-and-migration-status.md` | `d9c1801a20c565f5fe12184ba7d771d820bf3de9` | PRESENT / static findings, migration disposition, legacy call-path, metric risks and search execution bridge; no execution claimed |
 | `.github/workflows/unit-tests.yml` | `29b5c93e607bd3d26aa1a5395fe7a7d5d0510bc6` | PRESENT / workflow definition only |
 
 ## Authored test inventory
@@ -46,7 +47,8 @@
 | `tests/test_workflow.py` | `42aa6a5a64f2d49eea1a4df6fe0ea6959bdbfd1d` | 10 |
 | `tests/test_assessment_handlers.py` | `4b925b009e484b7c657619f3aa976b0eda2b765d` | 9 |
 | `tests/test_application.py` | `b525c98df09b67f8397c5e92f9045197ee9a93c9` | 4 |
-| **Total** | | **121** |
+| `tests/test_search_execution.py` | `8054cc3e1b66b37aa93a051da31baca39265b386` | 12 |
+| **Total** | | **133** |
 
 This is a count of declared test functions by source inspection, not a count of passing tests.
 
@@ -69,7 +71,15 @@ This is a count of declared test functions by source inspection, not a count of 
 - Eligibility evaluation now rejects malformed collections and duplicate requirement IDs; a critical requirement needs both candidate and recruitment evidence domains plus at least two distinct evidence references before its status can decide eligibility.
 - Ranking rejects duplicate opportunity IDs rather than silently allowing ambiguous duplicate entries.
 - Attachment policy flags must be booleans; DNS resolver output is shape-validated and malformed socket-address tuples return a sanitized policy error.
-- Added eight test functions covering these boundaries. They are authored only; **not executed**. Current authored test count: 121.
+- Added eight test functions covering these boundaries. They are authored only; **not executed**. Current authored test count: 133.
+
+## Search execution budget evidence (2026-10-19)
+
+- Added `src/recruit_match/search_execution.py` to adapt Search Matrix-shaped combinations (`combination_id`, `query`) to a budgeted injected callable.
+- Each planned query receives one in-memory receipt: success, failure, or budget-skipped. The report validates planned/attempted/succeeded/failed/skipped arithmetic and refuses duplicate ordinals or combination IDs before calls.
+- Added `tests/test_search_execution.py` with 12 authored test functions covering budget enforcement, call/receipt reconciliation, provider failure, duplicate plans, and the Search Matrix adapter bridge.
+- These 12 tests have **not been executed**. The counter measures invocations of the injected callable only; provider-internal retries, fan-out, and external calls outside the boundary require separate instrumentation.
+- No real Search Matrix planner, search provider, tool API, or durable receipt store is connected to this module. Actual Search Agent activation and real-world call-count compliance remain **UNVERIFIED**.
 
 ## Current architecture evidence
 
@@ -82,7 +92,7 @@ This is a count of declared test functions by source inspection, not a count of 
 
 ## Remaining merge/integration gates
 
-1. Execute all 121 authored tests and retain actual output.
+1. Execute all 133 authored tests and retain actual output.
 2. Exercise the DNS-pinned transport with TLS hostname mismatch, controlled redirects, IPv4/IPv6, DNS changes and proxy configuration.
 3. Implement and authorize actual external stage adapters; verify each adapter's source identity, observation time, access basis and evidence receipts.
 4. Execute the synthetic full workflow through `run_analysis`, then integration tests with controlled adapters.
