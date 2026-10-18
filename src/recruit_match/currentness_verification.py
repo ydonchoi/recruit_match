@@ -15,7 +15,6 @@ from typing import Any
 from .domain import CurrentnessState
 from .pipeline import StageStatus
 from .runner import StageExecution
-from .source_verification import SourceAuthorityStatus
 
 
 @dataclass(frozen=True, slots=True)
@@ -103,6 +102,15 @@ def build_currentness_verification_handler(
         if not isinstance(official, Sequence) or isinstance(official, (str, bytes, bytearray, Mapping)) or not official:
             return StageExecution(StageStatus.BLOCKED, {}, reason="OFFICIAL_SOURCE_RESULTS_MISSING")
 
+        source_receipts = context.get("source_verification_receipts")
+        if not isinstance(source_receipts, Sequence) or isinstance(source_receipts, (str, bytes, bytearray, Mapping)):
+            return StageExecution(StageStatus.BLOCKED, {}, reason="SOURCE_VERIFICATION_RECEIPTS_MISSING")
+        verified_official_refs = {
+            _field(receipt, "source_result_ref")
+            for receipt in source_receipts
+            if str(_field(receipt, "status")) in {"VERIFIED_OFFICIAL", "SourceAuthorityStatus.VERIFIED_OFFICIAL"}
+            and _field(receipt, "evidence_refs")
+        }
         preflight: list[Any] = []
         seen_refs: set[str] = set()
         seen_opportunities: set[str] = set()
@@ -114,6 +122,8 @@ def build_currentness_verification_handler(
             if result_ref in seen_refs:
                 return StageExecution(StageStatus.BLOCKED, {}, reason="DUPLICATE_OFFICIAL_SOURCE_REF")
             seen_refs.add(result_ref)
+            if result_ref not in verified_official_refs:
+                return StageExecution(StageStatus.BLOCKED, {}, reason="OFFICIAL_SOURCE_AUTHORITY_NOT_CONFIRMED")
             if not isinstance(opportunity_id, str) or not opportunity_id.strip():
                 return StageExecution(StageStatus.BLOCKED, {}, reason="OFFICIAL_OPPORTUNITY_ID_MISSING")
             if opportunity_id in seen_opportunities:
