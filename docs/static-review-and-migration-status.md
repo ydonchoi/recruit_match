@@ -33,8 +33,9 @@ These are code changes, not verified fixes. No runtime result is claimed.
 |---|---|---|
 | Candidate Ground Truth / privacy boundary | **CONTRACT-ONLY / BLOCKED** | No candidate-specific data copied. Approved private source, minimum fields, access, retention, deletion and redaction policy remain unresolved. |
 | Search axes, intent routing, randomized simulation and adaptive loop | **PARTIAL** | Legacy docs and selected files inspected. No live search planner/provider, adaptive loop, or independent utility-validator integration is wired into the target. Simulation must never count as source retrieval. |
-| Search Matrix planning | **LEGACY IMPLEMENTED / TARGET BRIDGE ADDED** | Legacy Search Matrix produces stable combination IDs and queries. Target now adapts combination-shaped objects into a budgeted executor, but no real planner/provider is wired to it. |
+| Search Matrix planning | **LEGACY IMPLEMENTED / TARGET BRIDGE ADDED** | Legacy Search Matrix produces stable combination IDs and queries. Target `search_stage.py` exposes an injected plan handler that can feed those combinations to discovery; no real planner is wired by default. |
 | Search execution and call budget | **CONTRACT IMPLEMENTED / UNVERIFIED** | Target `search_execution.py` caps callable invocations and emits one receipt per planned query. Provider-internal retries/fan-out are outside this counter unless separately instrumented. Tests authored, not executed. |
+| Search discovery stage | **IMPLEMENTED-SOURCE-REVIEWED / UNVERIFIED** | `search_stage.py` normalizes injected provider hits, records timestamps and query digests, and blocks partial runs. It is composable with `run_analysis()`, but no provider or legacy planner is selected by default. |
 | Multi-source acquisition and source coverage | **CONTRACT-ONLY** | Discovery adapter contract exists; no authorized live source adapters or retrieval receipts configured. |
 | Opportunity identity, recruitment cycle and duplicate resolution | **PARTIAL / CONTRACT-ONLY** | IDs and duplicate-state contracts exist. Canonical identity keys, cycle matching, conflict policy, and real source-level resolution are not implemented. |
 | Official source verification and currentness | **CONTRACT-ONLY** | Typed states and recommendation gates exist; no independent official-source verification adapter is configured. |
@@ -50,7 +51,7 @@ These are code changes, not verified fixes. No runtime result is claimed.
 | GitHub Registry CRUD / sync | **OUT OF SCOPE BY DEFAULT** | Do not port the legacy writer/sync merely because it exists in the old architecture. No candidate-linked data or source documents should be stored in GitHub. |
 | Human decision, application execution and outcome | **BOUNDARY PRESERVED / NOT IMPLEMENTED** | Analysis does not submit applications or send emails. Execution readiness, human approval, external action and application outcome remain distinct. |
 | Observability, audit and feedback metrics | **PARTIAL / UNVERIFIED** | Receipts and an evidence ledger contract exist; there is no durable redacted telemetry, measured baseline, operational alerting, or quality feedback loop. |
-| CI and tests | **TEST-AUTHORED / EXECUTION UNKNOWN** | 146 test functions are present by source inspection across nine files. No assertions have been executed and no passing count is known. |
+| CI and tests | **TEST-AUTHORED / EXECUTION UNKNOWN** | 146 test functions are present by source inspection across ten files. No assertions have been executed and no passing count is known. |
 
 ## Search execution bridge: source-reviewed contract
 
@@ -66,7 +67,7 @@ This improves the *observability and enforcement contract*, but does not complet
 
 Therefore the actual call count and adherence to a user-facing Search Matrix call budget remain **UNVERIFIED**.
 
-## High-priority unresolved issues
+## Search-stage adapter addition (2026-10-19)\n\n`src/recruit_match/search_stage.py` adds factories for the `search_plan` and `discovery` stages. A caller can inject them into `run_analysis()` alongside request-scope and candidate-context handlers. The adapter records provider identity, stable combination IDs, observation timestamps, query hashes, result references and per-call receipts. If a plan is not fully executed, the stage returns a non-success status and the runner stops. Well-formed outputs from a failed or blocked stage are retained in the in-memory result context for diagnostics; this does not make the run valid or allow downstream stages to execute. Twelve search-stage tests and one runner diagnostic test were authored but not executed.\n\n## High-priority unresolved issues
 
 1. **No end-to-end runtime path.** The 18-stage workflow is a contract runner. Missing external adapters stop the run; no live source, private candidate context, persistence or external write path is configured.
 2. **Attachment fetch is not content inspection.** PDF/ZIP magic checks do not establish parse safety or semantic validity. ZIP decompression limits, parser isolation, malformed document handling, and content extraction need a separate sandboxed inspection boundary.
