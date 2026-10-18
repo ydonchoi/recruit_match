@@ -60,7 +60,12 @@
 | `tests/test_application.py` | `b525c98df09b67f8397c5e92f9045197ee9a93c9` | 4 |
 | `tests/test_search_execution.py` | `8054cc3e1b66b37aa93a051da31baca39265b386` | 12 |
 | `tests/test_search_stage.py` | `d40c2e414483d72762beef5a29bb0a3940923664` | 14 |
-| **Total** | | **146** |
+| `tests/test_tool_call_adapter.py` | `e4c08d6af7c9b46180cc401a0867c5af6c9de6b8` | 12 |
+| `tests/test_identity_resolution.py` | `3f7add5cfc19f2619a8750018cbcc6c939812f01` | 13 |
+| `tests/test_source_verification.py` | `0abe7fb3540e700916408fa5ad713f361f230801` | 12 |
+| `tests/test_currentness_verification.py` | `94b4cf13b9c74e08b792f3edeac7cc0130f2baee` | 14 |
+| `tests/test_verification_stages.py` | `db56ff10c1b328d19790723288d35e0767733b65` | 5 |
+| **Total** | | **204** |
 
 This is a count of declared test functions by source inspection, not a count of passing tests.
 
