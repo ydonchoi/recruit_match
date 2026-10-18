@@ -15,6 +15,7 @@ A clean, verification-first reimplementation of the recruitment matching system.
 - Attachment retrieval limits: [docs/attachment-retrieval-boundary.md](docs/attachment-retrieval-boundary.md)
 - Verification evidence: [docs/delivery-evidence-ledger.md](docs/delivery-evidence-ledger.md)
 - Controlled ToolCall integration test procedure: [docs/tool-call-execution-runbook.md](docs/tool-call-execution-runbook.md)
+- Recruitment platform source catalog and access status: [docs/job-platform-registry.md](docs/job-platform-registry.md)
 - Identity/source/currentness verification contracts: [docs/verification-stage-contracts.md](docs/verification-stage-contracts.md)
 - Attachment policy/fetch/inspection contracts: [docs/attachment-stage-contracts.md](docs/attachment-stage-contracts.md)
 - Static review and migration status: [docs/static-review-and-migration-status.md](docs/static-review-and-migration-status.md)
@@ -38,7 +39,7 @@ A clean, verification-first reimplementation of the recruitment matching system.
 - **Application entry point:** `src/recruit_match/application.py` executes the declared workflow through injected handlers; real external adapters are not configured
 - **Notion writes:** not implemented
 - **GitHub Registry CRUD/sync:** excluded from the default target
-- **Tests:** 228 test functions are authored across sixteen test files; execution and results are unverified
+- **Tests:** 236 test functions are authored across seventeen test files; execution and results are unverified
 - **GitHub Actions:** the latest run failed before any step/log was exposed (`runner_id=0`, no runner name); the exact infrastructure cause is unconfirmed, and test state remains unknown
 
 ## Repository layout
@@ -49,6 +50,7 @@ A clean, verification-first reimplementation of the recruitment matching system.
 - `src/recruit_match/runner.py`: injected, in-memory bounded pipeline runner with strict receipt-shape validation; well-formed failed-stage outputs remain available for diagnostics while downstream execution stops.
 - `src/recruit_match/application.py`: explicit public entry point for full or bounded runs; missing external adapters fail closed.
 - `src/recruit_match/search_execution.py`: Search Matrix-shaped combination adapter, hard per-batch call budget, and per-query execution receipts; provider is still injected and no live search provider is configured.
+- `src/recruit_match/platform_registry.py`: provider-neutral catalog for general, university, research, public-sector, regional and global recruitment sources; listing metadata does not enable live access.
 - `src/recruit_match/search_stage.py`: injected `search_plan` and `discovery` stage handlers, including an explicit bridge for the legacy `AdaptiveSearchPlanner.plan(evidence, query)` interface.
 - `src/recruit_match/verification_stages.py`: composes the identity, source-authority, and currentness verification stages.
 - `src/recruit_match/tool_call_adapter.py`: direct allowlisted host ToolCall dispatch with a hard dispatch budget, separate dispatch/response-validation states, ambiguous-outcome handling, and auditable receipts.
@@ -58,7 +60,7 @@ A clean, verification-first reimplementation of the recruitment matching system.
 - `src/recruit_match/workflow.py`: canonical 18-stage analysis contract with explicit bounded-run scope and evidence requirements for source/provenance stages.
 - `src/recruit_match/assessment_handlers.py`: fail-closed adapters that bind pure assessment functions to the runner; recommendation gates are derived from upstream stage outputs rather than a separately supplied aggregate.
 - `src/recruit_match/attachments.py`: public attachment fetch boundary with allowlist, DNS-pinned HTTPS transport, TLS hostname verification, redirects, robots, time/size limits, MIME/signature checks and integrity receipt. It is not production-ready until tests and adversarial network checks execute successfully.
-- `tests/`: synthetic unit tests for domain, stage contracts, runner behavior, attachment safety boundaries, search call-budget/receipt contracts, and direct ToolCall dispatch. All authored tests remain unexecuted.
+- `tests/`: synthetic unit tests for domain, stage contracts, runner behavior, attachment safety boundaries, platform registry metadata/filtering, search call-budget/receipt contracts, and direct ToolCall dispatch. All authored tests remain unexecuted.
 - `pyproject.toml`: minimal Python package metadata.
 - `.github/workflows/unit-tests.yml`: CI definition for later execution; no run is claimed.
 - `.gitignore`: excludes local candidate-data directories, credentials, raw source documents and generated run artifacts; this is a guardrail, not a security boundary.
