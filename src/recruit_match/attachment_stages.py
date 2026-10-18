@@ -433,7 +433,11 @@ def build_attachment_fetch_handler(
                 return StageExecution(StageStatus.BLOCKED, {}, reason="NO_ATTACHMENT_POLICY_EVIDENCE")
             return StageExecution(
                 StageStatus.NOT_APPLICABLE,
-                {"attachment_fetch_receipts": (), "attachment_fetch_state": "NOT_APPLICABLE"},
+                {
+                    "attachment_fetch_receipts": (),
+                    "attachment_fetch_state": "NOT_APPLICABLE",
+                    "attachment_fetch_evidence_refs": policy_evidence,
+                },
                 evidence_refs=policy_evidence,
                 reason="NO_APPROVED_ATTACHMENTS",
             )
