@@ -38,7 +38,7 @@ A clean, verification-first reimplementation of the recruitment matching system.
 - **Application entry point:** `src/recruit_match/application.py` executes the declared workflow through injected handlers; real external adapters are not configured
 - **Notion writes:** not implemented
 - **GitHub Registry CRUD/sync:** excluded from the default target
-- **Tests:** 226 test functions are authored across sixteen test files; execution and results are unverified
+- **Tests:** 228 test functions are authored across sixteen test files; execution and results are unverified
 - **GitHub Actions:** the latest run failed before any step/log was exposed (`runner_id=0`, no runner name); the exact infrastructure cause is unconfirmed, and test state remains unknown
 
 ## Repository layout
