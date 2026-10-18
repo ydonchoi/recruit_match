@@ -63,6 +63,11 @@ class ToolCallPlan:
         ):
             if not isinstance(value, str) or not value.strip():
                 raise ValueError(name)
+        if (
+            len(self.query_sha256) != 64
+            or any(char not in "0123456789abcdef" for char in self.query_sha256)
+        ):
+            raise ValueError("TOOL_CALL_QUERY_HASH_INVALID")
         if not isinstance(self.arguments, Mapping):
             raise ValueError("TOOL_CALL_ARGUMENTS_MUST_BE_MAPPING")
         if any(not isinstance(key, str) or not key.strip() for key in self.arguments):
