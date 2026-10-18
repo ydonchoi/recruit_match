@@ -3,7 +3,7 @@
 - Snapshot date: 2026-10-19
 - Target repository: `ydonchoi/recruit_match` (private)
 - Target branch: `bootstrap/verification-first-architecture`
-- Target branch head before this ledger update: `56e0f0116fcb4d93270e6484d34f4c622b66369e`
+- Target branch head before this ledger update: `6117dff4e560a684c3cfff1195230c4db17c0fb4`
 - Legacy source revision: `ydonchoi/recruitment_matching@89899ee3b0719d73f36311004ac32f87e8a78dee`
 - PR: [#1](https://github.com/ydonchoi/recruit_match/pull/1), Draft, not merged
 
@@ -65,7 +65,8 @@
 | `tests/test_source_verification.py` | `f3de20bc2b5eea3f1d7b7d40d37c72c69a3472d1` | 14 |
 | `tests/test_currentness_verification.py` | `f51a0137b7357457268a5b826f5d640cd62d6da6` | 16 |
 | `tests/test_verification_stages.py` | `db56ff10c1b328d19790723288d35e0767733b65` | 5 |
-| **Total** | | **208** |
+| `tests/test_attachment_stages.py` | `4bb8fafea28b2f00fd8e11f239d22474d1bfc79a` | 15 |
+| **Total** | | **223** |
 
 This is a count of declared test functions by source inspection, not a count of passing tests.
 
