@@ -72,6 +72,12 @@ class ToolCallPlan:
             raise ValueError("TOOL_CALL_ARGUMENTS_MUST_BE_MAPPING")
         if any(not isinstance(key, str) or not key.strip() for key in self.arguments):
             raise ValueError("TOOL_CALL_ARGUMENT_KEYS_MUST_BE_STRINGS")
+        query = self.arguments.get("query")
+        if not isinstance(query, str) or not query.strip():
+            raise ValueError("TOOL_CALL_QUERY_REQUIRED")
+        expected_query_hash = sha256(query.encode("utf-8")).hexdigest()
+        if self.query_sha256 != expected_query_hash:
+            raise ValueError("TOOL_CALL_QUERY_HASH_MISMATCH")
 
 
 @dataclass(frozen=True, slots=True)
