@@ -50,7 +50,7 @@ These are code changes, not verified fixes. No runtime result is claimed.
 | GitHub Registry CRUD / sync | **OUT OF SCOPE BY DEFAULT** | Do not port the legacy writer/sync merely because it exists in the old architecture. No candidate-linked data or source documents should be stored in GitHub. |
 | Human decision, application execution and outcome | **BOUNDARY PRESERVED / NOT IMPLEMENTED** | Analysis does not submit applications or send emails. Execution readiness, human approval, external action and application outcome remain distinct. |
 | Observability, audit and feedback metrics | **PARTIAL / UNVERIFIED** | Receipts and an evidence ledger contract exist; there is no durable redacted telemetry, measured baseline, operational alerting, or quality feedback loop. |
-| CI and tests | **TEST-AUTHORED / EXECUTION UNKNOWN** | 133 test functions are present by source inspection across nine files. No assertions have been executed and no passing count is known. |
+| CI and tests | **TEST-AUTHORED / EXECUTION UNKNOWN** | 146 test functions are present by source inspection across nine files. No assertions have been executed and no passing count is known. |
 
 ## Search execution bridge: source-reviewed contract
 
