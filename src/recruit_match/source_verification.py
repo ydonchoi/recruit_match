@@ -94,9 +94,9 @@ def build_source_verification_handler(
         raise ValueError("DEFAULT_SOURCE_VERIFIER_ID_REQUIRED")
 
     def handler(context: Mapping[str, Any]) -> StageExecution:
-        discovered = context.get("discovered_search_results")
+        discovered = context.get("resolved_opportunity_sources")
         if not isinstance(discovered, Sequence) or isinstance(discovered, (str, bytes, bytearray, Mapping)) or not discovered:
-            return StageExecution(StageStatus.BLOCKED, {}, reason="DISCOVERED_SEARCH_RESULTS_MISSING")
+            return StageExecution(StageStatus.BLOCKED, {}, reason="RESOLVED_OPPORTUNITY_SOURCES_MISSING")
 
         # Validate the entire input batch before invoking any external verifier.
         preflight: list[tuple[Any, str, str]] = []
