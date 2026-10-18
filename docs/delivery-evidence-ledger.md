@@ -3,7 +3,7 @@
 - Snapshot date: 2026-10-19
 - Target repository: `ydonchoi/recruit_match` (private)
 - Target branch: `bootstrap/verification-first-architecture`
-- Target branch head before this ledger update: `090a88e87058950abff4e1638a5f7c3cf2015910`
+- Target branch head before this ledger update: `c9b4febd56582740b1a74702311497c9e9c7c952`
 - Legacy source revision: `ydonchoi/recruitment_matching@89899ee3b0719d73f36311004ac32f87e8a78dee`
 - PR: [#1](https://github.com/ydonchoi/recruit_match/pull/1), Draft, not merged
 
@@ -30,7 +30,7 @@
 | `src/recruit_match/search_stage.py` | `2044f16d8142644dfea22d3fe639cc1b3889633d` | PRESENT / SOURCE-REVIEWED; injected plan/discovery factories plus legacy adaptive planner bridge; no default provider |
 | `src/recruit_match/tool_call_adapter.py` | `76dfbe1e01fed01d1601532b614d09fa6983590e` | PRESENT / SOURCE-REVIEWED; allowlisted host ToolCall dispatcher, hard dispatch budget, separate execution/response states; no host tool configured |
 | `src/recruit_match/identity_resolution.py` | `fcc3addb5046f0d07ad61b7c151ca0ce2e6b516d` | PRESENT / SOURCE-REVIEWED; evidence-backed identity and duplicate-conflict gate; resolver injected |
-| `src/recruit_match/source_verification.py` | `457309cb37c2e6c3896972d087b1991cc08d0002` | PRESENT / SOURCE-REVIEWED; official/non-official/unknown authority gate; verifier injected |
+| `src/recruit_match/source_verification.py` | `457309cb37c2e6c3896972d087b1991cc08d0002` | PRESENT / SOURCE-REVIEWED; requires identity-resolved records; official/non-official/unknown authority gate; verifier injected |
 | `src/recruit_match/currentness_verification.py` | `c1ad50f8d8636780d612667e0ee5940d7d099ac7` | PRESENT / SOURCE-REVIEWED; requires typed verified-official receipts and typed currentness evidence; verifier injected |
 | `src/recruit_match/verification_stages.py` | `057972a5e2515135365aa48e80713012b401513c` | PRESENT / composes identity, source authority and currentness handlers; external verifiers injected |
 | `src/recruit_match/tool_call_adapter.py` | `76dfbe1e01fed01d1601532b614d09fa6983590e` | PRESENT / SOURCE-REVIEWED; allowlisted host ToolCall dispatch, hard budget, separate execution/response states; no host tool configured |
@@ -39,11 +39,11 @@
 | `docs/adapter-contracts.md` | `7ba6ce8c75ca6ada22f5cdec95269571133a85b5` | PRESENT / defines adapter responsibilities, direct ToolCall dispatch and verification stage contracts |
 | `docs/tool-call-execution-runbook.md` | `2609d9c002bab9e843117547595ae0e0b4f5d81e` | PRESENT / controlled integration test procedure and acceptance criteria; not executed |
 | `docs/verification-stage-contracts.md` | `01e8162b44b9c975d2648deda652391cf9f1025b` | PRESENT / identity, source authority and currentness stage contracts |
-| `README.md` | `54e46b5acf103b2a12bed22f33c3337a81143ea0` | PRESENT / links runbooks; 204 authored test functions documented |
+| `README.md` | `136488a8043629e120f7210291adb3338cc17c20` | PRESENT / links runbooks; 204 authored test functions documented |
 | `docs/architecture.md` | `50d7d8ea2d73b9e3b9e97dbb217f9b74fa0c6aa1` | PRESENT / architecture status updated |
 | `docs/legacy-architecture-inventory.md` | `aba47610afa4586f4da68c6020b12b8db011fa1a` | PRESENT / complete tracked-path inventory, partial call graph |
 | `docs/target-architecture-and-migration-plan.md` | `1166785636961e63e8c6e7dbabde5e8fa5b4704b` | PRESENT / partial implementation status |
-| `docs/static-review-and-migration-status.md` | `593d69d1e7e5ac494bf1b35a6531cfbc16b0d517` | PRESENT / static findings, migration disposition, legacy call-path, metric risks and search execution bridge; no execution claimed |
+| `docs/static-review-and-migration-status.md` | `6cb943056a267ad46ff30e833fe8dce97b1b896e` | PRESENT / static findings, migration disposition, legacy call-path, metric risks and search execution bridge; no execution claimed |
 | `.github/workflows/unit-tests.yml` | `29b5c93e607bd3d26aa1a5395fe7a7d5d0510bc6` | PRESENT / workflow definition only |
 
 ## Authored test inventory
