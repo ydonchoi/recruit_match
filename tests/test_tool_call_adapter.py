@@ -139,6 +139,18 @@ class ToolCallAdapterTests(unittest.TestCase):
                 max_calls=2, allowed_tool_names=("web.search",), run_id="run-1",
             )
 
+    def test_query_hash_must_be_64_lowercase_hex_characters(self):
+        with self.assertRaisesRegex(ValueError, "TOOL_CALL_QUERY_HASH_INVALID"):
+            ToolCallPlan(0, "call", "matrix-A", "web.search", {"query": "one"}, "z" * 64)
+        with self.assertRaisesRegex(ValueError, "TOOL_CALL_QUERY_HASH_INVALID"):
+            ToolCallPlan(0, "call", "matrix-A", "web.search", {"query": "one"}, "a" * 63)
+
+    def test_query_hash_accepts_canonical_sha256(self):
+        plan = ToolCallPlan(
+            0, "call", "matrix-A", "web.search", {"query": "one"}, "a" * 64
+        )
+        self.assertEqual(len(plan.query_sha256), 64)
+
     def test_bool_budget_is_rejected(self):
         with self.assertRaisesRegex(ValueError, "TOOL_CALL_BUDGET_MUST_BE_POSITIVE_INTEGER"):
             execute_tool_call_plan(
