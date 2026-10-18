@@ -132,6 +132,24 @@ class CurrentnessVerificationStageTests(unittest.TestCase):
         self.assertEqual(execution.status, StageStatus.BLOCKED)
         self.assertEqual(execution.reason, "OFFICIAL_SOURCE_AUTHORITY_NOT_CONFIRMED")
 
+    def test_authority_receipt_for_different_url_cannot_authorize_currentness(self):
+        source = self.source()
+        mismatched = SourceVerificationReceipt(
+            source_result_ref=source.source_result_ref,
+            source_url="https://other.example.org/not-the-same-posting",
+            status=SourceAuthorityStatus.VERIFIED_OFFICIAL,
+            verifier_id="synthetic-source-verifier",
+            observed_at="2026-10-19T12:01:00+00:00",
+            authority_basis="Synthetic official-source registry",
+            evidence_refs=("synthetic:authority-evidence",),
+        )
+        execution = self.handler(lambda item: self.decision(item))({
+            "official_source_results": (source,),
+            "source_verification_receipts": (mismatched,),
+        })
+        self.assertEqual(execution.status, StageStatus.BLOCKED)
+        self.assertEqual(execution.reason, "OFFICIAL_SOURCE_AUTHORITY_NOT_CONFIRMED")
+
     def test_untyped_source_receipt_cannot_authorize_currentness(self):
         source = self.source()
         forged = {
