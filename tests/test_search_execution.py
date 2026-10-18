@@ -74,6 +74,19 @@ class SearchExecutionBudgetTests(unittest.TestCase):
         self.assertEqual(batch.report.failed_call_count, 1)
         self.assertEqual(batch.report.receipts[0].status, SearchCallStatus.FAILED)
 
+    def test_provider_call_and_response_shape_failures_have_distinct_codes(self):
+        call_failure = execute_search_plan(
+            self.plans(1),
+            lambda query: (_ for _ in ()).throw(TimeoutError("private detail")),
+            max_calls=1,
+        )
+        shape_failure = execute_search_plan(
+            self.plans(1), lambda query: {"not": "a sequence"}, max_calls=1
+        )
+        self.assertEqual(call_failure.report.receipts[0].error_code, "PROVIDER_CALL_FAILED")
+        self.assertEqual(shape_failure.report.receipts[0].error_code, "PROVIDER_RESPONSE_NOT_SEQUENCE")
+        self.assertNotIn("private detail", repr(call_failure.report))
+
     def test_duplicate_combination_ids_are_rejected_before_calls(self):
         calls = []
         plans = (
