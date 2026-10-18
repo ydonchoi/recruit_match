@@ -185,3 +185,11 @@ Repository content presence is not runtime evidence. Authored tests are not pass
 - Added two authored regression tests: digest/query mismatch rejection and missing/empty/non-string query rejection. Current source-inspected test inventory: 228 functions across sixteen test files.
 - Source change commit: `0b39c87e5a380f257addc51301d7f01ff8ee3ee8`; test change commit: `e2bea6fe76aa8ae29201d1a5f8d33f3ce4924bb9`; README inventory update: `879b11c7873afee43279c8d898a7fb407d8dc9bb`.
 - The source and test files were fetched again after writing. No test execution has been performed; this remains static evidence only.
+
+
+## Search execution failure classification follow-up (2026-10-19)
+
+- Updated `src/recruit_match/search_execution.py` to distinguish an exception raised by the injected search callable (`PROVIDER_CALL_FAILED`) from a returned value that violates the expected sequence response contract (`PROVIDER_RESPONSE_NOT_SEQUENCE`). Both remain failed calls and consume one invocation of the configured call budget.
+- Added one authored regression test in `tests/test_search_execution.py` verifying the two error codes and that raw exception details are not exposed in the receipt.
+- Source commit: `a1d38bd7a9762ed40c3f219548334a53cf11e049`; test commit: `d7c35777fabac8a15b3dcadbd53c4cff546764db`.
+- The source and test writes were accepted by GitHub. This is repository-write evidence, not test-execution evidence. The new test and full suite have **not** been executed; runtime behavior remains **UNVERIFIED**.
