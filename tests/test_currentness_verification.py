@@ -132,6 +132,17 @@ class CurrentnessVerificationStageTests(unittest.TestCase):
         self.assertEqual(execution.status, StageStatus.BLOCKED)
         self.assertEqual(execution.reason, "OFFICIAL_SOURCE_AUTHORITY_NOT_CONFIRMED")
 
+    def test_malformed_source_authority_receipt_cannot_authorize_currentness(self):
+        source = self.source()
+        malformed = self.source_receipt(source)
+        object.__setattr__(malformed, "observed_at", "not-a-timestamp")
+        execution = self.handler(lambda item: self.decision(item))({
+            "official_source_results": (source,),
+            "source_verification_receipts": (malformed,),
+        })
+        self.assertEqual(execution.status, StageStatus.BLOCKED)
+        self.assertEqual(execution.reason, "OFFICIAL_SOURCE_AUTHORITY_NOT_CONFIRMED")
+
     def test_authority_receipt_for_different_url_cannot_authorize_currentness(self):
         source = self.source()
         mismatched = SourceVerificationReceipt(
