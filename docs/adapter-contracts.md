@@ -20,6 +20,24 @@ This document specifies the boundary for adapters needed by the 18-stage workflo
 
 Pure assessment stages (`eligibility`, `fit_assessment`, `compensation_resolution`, `ranking`, `recommendation`) are implemented as deterministic domain functions and are protected from external-handler overrides.
 
+## Search call budget and execution receipts
+
+`src/recruit_match/search_execution.py` defines a provider-neutral bridge from Search Matrix-like objects (stable `combination_id` and `query`) to a budgeted callable. For each planned combination it emits one receipt with the ordinal, combination ID, attempted/not-attempted flag, status, result count, and a sanitized error code when the call fails.
+
+The report enforces these accounting invariants:
+
+- `planned_query_count = attempted_call_count + skipped_query_count`;
+- `attempted_call_count = successful_call_count + failed_call_count`;
+- `attempted_call_count <= max_calls`;
+- exactly one receipt exists for every planned combination;
+- duplicate plan ordinals or stable combination IDs are rejected before any provider call;
+- budget-exhausted plans are marked `SKIPPED_BUDGET` and do not invoke the callable;
+- provider exceptions do not trigger implicit retries and do not expose exception text in receipts.
+
+The unit of accounting is **one invocation of the injected callable**. If a provider adapter internally retries, fans out to multiple APIs, or invokes nested tools, those internal calls must be instrumented by that adapter; the outer receipt alone cannot establish their count. A returned sequence and its length are provider response data, not proof of relevance, freshness, or authoritative source verification.
+
+This is a newly authored execution boundary, not evidence of live Search Agent activation. No provider is configured by this module, and its tests remain unexecuted.
+
 ## Receipt contract
 
 Each handler returns `StageExecution` with:
