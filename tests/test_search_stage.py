@@ -11,6 +11,7 @@ from recruit_match.search_stage import (
     build_search_discovery_handler,
     build_search_handlers,
     build_search_plan_handler,
+    build_adaptive_planner_callback,
 )
 
 
@@ -23,6 +24,40 @@ class SearchStageAdapterTests(unittest.TestCase):
 
     def fixed_clock(self):
         return lambda: datetime(2026, 10, 19, 12, 0, tzinfo=timezone.utc)
+
+    def test_adaptive_planner_adapter_passes_evidence_and_request_query(self):
+        calls = []
+        evidence = object()
+
+        class EvidenceProvider:
+            def get(self):
+                calls.append("evidence")
+                return evidence
+
+        class AdaptivePlanner:
+            def plan(self, received_evidence, user_query):
+                calls.append((received_evidence, user_query))
+                return (SimpleNamespace(combination=self.combinations[0]),)
+
+        adapter = build_adaptive_planner_callback(
+            AdaptivePlanner(), EvidenceProvider()
+        )
+        result = adapter({"user_query": "research admin roles"})
+        self.assertEqual(calls, ["evidence", (evidence, "research admin roles")])
+        self.assertEqual(result[0].combination.combination_id, "matrix-A")
+
+    def test_adaptive_planner_adapter_rejects_non_string_query(self):
+        class EvidenceProvider:
+            def get(self):
+                return object()
+
+        class AdaptivePlanner:
+            def plan(self, evidence, query):
+                return ()
+
+        adapter = build_adaptive_planner_callback(AdaptivePlanner(), EvidenceProvider())
+        with self.assertRaisesRegex(ValueError, "USER_QUERY_MUST_BE_STRING"):
+            adapter({"user_query": 42})
 
     def test_search_plan_handler_exposes_stable_combinations(self):
         handler = build_search_plan_handler(
