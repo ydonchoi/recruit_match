@@ -74,7 +74,7 @@ If there are no approved/fetched attachments, inspection returns `NOT_APPLICABLE
 ## 5. Evidence and limitations
 
 - `build_attachment_handlers(...)` composes `attachment_policy`, `attachment_fetch`, and `attachment_inspection` for injection into `run_analysis()`.
-- `tests/test_attachment_stages.py` contains 14 test functions covering policy gating, official-source provenance, no-attachment handling, hash/redirect checks, private sink behavior, and requirement-level inspection evidence. They are authored only, not executed.
+- `tests/test_attachment_stages.py` contains 15 test functions covering policy gating, official-source provenance, no-attachment handling, hash/redirect checks, private sink behavior, and requirement-level inspection evidence. They are authored only, not executed.
 - No attachment discoverer, policy evaluator, private sink, or parser is configured by default.
 - No candidate data or raw attachment bytes are written to the repository.
 - Therefore live fetching, storage durability, parser isolation, extraction quality, and production readiness remain **UNVERIFIED**.
