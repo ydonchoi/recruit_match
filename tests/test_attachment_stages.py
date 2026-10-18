@@ -236,6 +236,28 @@ class AttachmentStageTests(unittest.TestCase):
         self.assertEqual(result.output["attachment_fetch_failure_count"], 1)
         self.assertNotIn("private storage failure", repr(result.output))
 
+    def test_fetch_rejects_content_hash_mismatch_before_storage(self):
+        candidate = self.candidate()
+        decision = self.allow(candidate)
+        content = b"%PDF-1.4\\ncontent"
+        raw = AttachmentReceipt(
+            source_url=candidate.attachment_url, final_url=candidate.attachment_url,
+            retrieved_at_epoch=1792411200.0, content_type="application/pdf",
+            byte_size=len(content), sha256="0" * 64,
+            media_kind="pdf", content=content,
+        )
+        stored = []
+        result = build_attachment_fetch_handler(
+            fetcher_factory=lambda policy, limits: SimpleNamespace(fetch=lambda url: raw),
+            content_sink=lambda item, receipt: stored.append(receipt.content) or "private://attachment-1",
+        )({
+            "approved_attachments": (ApprovedAttachment(candidate, decision),),
+            "attachment_policy_receipts": (),
+        })
+        self.assertEqual(result.status, StageStatus.BLOCKED)
+        self.assertEqual(result.output["attachment_fetch_failure_count"], 1)
+        self.assertEqual(stored, [])
+
     def test_fetch_rejects_redirect_to_host_outside_policy(self):
         candidate = self.candidate()
         decision = self.allow(candidate)
