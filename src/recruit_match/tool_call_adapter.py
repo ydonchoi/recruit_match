@@ -163,7 +163,7 @@ class ToolCallExecutionReport:
             raise ValueError("TOOL_REPORT_BUDGET_EXCEEDED")
         if self.execution_confirmed_count != self.successful_dispatch_count:
             raise ValueError("TOOL_REPORT_CONFIRMATION_COUNT_MISMATCH")
-        if self.response_validated_count + self.response_rejected_count > self.successful_dispatch_count:
+        if self.response_validated_count + self.response_rejected_count != self.successful_dispatch_count:
             raise ValueError("TOOL_REPORT_RESPONSE_COUNT_MISMATCH")
         if sum(r.dispatch_attempted for r in self.receipts) != self.attempted_dispatch_count:
             raise ValueError("TOOL_REPORT_RECEIPT_ATTEMPT_MISMATCH")
