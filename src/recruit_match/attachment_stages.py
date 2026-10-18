@@ -447,15 +447,54 @@ def build_attachment_fetch_handler(
                 reason="NO_APPROVED_ATTACHMENTS",
             )
 
-        receipts: list[AttachmentFetchResult] = []
-        evidence_refs: list[str] = list(policy_evidence)
-        failed = False
+        # Preflight every approved attachment against a typed ALLOW receipt
+        # before making any network or storage call.
+        policy_receipt_by_ref = {
+            receipt.attachment_ref: receipt
+            for receipt in policy_receipts
+            if isinstance(receipt, AttachmentPolicyReceipt)
+            and receipt.status is AttachmentPolicyStatus.ALLOW
+            and receipt.evidence_refs
+        }
+        preflight: list[ApprovedAttachment] = []
+        seen_approved: set[str] = set()
         for approved_item in approved:
             if not isinstance(approved_item, ApprovedAttachment):
                 return StageExecution(StageStatus.BLOCKED, {}, reason="APPROVED_ATTACHMENT_INVALID")
             candidate, decision = approved_item.candidate, approved_item.policy
+            try:
+                candidate.__post_init__()
+                decision.__post_init__()
+            except Exception:
+                return StageExecution(StageStatus.BLOCKED, {}, reason="APPROVED_ATTACHMENT_INVALID")
             if decision.status is not AttachmentPolicyStatus.ALLOW:
                 return StageExecution(StageStatus.BLOCKED, {}, reason="ATTACHMENT_POLICY_NOT_ALLOW")
+            if candidate.attachment_ref in seen_approved:
+                return StageExecution(StageStatus.BLOCKED, {}, reason="DUPLICATE_APPROVED_ATTACHMENT_REF")
+            seen_approved.add(candidate.attachment_ref)
+            policy_receipt = policy_receipt_by_ref.get(candidate.attachment_ref)
+            if (
+                policy_receipt is None
+                or policy_receipt.source_result_ref != candidate.source_result_ref
+                or policy_receipt.attachment_url != candidate.attachment_url
+                or policy_receipt.policy_id != decision.policy_id
+                or policy_receipt.allowed_hosts != decision.allowed_hosts
+                or policy_receipt.max_bytes != decision.max_bytes
+                or policy_receipt.timeout_seconds != decision.timeout_seconds
+                or policy_receipt.robots_required != decision.robots_required
+            ):
+                return StageExecution(StageStatus.BLOCKED, {}, reason="ATTACHMENT_POLICY_RECEIPT_MISMATCH")
+            parsed_candidate = urlsplit(candidate.attachment_url)
+            allowed_hosts = {host.lower().rstrip(".") for host in decision.allowed_hosts}
+            if parsed_candidate.hostname is None or parsed_candidate.hostname.lower().rstrip(".") not in allowed_hosts:
+                return StageExecution(StageStatus.BLOCKED, {}, reason="ATTACHMENT_HOST_NOT_ALLOWLISTED")
+            preflight.append(approved_item)
+
+        receipts: list[AttachmentFetchResult] = []
+        evidence_refs: list[str] = list(policy_evidence)
+        failed = False
+        for approved_item in preflight:
+            candidate, decision = approved_item.candidate, approved_item.policy
             policy = AttachmentPolicy(
                 allowed_hosts=frozenset(decision.allowed_hosts),
                 policy_allows=True,
@@ -501,6 +540,10 @@ def build_attachment_fetch_handler(
                 digest = hashlib.sha256(raw.content).hexdigest()
                 if digest != raw.sha256:
                     raise ValueError("ATTACHMENT_CONTENT_HASH_MISMATCH")
+                if raw.media_kind == "pdf" and not raw.content.startswith(b"%PDF-"):
+                    raise ValueError("ATTACHMENT_MEDIA_MAGIC_MISMATCH")
+                if raw.media_kind == "zip-container" and not raw.content.startswith(b"PK\\x03\\x04"):
+                    raise ValueError("ATTACHMENT_MEDIA_MAGIC_MISMATCH")
                 content_ref = content_sink(candidate, raw)
                 if not isinstance(content_ref, str) or not content_ref.strip():
                     raise ValueError("PRIVATE_CONTENT_REF_REQUIRED")
