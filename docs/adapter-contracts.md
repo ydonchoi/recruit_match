@@ -49,6 +49,18 @@ This is a newly authored execution boundary, not evidence of live Search Agent a
 
 The adapter factory is available for application composition, but no concrete provider or legacy planner is selected by default. This keeps provider authorization and live credentials under caller control.
 
+## Attachment policy, fetch and inspection stages
+
+`src/recruit_match/attachment_stages.py` now defines factories for `attachment_policy`, `attachment_fetch`, and `attachment_inspection`.
+
+- Policy evaluation requires a typed verified-official source receipt and a matching source URL before discovering or evaluating attachment candidates. Host allowlists are explicit; an unknown policy blocks.
+- Fetch requires an injected fetcher and private content sink. The adapter rechecks final URL host, byte count, media kind, retrieval timestamp, and SHA-256 before passing bytes to the sink. Raw bytes are not included in pipeline context.
+- Inspection accepts content references, not raw bytes. An injected inspector must return requirement-level evidence with source location and evidence references. Incomplete or unknown inspection blocks downstream assessment.
+- A complete attachment scan with no links, or a policy run with no approved attachments, is represented explicitly with evidence-backed no-op states where the workflow permits `NOT_APPLICABLE`.
+- No private sink, attachment discoverer, policy evaluator, or parser is configured by default. Parser isolation, archive expansion limits, OCR quality, durable storage and recovery still require explicit implementations and tests.
+
+Detailed contract: [attachment-stage-contracts.md](attachment-stage-contracts.md). `tests/test_attachment_stages.py` contains 14 authored tests; they have not been executed.
+
 ## Identity, source authority and currentness gates
 
 Three additional stage adapters are now defined:
