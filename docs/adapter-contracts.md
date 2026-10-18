@@ -20,6 +20,33 @@ This document specifies the boundary for adapters needed by the 18-stage workflo
 
 Pure assessment stages (`eligibility`, `fit_assessment`, `compensation_resolution`, `ranking`, `recommendation`) are implemented as deterministic domain functions and are protected from external-handler overrides. `src/recruit_match/search_stage.py` now provides injected `search_plan` and `discovery` stage-handler factories. `build_search_handlers(...)` returns the pair to pass to `run_analysis()` alongside request-scope and candidate-context handlers.
 
+## Recruitment platform catalog and selection
+
+`src/recruit_match/platform_registry.py` provides a provider-neutral catalog
+of candidate recruitment sources, including general job boards, university
+faculty/staff boards, research recruitment, central and local public
+institutions, civil-service listings, regional employment and global sources.
+The full catalog and source-by-source uncertainty notes are in
+[job-platform-registry.md](job-platform-registry.md).
+
+- `list_platforms(...)`, `get_platform(...)`, and
+  `select_platforms(categories)` return metadata only; they do not perform
+  network requests or enable a provider.
+- The catalog distinguishes documented API entry points from sources whose
+  API/access terms remain unverified and university sources requiring explicit
+  institution-level registration.
+- Search Matrix planning remains independent: normalized intent categories
+  select relevant source metadata without coupling the catalog to the number
+  or internal shape of Search Matrix combinations.
+- A platform becomes executable only after an authorized concrete adapter,
+  required credentials, rate limits, terms/access policy, normalization and
+  retrieval receipts have been configured and tested.
+- The shared 20-call default / 100-call maximum remains separate from any
+  source-specific quota or nested provider request count.
+
+The catalog and selection tests are authored but not executed. No source is
+claimed to be connected or live-searchable merely because it is listed.
+
 ## Search call budget and execution receipts
 
 `src/recruit_match/search_execution.py` defines a provider-neutral bridge from Search Matrix-like objects (stable `combination_id` and `query`) to a budgeted callable. For each planned combination it emits one receipt with the ordinal, combination ID, attempted/not-attempted flag, status, result count, and a sanitized error code when the call fails.
