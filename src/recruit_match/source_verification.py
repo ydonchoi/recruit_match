@@ -72,6 +72,44 @@ class SourceVerificationReceipt:
     evidence_refs: tuple[str, ...]
     error_code: str | None = None
 
+    def __post_init__(self) -> None:
+        for name, value in (
+            ("SOURCE_RECEIPT_RESULT_REF_REQUIRED", self.source_result_ref),
+            ("SOURCE_RECEIPT_VERIFIER_ID_REQUIRED", self.verifier_id),
+        ):
+            if not isinstance(value, str) or not value.strip():
+                raise ValueError(name)
+        if not isinstance(self.status, SourceAuthorityStatus):
+            raise ValueError("SOURCE_RECEIPT_STATUS_INVALID")
+        if not isinstance(self.source_url, str) or not self.source_url.strip():
+            raise ValueError("SOURCE_RECEIPT_URL_REQUIRED")
+        parsed_url = urlsplit(self.source_url)
+        if parsed_url.scheme not in {"http", "https"} or not parsed_url.hostname or parsed_url.username is not None or parsed_url.password is not None:
+            raise ValueError("SOURCE_RECEIPT_URL_INVALID")
+        if not isinstance(self.evidence_refs, tuple) or any(
+            not isinstance(ref, str) or not ref.strip() for ref in self.evidence_refs
+        ):
+            raise ValueError("SOURCE_RECEIPT_EVIDENCE_REFS_INVALID")
+        if self.error_code is not None and (
+            not isinstance(self.error_code, str) or not self.error_code.strip()
+        ):
+            raise ValueError("SOURCE_RECEIPT_ERROR_CODE_INVALID")
+        if self.status in (SourceAuthorityStatus.VERIFIED_OFFICIAL, SourceAuthorityStatus.VERIFIED_NON_OFFICIAL):
+            if not isinstance(self.authority_basis, str) or not self.authority_basis.strip():
+                raise ValueError("VERIFIED_SOURCE_REQUIRES_AUTHORITY_BASIS")
+            if not self.evidence_refs:
+                raise ValueError("VERIFIED_SOURCE_REQUIRES_EVIDENCE_REFS")
+        if not isinstance(self.observed_at, str) or not self.observed_at.strip():
+            if self.status is SourceAuthorityStatus.UNKNOWN and self.error_code:
+                return
+            raise ValueError("SOURCE_RECEIPT_TIMESTAMP_REQUIRED")
+        try:
+            observed = datetime.fromisoformat(self.observed_at.replace("Z", "+00:00"))
+        except ValueError as exc:
+            raise ValueError("SOURCE_RECEIPT_TIMESTAMP_INVALID") from exc
+        if observed.tzinfo is None or observed.utcoffset() is None:
+            raise ValueError("SOURCE_RECEIPT_TIMESTAMP_MUST_BE_AWARE")
+
 
 SourceVerifier = Callable[[Any], SourceAuthorityDecision]
 
