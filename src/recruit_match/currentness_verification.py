@@ -106,20 +106,16 @@ def build_currentness_verification_handler(
         source_receipts = context.get("source_verification_receipts")
         if not isinstance(source_receipts, Sequence) or isinstance(source_receipts, (str, bytes, bytearray, Mapping)):
             return StageExecution(StageStatus.BLOCKED, {}, reason="SOURCE_VERIFICATION_RECEIPTS_MISSING")
-        verified_official_receipts = {
-            receipt.source_result_ref: receipt
-            for receipt in source_receipts
-            if isinstance(receipt, SourceVerificationReceipt)
-            and receipt.status is SourceAuthorityStatus.VERIFIED_OFFICIAL
-            and isinstance(receipt.evidence_refs, tuple)
-            and receipt.evidence_refs
-            and isinstance(receipt.verifier_id, str)
-            and receipt.verifier_id.strip()
-            and isinstance(receipt.authority_basis, str)
-            and receipt.authority_basis.strip()
-            and isinstance(receipt.observed_at, str)
-            and receipt.observed_at.strip()
-        }
+        verified_official_receipts = {}
+        for source_receipt in source_receipts:
+            if not isinstance(source_receipt, SourceVerificationReceipt):
+                continue
+            try:
+                source_receipt.__post_init__()
+            except Exception:
+                continue
+            if source_receipt.status is SourceAuthorityStatus.VERIFIED_OFFICIAL:
+                verified_official_receipts[source_receipt.source_result_ref] = source_receipt
         preflight: list[Any] = []
         seen_refs: set[str] = set()
         seen_opportunities: set[str] = set()
