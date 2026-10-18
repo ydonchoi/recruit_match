@@ -1,9 +1,12 @@
 import unittest
+from types import SimpleNamespace
 
 from recruit_match.search_execution import (
     SearchCallStatus,
     SearchQueryPlan,
+    execute_search_combinations,
     execute_search_plan,
+    plans_from_combinations,
 )
 
 
@@ -113,6 +116,26 @@ class SearchExecutionBudgetTests(unittest.TestCase):
         )
         self.assertEqual(batch.results_by_ordinal[0], ("QUERY 0",))
         self.assertEqual(batch.results_by_ordinal[1], ("QUERY 1",))
+
+    def test_search_matrix_combinations_feed_budgeted_execution(self):
+        combinations = (
+            SimpleNamespace(combination_id="matrix-A", query="axis A"),
+            SimpleNamespace(combination_id="matrix-B", query="axis B"),
+            SimpleNamespace(combination_id="matrix-C", query="axis C"),
+        )
+        calls = []
+        batch = execute_search_combinations(
+            combinations, lambda query: calls.append(query) or (query,), max_calls=2
+        )
+        self.assertEqual(calls, ["axis A", "axis B"])
+        self.assertEqual(batch.report.planned_query_count, 3)
+        self.assertEqual(batch.report.attempted_call_count, 2)
+        self.assertEqual(batch.report.skipped_query_count, 1)
+        self.assertEqual(batch.report.receipts[-1].combination_id, "matrix-C")
+
+    def test_matrix_combination_without_stable_id_is_rejected(self):
+        with self.assertRaisesRegex(ValueError, "INVALID_SEARCH_COMBINATION_AT:0"):
+            plans_from_combinations((SimpleNamespace(query="no stable ID"),))
 
     def test_empty_plan_has_zero_receipts_and_zero_calls(self):
         calls = []
