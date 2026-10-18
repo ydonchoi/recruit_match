@@ -3,6 +3,7 @@
 - Date: 2026-10-19
 - Repository: `ydonchoi/recruit_match`
 - Status: prepared for controlled integration testing; **not executed**
+- Call budget policy: default 20 dispatcher/search calls per execution; hard maximum 100
 - Scope: Search Matrix planning → allowlisted host ToolCall dispatch → normalized result receipts
 - Out of scope: candidate-data persistence, application submission, automatic registry writes
 
@@ -26,11 +27,13 @@ PYTHONPATH=src python -m unittest discover -s tests -v
 
 The current tests are authored but have not been executed in the development environment. Save the exact command, revision, environment, exit code, and complete output when a run is eventually performed.
 
+The shared budget policy is defined in `src/recruit_match/search_budget.py`: `DEFAULT_CALLS = 20`, `MAX_CALLS = 100`; budgets must be integers in the inclusive range 1–100 (booleans are rejected). The lower-level search and host-dispatch adapters use 20 when `max_calls` is omitted and reject values above 100.
+
 The tool adapter tests cover:
 
 - allowlist rejection before dispatch;
 - duplicate call ID and duplicate combination rejection before dispatch;
-- strict positive-integer budget validation;
+- strict integer budget validation, including default 20, maximum 100, and rejection of values above 100;
 - dispatch attempt count never exceeding the budget;
 - budget-skipped calls having no dispatch timestamp and no attempt flag;
 - dispatcher exceptions being recorded as ambiguous and not retried;
