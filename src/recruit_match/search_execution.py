@@ -202,9 +202,6 @@ def execute_search_plan(
         attempted += 1
         try:
             results = search_callable(plan.query)
-            if not isinstance(results, Sequence) or isinstance(results, (str, bytes, bytearray, Mapping)):
-                raise TypeError("PROVIDER_RESPONSE_NOT_SEQUENCE")
-            result_tuple = tuple(results)
         except Exception:
             receipts.append(SearchCallReceipt(
                 ordinal=plan.ordinal,
@@ -215,6 +212,21 @@ def execute_search_plan(
             ))
             failed += 1
             continue
+
+        if not isinstance(results, Sequence) or isinstance(
+            results, (str, bytes, bytearray, Mapping)
+        ):
+            receipts.append(SearchCallReceipt(
+                ordinal=plan.ordinal,
+                combination_id=plan.combination_id,
+                status=SearchCallStatus.FAILED,
+                call_attempted=True,
+                error_code="PROVIDER_RESPONSE_NOT_SEQUENCE",
+            ))
+            failed += 1
+            continue
+
+        result_tuple = tuple(results)
 
         results_by_ordinal[plan.ordinal] = result_tuple
         receipts.append(SearchCallReceipt(
