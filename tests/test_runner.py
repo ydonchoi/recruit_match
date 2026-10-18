@@ -106,6 +106,27 @@ class PipelineRunnerTests(unittest.TestCase):
         self.assertEqual(calls, [])
         self.assertEqual(result.receipts[0].status, StageStatus.BLOCKED)
 
+    def test_failed_stage_preserves_diagnostics_without_running_downstream(self):
+        calls = []
+        result = execute_pipeline(
+            self.contract,
+            {
+                "discover": lambda context: StageExecution(
+                    StageStatus.BLOCKED,
+                    {"search_execution_report": {"attempted": 1, "skipped": 2}},
+                    reason="partial discovery",
+                ),
+                "verify": lambda context: (calls.append("verify") or StageExecution(StageStatus.SUCCESS, {})),
+            },
+        )
+        self.assertFalse(result.validation.valid)
+        self.assertEqual(
+            result.context["search_execution_report"],
+            {"attempted": 1, "skipped": 2},
+        )
+        self.assertEqual(calls, [])
+        self.assertEqual(result.receipts[0].status, StageStatus.BLOCKED)
+
     def test_not_applicable_without_permission_does_not_execute_downstream(self):
         calls = []
         result = execute_pipeline(
