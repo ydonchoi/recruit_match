@@ -3,7 +3,7 @@
 - Snapshot date: 2026-10-19
 - Target repository: `ydonchoi/recruit_match` (private)
 - Target branch: `bootstrap/verification-first-architecture`
-- Target branch head before this ledger update: `3fa59f685685732da8075e49e7c3ad33461f833b`
+- Target branch head before this ledger update: `991ceda29de885996ebefc82309909679877a41a`
 - Legacy source revision: `ydonchoi/recruitment_matching@89899ee3b0719d73f36311004ac32f87e8a78dee`
 - PR: [#1](https://github.com/ydonchoi/recruit_match/pull/1), Draft, not merged
 
@@ -27,10 +27,10 @@
 | `src/recruit_match/workflow.py` | `c6f4c6e01cec500a287dd5d2383f5463b373d582` | PRESENT / 18-stage contract; real adapters not configured |
 | `src/recruit_match/application.py` | `8d0318d8689b28ba7655d7d692c9f8c03cb11147` | PRESENT / SOURCE-REVIEWED; injectable full/bounded entry point |
 | `src/recruit_match/search_execution.py` | `fd6cb37dd320e25faf3ca9a87b6b5f3cd36b79c6` | PRESENT / SOURCE-REVIEWED; Search Matrix-shaped plan adapter, hard callable-invocation budget, per-query in-memory receipts; no provider configured |
-| `src/recruit_match/search_stage.py` | `5daadf05f17782cf657f7ef247e53b487eb17591` | PRESENT / SOURCE-REVIEWED; injected plan/discovery stage factories; no default provider/planner |
+| `src/recruit_match/search_stage.py` | `2044f16d8142644dfea22d3fe639cc1b3889633d` | PRESENT / SOURCE-REVIEWED; injected plan/discovery factories plus legacy adaptive planner bridge; no default provider |\n| `src/recruit_match/tool_call_adapter.py` | `76dfbe1e01fed01d1601532b614d09fa6983590e` | PRESENT / SOURCE-REVIEWED; allowlisted host ToolCall dispatcher, hard dispatch budget, separate execution/response states; no host tool configured |
 
 | `src/recruit_match/attachments.py` | `9c0af749e909ec59e8bbcfd1a17fa3efbcb13359` | PRESENT / SOURCE-REVIEWED; typed policy flags and malformed DNS responses rejected; transport execution unverified |
-| `docs/adapter-contracts.md` | `f539095730f435d93ce6c0e8c9515ca355a7acc2` | PRESENT / defines adapter responsibilities, search-call budget, receipt invariants and stage adapter behavior |
+| `docs/adapter-contracts.md` | `363ec30ce07ac6ea2251d97b00d3046414901d91` | PRESENT / defines adapter responsibilities, direct ToolCall dispatch and receipt states |
 | `docs/architecture.md` | `50d7d8ea2d73b9e3b9e97dbb217f9b74fa0c6aa1` | PRESENT / architecture status updated |
 | `docs/legacy-architecture-inventory.md` | `aba47610afa4586f4da68c6020b12b8db011fa1a` | PRESENT / complete tracked-path inventory, partial call graph |
 | `docs/target-architecture-and-migration-plan.md` | `1166785636961e63e8c6e7dbabde5e8fa5b4704b` | PRESENT / partial implementation status |
@@ -74,7 +74,7 @@ This is a count of declared test functions by source inspection, not a count of 
 - Eligibility evaluation now rejects malformed collections and duplicate requirement IDs; a critical requirement needs both candidate and recruitment evidence domains plus at least two distinct evidence references before its status can decide eligibility.
 - Ranking rejects duplicate opportunity IDs rather than silently allowing ambiguous duplicate entries.
 - Attachment policy flags must be booleans; DNS resolver output is shape-validated and malformed socket-address tuples return a sanitized policy error.
-- Added eight test functions covering these boundaries. They are authored only; **not executed**. Current authored test count: 146.
+- Added eight test functions covering these boundaries. They are authored only; **not executed**. Current authored test count: 160.
 
 ## Search execution budget evidence (2026-10-19)
 
@@ -95,7 +95,7 @@ This is a count of declared test functions by source inspection, not a count of 
 
 ## Remaining merge/integration gates
 
-1. Execute all 146 authored tests and retain actual output.
+1. Execute all 160 authored tests and retain actual output.
 2. Exercise the DNS-pinned transport with TLS hostname mismatch, controlled redirects, IPv4/IPv6, DNS changes and proxy configuration.
 3. Implement and authorize actual external stage adapters; verify each adapter's source identity, observation time, access basis and evidence receipts.
 4. Execute the synthetic full workflow through `run_analysis`, then integration tests with controlled adapters.
@@ -112,5 +112,15 @@ Repository content presence is not runtime evidence. Authored tests are not pass
 
 - `src/recruit_match/search_stage.py` defines injected `search_plan` and `discovery` stage handlers. It does not select a provider or planner by default.
 - `tests/test_search_stage.py` adds 12 test functions; `tests/test_runner.py` adds one test to preserve diagnostics from a blocked stage while still stopping downstream execution.
-- Current authored test inventory is 146 functions across ten test files. This count is based on source inspection; none of these tests is claimed to have run.
+- Current authored test inventory is 160 functions across eleven test files. This count is based on source inspection; none of these tests is claimed to have run.
 - The search stage can be composed into `run_analysis()` by passing `build_search_handlers(...)` with the caller's request-scope and candidate-context handlers. Actual provider connectivity, provider-internal call counts, and runtime behavior remain unverified.
+
+
+## Direct host ToolCall adapter (2026-10-19)
+
+- Added `src/recruit_match/tool_call_adapter.py` to dispatch explicit tool-call plans through an injected host dispatcher. Tool names are allowlisted before any dispatch; duplicate call IDs, ordinals, and combination IDs are rejected before side effects.
+- The dispatch budget counts invocations of the injected dispatcher. A returned response means dispatch returned, not that the content is authoritative. A dispatcher exception is recorded as an ambiguous `UNKNOWN` external outcome and is not retried automatically.
+- Response validation is tracked separately from dispatch confirmation. Malformed returned responses are recorded as rejected, while valid normalized results become `SearchProviderHit` records. Receipt accounting reconciles plan, attempt, success, failure, skip, confirmation and validation counts.
+- Added `tests/test_tool_call_adapter.py` with 12 test functions; added two tests for the legacy adaptive-planner bridge in `tests/test_search_stage.py`. All are authored, not executed.
+- Added `build_adaptive_planner_callback(...)` in `search_stage.py` to adapt the legacy `AdaptiveSearchPlanner.plan(candidate_evidence, user_query)` interface without importing the legacy package. Candidate-evidence access and planner instances remain explicitly injected.
+- No host tool, credentials, real legacy planner instance, or persistent receipt store is configured. Actual tool-call counts, nested provider retries/fan-out, source authority, and end-to-end behavior remain unverified.
