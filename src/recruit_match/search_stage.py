@@ -82,6 +82,44 @@ def _unwrap_combination(value: Any) -> Any:
     return nested if nested is not None else value
 
 
+def build_adaptive_planner_callback(
+    adaptive_planner: Any,
+    candidate_evidence_provider: Any,
+    *,
+    query_key: str = "user_query",
+) -> Callable[[Mapping[str, Any]], Sequence[Any]]:
+    """Adapt the legacy-style AdaptiveSearchPlanner.plan(evidence, query) API.
+
+    The candidate evidence provider and adaptive planner are injected. The
+    request-scope stage must place the user query under query_key. This adapter
+    does not load candidate records itself or persist learned search memory.
+    """
+    plan_method = getattr(adaptive_planner, "plan", None)
+    evidence_method = getattr(candidate_evidence_provider, "get", None)
+    if not callable(plan_method):
+        raise ValueError("ADAPTIVE_SEARCH_PLANNER_REQUIRED")
+    if not callable(evidence_method):
+        raise ValueError("CANDIDATE_EVIDENCE_PROVIDER_REQUIRED")
+    if not isinstance(query_key, str) or not query_key.strip():
+        raise ValueError("USER_QUERY_CONTEXT_KEY_REQUIRED")
+
+    def planner(context: Mapping[str, Any]) -> Sequence[Any]:
+        if not isinstance(context, Mapping):
+            raise ValueError("SEARCH_PLANNER_CONTEXT_REQUIRED")
+        query = context.get(query_key, "")
+        if not isinstance(query, str):
+            raise ValueError("USER_QUERY_MUST_BE_STRING")
+        evidence = evidence_method()
+        if evidence is None:
+            raise ValueError("CANDIDATE_EVIDENCE_UNAVAILABLE")
+        plans = plan_method(evidence, query)
+        if not isinstance(plans, Sequence) or isinstance(plans, (str, bytes, bytearray)):
+            raise ValueError("ADAPTIVE_PLANNER_OUTPUT_MUST_BE_SEQUENCE")
+        return tuple(plans)
+
+    return planner
+
+
 def build_search_plan_handler(
     planner: Callable[[Mapping[str, Any]], Sequence[Any]],
     *,
