@@ -106,13 +106,19 @@ def build_currentness_verification_handler(
         source_receipts = context.get("source_verification_receipts")
         if not isinstance(source_receipts, Sequence) or isinstance(source_receipts, (str, bytes, bytearray, Mapping)):
             return StageExecution(StageStatus.BLOCKED, {}, reason="SOURCE_VERIFICATION_RECEIPTS_MISSING")
-        verified_official_refs = {
-            receipt.source_result_ref
+        verified_official_receipts = {
+            receipt.source_result_ref: receipt
             for receipt in source_receipts
             if isinstance(receipt, SourceVerificationReceipt)
             and receipt.status is SourceAuthorityStatus.VERIFIED_OFFICIAL
             and isinstance(receipt.evidence_refs, tuple)
             and receipt.evidence_refs
+            and isinstance(receipt.verifier_id, str)
+            and receipt.verifier_id.strip()
+            and isinstance(receipt.authority_basis, str)
+            and receipt.authority_basis.strip()
+            and isinstance(receipt.observed_at, str)
+            and receipt.observed_at.strip()
         }
         preflight: list[Any] = []
         seen_refs: set[str] = set()
@@ -125,7 +131,8 @@ def build_currentness_verification_handler(
             if result_ref in seen_refs:
                 return StageExecution(StageStatus.BLOCKED, {}, reason="DUPLICATE_OFFICIAL_SOURCE_REF")
             seen_refs.add(result_ref)
-            if result_ref not in verified_official_refs:
+            authority_receipt = verified_official_receipts.get(result_ref)
+            if authority_receipt is None or authority_receipt.source_url != _field(source, "source_url"):
                 return StageExecution(StageStatus.BLOCKED, {}, reason="OFFICIAL_SOURCE_AUTHORITY_NOT_CONFIRMED")
             if not isinstance(opportunity_id, str) or not opportunity_id.strip():
                 return StageExecution(StageStatus.BLOCKED, {}, reason="OFFICIAL_OPPORTUNITY_ID_MISSING")
