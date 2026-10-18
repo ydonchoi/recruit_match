@@ -49,6 +49,48 @@ This is a newly authored execution boundary, not evidence of live Search Agent a
 
 The adapter factory is available for application composition, but no concrete provider or legacy planner is selected by default. This keeps provider authorization and live credentials under caller control.
 
+## Direct host ToolCall dispatch adapter
+
+`src/recruit_match/tool_call_adapter.py` adds an explicit path for a Search Matrix plan to dispatch through an injected host ToolCall dispatcher, rather than requiring every host integration to be wrapped as a generic search callable.
+
+The caller supplies:
+- a planner that produces Search Matrix-shaped combinations;
+- one explicit tool name and an allowlist of permitted names;
+- a dispatcher accepting `(tool_name, arguments)`;
+- a result normalizer that converts the host response to `SearchProviderHit` records;
+- a hard maximum number of dispatch attempts and a run ID.
+
+The adapter creates one deterministic call ID per run/combination/tool and rejects duplicate call IDs, combination IDs, ordinals, or non-allowlisted tool names before dispatch. Arguments are defensively copied before they are passed to the host. It does not perform hidden retries.
+
+Execution and validation are separate:
+- `execution_confirmation=CONFIRMED` means the dispatcher returned control with a response; it does not prove the response is correct or authoritative.
+- `execution_confirmation=UNKNOWN` means the dispatcher raised an exception. The operation may have reached an external service before the exception, so the adapter does not retry automatically.
+- `response_validation=VALIDATED` means the injected normalizer returned a sequence of structurally valid `SearchProviderHit` objects.
+- `response_validation=REJECTED` means the host call returned but its response could not be normalized.
+- Budget-exhausted calls are recorded as `SKIPPED_BUDGET` without dispatch timestamps.
+
+The report reconciles planned, attempted, succeeded, failed, skipped, confirmed, validated and rejected counts. The budget applies to invocations of the injected dispatcher. If the host tool or dispatcher internally fans out or retries, that behavior must expose its own request count; the adapter cannot infer nested calls. Receipts are currently in-memory, not durable. Official-source authority, currentness, recruitment validity and candidate matching remain later verification stages.
+
+Example composition:
+
+```python
+from recruit_match.tool_call_adapter import build_tool_call_search_handlers
+
+handlers = build_tool_call_search_handlers(
+    run_id="run-001",
+    planner=planner_adapter,
+    dispatcher=host_tool_dispatcher,
+    result_normalizer=normalize_host_response,
+    tool_name="web.search",
+    allowed_tool_names=("web.search",),
+    max_planned_combinations=50,
+    max_calls=10,
+)
+# Add request_scope and candidate_context handlers before calling run_analysis().
+```
+
+The example is an interface sketch; it does not configure a real host tool, credentials, or network access. `tests/test_tool_call_adapter.py` contains 12 authored tests, but they have not been executed.
+
 ## Receipt contract
 
 Each handler returns `StageExecution` with:
