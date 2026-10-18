@@ -279,7 +279,7 @@ class AttachmentStageTests(unittest.TestCase):
             content_sink=lambda item, receipt: (_ for _ in ()).throw(RuntimeError("private storage failure")),
         )({
             "approved_attachments": (ApprovedAttachment(candidate, decision),),
-            "attachment_policy_receipts": (),
+            "attachment_policy_receipts": (self.policy_receipt(candidate, decision),),
         })
         self.assertEqual(result.status, StageStatus.BLOCKED)
         self.assertEqual(result.output["attachment_fetch_failure_count"], 1)
@@ -301,7 +301,7 @@ class AttachmentStageTests(unittest.TestCase):
             content_sink=lambda item, receipt: stored.append(receipt.content) or "private://attachment-1",
         )({
             "approved_attachments": (ApprovedAttachment(candidate, decision),),
-            "attachment_policy_receipts": (),
+            "attachment_policy_receipts": (self.policy_receipt(candidate, decision),),
         })
         self.assertEqual(result.status, StageStatus.BLOCKED)
         self.assertEqual(result.output["attachment_fetch_failure_count"], 1)
@@ -322,7 +322,7 @@ class AttachmentStageTests(unittest.TestCase):
             content_sink=lambda item, receipt: "private://attachment-1",
         )({
             "approved_attachments": (ApprovedAttachment(candidate, decision),),
-            "attachment_policy_receipts": (),
+            "attachment_policy_receipts": (self.policy_receipt(candidate, decision),),
         })
         self.assertEqual(result.status, StageStatus.BLOCKED)
         self.assertEqual(result.output["attachment_fetch_receipts"][0].error_code, "ATTACHMENT_FETCH_OR_STORE_FAILED")
