@@ -81,7 +81,7 @@ class SourceVerificationStageTests(unittest.TestCase):
             )
         execution = build_source_verification_handler(
             verifier, default_verifier_id="fallback-verifier"
-        )({"discovered_search_results": (self.result(),)})
+        )({"resolved_opportunity_sources": (self.result(),)})
         self.assertEqual(execution.status, StageStatus.BLOCKED)
         self.assertEqual(execution.reason, "SOURCE_AUTHORITY_UNKNOWN")
         self.assertEqual(execution.output["source_verification_unknown_count"], 1)
@@ -91,7 +91,7 @@ class SourceVerificationStageTests(unittest.TestCase):
             raise RuntimeError("private page body")
         execution = build_source_verification_handler(
             verifier, default_verifier_id="fallback-verifier"
-        )({"discovered_search_results": (self.result(),)})
+        )({"resolved_opportunity_sources": (self.result(),)})
         self.assertEqual(execution.status, StageStatus.BLOCKED)
         self.assertNotIn("private page body", repr(execution.output))
         receipt = execution.output["source_verification_receipts"][0]
@@ -101,7 +101,7 @@ class SourceVerificationStageTests(unittest.TestCase):
         execution = build_source_verification_handler(
             lambda result: {"official": True},
             default_verifier_id="fallback-verifier",
-        )({"discovered_search_results": (self.result(),)})
+        )({"resolved_opportunity_sources": (self.result(),)})
         self.assertEqual(execution.status, StageStatus.BLOCKED)
         self.assertEqual(execution.output["source_verification_unknown_count"], 1)
 
@@ -146,7 +146,7 @@ class SourceVerificationStageTests(unittest.TestCase):
         object.__setattr__(decision, "authority_basis", "")
         execution = build_source_verification_handler(
             lambda result: decision, default_verifier_id="fallback-verifier"
-        )({"discovered_search_results": (self.result(),)})
+        )({"resolved_opportunity_sources": (self.result(),)})
         self.assertEqual(execution.status, StageStatus.BLOCKED)
         self.assertEqual(execution.output["source_verification_unknown_count"], 1)
 
@@ -173,7 +173,7 @@ class SourceVerificationStageTests(unittest.TestCase):
     def test_unknown_result_in_mixed_batch_blocks_even_if_an_official_source_exists(self):
         results = (self.result("official"), self.result("unknown", "https://other.example/jobs/2"))
         def verifier(result):
-            if result.result_ref == "official":
+            if result.source_result_ref == "official":
                 return self.official(result)
             return SourceAuthorityDecision(
                 status=SourceAuthorityStatus.UNKNOWN,
