@@ -3,7 +3,7 @@
 - Snapshot date: 2026-10-19
 - Target repository: `ydonchoi/recruit_match` (private)
 - Target branch: `bootstrap/verification-first-architecture`
-- Target branch head before this ledger update: `991ceda29de885996ebefc82309909679877a41a`
+- Target branch head before this ledger update: `35a515ec397aa933be34e009aaae2c2c80fa4828`
 - Legacy source revision: `ydonchoi/recruitment_matching@89899ee3b0719d73f36311004ac32f87e8a78dee`
 - PR: [#1](https://github.com/ydonchoi/recruit_match/pull/1), Draft, not merged
 
@@ -27,14 +27,14 @@
 | `src/recruit_match/workflow.py` | `c6f4c6e01cec500a287dd5d2383f5463b373d582` | PRESENT / 18-stage contract; real adapters not configured |
 | `src/recruit_match/application.py` | `8d0318d8689b28ba7655d7d692c9f8c03cb11147` | PRESENT / SOURCE-REVIEWED; injectable full/bounded entry point |
 | `src/recruit_match/search_execution.py` | `fd6cb37dd320e25faf3ca9a87b6b5f3cd36b79c6` | PRESENT / SOURCE-REVIEWED; Search Matrix-shaped plan adapter, hard callable-invocation budget, per-query in-memory receipts; no provider configured |
-| `src/recruit_match/search_stage.py` | `2044f16d8142644dfea22d3fe639cc1b3889633d` | PRESENT / SOURCE-REVIEWED; injected plan/discovery factories plus legacy adaptive planner bridge; no default provider |\n| `src/recruit_match/tool_call_adapter.py` | `76dfbe1e01fed01d1601532b614d09fa6983590e` | PRESENT / SOURCE-REVIEWED; allowlisted host ToolCall dispatcher, hard dispatch budget, separate execution/response states; no host tool configured |
+| `src/recruit_match/search_stage.py` | `2044f16d8142644dfea22d3fe639cc1b3889633d` | PRESENT / SOURCE-REVIEWED; injected plan/discovery factories plus legacy adaptive planner bridge; no default provider |\n| `src/recruit_match/tool_call_adapter.py` | `76dfbe1e01fed01d1601532b614d09fa6983590e` | PRESENT / SOURCE-REVIEWED; allowlisted host ToolCall dispatch, hard budget, separate execution/response states; no host tool configured |\n| `src/recruit_match/tool_call_adapter.py` | `76dfbe1e01fed01d1601532b614d09fa6983590e` | PRESENT / SOURCE-REVIEWED; allowlisted host ToolCall dispatcher, hard dispatch budget, separate execution/response states; no host tool configured |
 
 | `src/recruit_match/attachments.py` | `9c0af749e909ec59e8bbcfd1a17fa3efbcb13359` | PRESENT / SOURCE-REVIEWED; typed policy flags and malformed DNS responses rejected; transport execution unverified |
-| `docs/adapter-contracts.md` | `363ec30ce07ac6ea2251d97b00d3046414901d91` | PRESENT / defines adapter responsibilities, direct ToolCall dispatch and receipt states |
+| `docs/adapter-contracts.md` | `363ec30ce07ac6ea2251d97b00d3046414901d91` | PRESENT / defines adapter responsibilities, direct ToolCall dispatch and receipt states |\n| `docs/tool-call-execution-runbook.md` | `2609d9c002bab9e843117547595ae0e0b4f5d81e` | PRESENT / controlled integration test procedure and acceptance criteria; not executed |\n| `README.md` | `b66f0074e2eb44a7d4e5e4cb81a83b2ebb5adef2` | PRESENT / links runbook; 160 authored test functions documented |
 | `docs/architecture.md` | `50d7d8ea2d73b9e3b9e97dbb217f9b74fa0c6aa1` | PRESENT / architecture status updated |
 | `docs/legacy-architecture-inventory.md` | `aba47610afa4586f4da68c6020b12b8db011fa1a` | PRESENT / complete tracked-path inventory, partial call graph |
 | `docs/target-architecture-and-migration-plan.md` | `1166785636961e63e8c6e7dbabde5e8fa5b4704b` | PRESENT / partial implementation status |
-| `docs/static-review-and-migration-status.md` | `f6c055be65b5ab9945dd411da5f9283a480213ba` | PRESENT / static findings, migration disposition, legacy call-path, metric risks and search execution bridge; no execution claimed |
+| `docs/static-review-and-migration-status.md` | `1e728c2fa4ab8170fd62c18fb5323fdb91923ef3` | PRESENT / static findings, migration disposition, legacy call-path, metric risks and search execution bridge; no execution claimed |
 | `.github/workflows/unit-tests.yml` | `29b5c93e607bd3d26aa1a5395fe7a7d5d0510bc6` | PRESENT / workflow definition only |
 
 ## Authored test inventory
