@@ -17,6 +17,7 @@ from hashlib import sha256
 from typing import Any
 
 from .pipeline import StageStatus
+from .search_budget import DEFAULT_CALLS, MAX_CALLS, validate_call_budget
 from .runner import StageExecution
 from .search_stage import (
     SearchProviderHit,
@@ -212,7 +213,7 @@ def execute_tool_call_plan(
     dispatcher: ToolDispatcher,
     result_normalizer: ResultNormalizer,
     *,
-    max_calls: int,
+    max_calls: int = DEFAULT_CALLS,
     allowed_tool_names: Sequence[str],
     clock: Callable[[], datetime] | None = None,
     run_id: str,
@@ -232,8 +233,7 @@ def execute_tool_call_plan(
         raise ValueError("TOOL_DISPATCHER_REQUIRED")
     if not callable(result_normalizer):
         raise ValueError("TOOL_RESULT_NORMALIZER_REQUIRED")
-    if not isinstance(max_calls, int) or isinstance(max_calls, bool) or max_calls < 1:
-        raise ValueError("TOOL_CALL_BUDGET_MUST_BE_POSITIVE_INTEGER")
+    max_calls = validate_call_budget(max_calls, error_code="TOOL_CALL_BUDGET_MUST_BE_BETWEEN_1_AND_100")
     if not isinstance(run_id, str) or not run_id.strip():
         raise ValueError("TOOL_CALL_RUN_ID_REQUIRED")
     if not isinstance(allowed_tool_names, Sequence) or isinstance(allowed_tool_names, (str, bytes, bytearray)):
@@ -350,13 +350,14 @@ def build_tool_call_search_handlers(
     tool_name: str,
     allowed_tool_names: Sequence[str],
     max_planned_combinations: int,
-    max_calls: int,
+    max_calls: int = DEFAULT_CALLS,
     arguments_builder: ArgumentsBuilder | None = None,
     clock: Callable[[], datetime] | None = None,
 ) -> dict[str, Callable[[Mapping[str, Any]], StageExecution]]:
     """Compose a Search Matrix plan handler with direct host ToolCall dispatch."""
     if not isinstance(tool_name, str) or not tool_name.strip():
         raise ValueError("TOOL_NAME_REQUIRED")
+    max_calls = validate_call_budget(max_calls, error_code="TOOL_CALL_BUDGET_MUST_BE_BETWEEN_1_AND_100")
     allowlist = frozenset(allowed_tool_names)
     if tool_name not in allowlist:
         raise ValueError("TOOL_NAME_NOT_ALLOWLISTED")
