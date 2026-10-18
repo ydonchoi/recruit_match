@@ -12,6 +12,8 @@ from dataclasses import dataclass
 from enum import StrEnum
 from typing import Any
 
+from .search_budget import DEFAULT_CALLS, MAX_CALLS, validate_call_budget
+
 
 class SearchCallStatus(StrEnum):
     SUCCEEDED = "SUCCEEDED"
@@ -146,13 +148,14 @@ def execute_search_combinations(
     combinations: Sequence[Any],
     search_callable: SearchCallable,
     *,
-    max_calls: int,
+    max_calls: int = DEFAULT_CALLS,
 ) -> SearchExecutionBatch:
     """Convert Search Matrix combinations and execute within a hard call budget."""
+    budget = validate_call_budget(max_calls, error_code="SEARCH_CALL_BUDGET_MUST_BE_BETWEEN_1_AND_100")
     return execute_search_plan(
         plans_from_combinations(combinations),
         search_callable,
-        max_calls=max_calls,
+        max_calls=budget,
     )
 
 
@@ -160,7 +163,7 @@ def execute_search_plan(
     plans: Sequence[SearchQueryPlan],
     search_callable: SearchCallable,
     *,
-    max_calls: int,
+    max_calls: int = DEFAULT_CALLS,
 ) -> SearchExecutionBatch:
     """Execute at most max_calls planned queries and return auditable receipts.
 
@@ -181,8 +184,7 @@ def execute_search_plan(
         raise ValueError("SEARCH_PLAN_DUPLICATE_COMBINATION")
     if not isinstance(search_callable, Callable):
         raise ValueError("SEARCH_CALLABLE_REQUIRED")
-    if not isinstance(max_calls, int) or isinstance(max_calls, bool) or max_calls < 1:
-        raise ValueError("SEARCH_CALL_BUDGET_MUST_BE_POSITIVE_INTEGER")
+    max_calls = validate_call_budget(max_calls, error_code="SEARCH_CALL_BUDGET_MUST_BE_BETWEEN_1_AND_100")
 
     receipts: list[SearchCallReceipt] = []
     results_by_ordinal: dict[int, tuple[Any, ...]] = {}
