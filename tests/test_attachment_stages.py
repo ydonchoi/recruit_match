@@ -183,6 +183,26 @@ class AttachmentStageTests(unittest.TestCase):
         self.assertEqual(result.status, StageStatus.BLOCKED)
         self.assertEqual(result.reason, "ATTACHMENT_DISCOVERY_INCOMPLETE")
 
+    def test_no_attachment_scan_propagates_not_applicable_through_all_stages(self):
+        policy = build_attachment_policy_handler(
+            lambda source: self.batch(()),
+            lambda item, source: self.allow(item),
+        )(self.context())
+        self.assertEqual(policy.status, StageStatus.SUCCESS)
+        fetched = build_attachment_fetch_handler(
+            fetcher_factory=lambda policy, limits: None,
+            content_sink=lambda candidate, receipt: "unused",
+        )({
+            **policy.output,
+            "attachment_policy_receipts": policy.output["attachment_policy_receipts"],
+        })
+        self.assertEqual(fetched.status, StageStatus.NOT_APPLICABLE)
+        inspected = build_attachment_inspection_handler(lambda ref, metadata: None)({
+            **fetched.output,
+        })
+        self.assertEqual(inspected.status, StageStatus.NOT_APPLICABLE)
+        self.assertTrue(inspected.evidence_refs)
+
     def test_fetch_and_inspection_do_not_put_raw_bytes_in_pipeline_context(self):
         candidate = self.candidate()
         decision = self.allow(candidate)
