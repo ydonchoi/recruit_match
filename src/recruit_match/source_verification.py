@@ -98,20 +98,28 @@ def build_source_verification_handler(
         if not isinstance(discovered, Sequence) or isinstance(discovered, (str, bytes, bytearray, Mapping)) or not discovered:
             return StageExecution(StageStatus.BLOCKED, {}, reason="DISCOVERED_SEARCH_RESULTS_MISSING")
 
-        receipts: list[SourceVerificationReceipt] = []
-        official: list[Any] = []
-        unknown_count = 0
+        # Validate the entire input batch before invoking any external verifier.
+        preflight: list[tuple[Any, str, str]] = []
+        seen_refs: set[str] = set()
         for item in discovered:
             result_ref = _field(item, "result_ref")
             source_url = _field(item, "source_url")
             if not isinstance(result_ref, str) or not result_ref.strip():
                 return StageExecution(StageStatus.BLOCKED, {}, reason="DISCOVERED_RESULT_REF_MISSING")
+            if result_ref in seen_refs:
+                return StageExecution(StageStatus.BLOCKED, {}, reason="DUPLICATE_DISCOVERED_RESULT_REF")
+            seen_refs.add(result_ref)
             if not isinstance(source_url, str) or not source_url.strip():
                 return StageExecution(StageStatus.BLOCKED, {}, reason="DISCOVERED_SOURCE_URL_MISSING")
             parsed = urlsplit(source_url)
             if parsed.scheme not in {"http", "https"} or not parsed.hostname or parsed.username is not None or parsed.password is not None:
                 return StageExecution(StageStatus.BLOCKED, {}, reason="DISCOVERED_SOURCE_URL_INVALID")
+            preflight.append((item, result_ref, source_url))
 
+        receipts: list[SourceVerificationReceipt] = []
+        official: list[Any] = []
+        unknown_count = 0
+        for item, result_ref, source_url in preflight:
             try:
                 decision = verifier(item)
                 if not isinstance(decision, SourceAuthorityDecision):
