@@ -3,7 +3,7 @@
 - Snapshot date: 2026-10-19
 - Target repository: `ydonchoi/recruit_match` (private)
 - Target branch: `bootstrap/verification-first-architecture`
-- Target branch head before this ledger update: `6117dff4e560a684c3cfff1195230c4db17c0fb4`
+- Target branch head before this ledger update: `0678b3279fa60e2ce53ffa7e5f59a40eb28f68a1`
 - Legacy source revision: `ydonchoi/recruitment_matching@89899ee3b0719d73f36311004ac32f87e8a78dee`
 - PR: [#1](https://github.com/ydonchoi/recruit_match/pull/1), Draft, not merged
 
@@ -33,17 +33,17 @@
 | `src/recruit_match/source_verification.py` | `ca41e2dc2cc1f0f693aa76b100d1d19a92e9e3f4` | PRESENT / SOURCE-REVIEWED; requires identity-resolved records; official/non-official/unknown authority gate; verifier injected |
 | `src/recruit_match/currentness_verification.py` | `b4b9089a99645d33758bc0671eacd982152a315f` | PRESENT / SOURCE-REVIEWED; requires typed verified-official receipts bound to the exact source URL and typed currentness evidence; verifier injected |
 | `src/recruit_match/verification_stages.py` | `057972a5e2515135365aa48e80713012b401513c` | PRESENT / composes identity, source authority and currentness handlers; external verifiers injected |
-| `src/recruit_match/attachment_stages.py` | `ced68f15f2857ca8344cd21f377102a0047eb56e` | PRESENT / SOURCE-REVIEWED; policy-gated fetch, private content sink and injected inspection; no adapters configured |
+| `src/recruit_match/attachment_stages.py` | `7ec6e3a13f9e6fdbed0f6280d153dc39732bc293` | PRESENT / SOURCE-REVIEWED; policy-gated fetch, private content sink and injected inspection; no adapters configured |
 | `src/recruit_match/attachments.py` | `9c0af749e909ec59e8bbcfd1a17fa3efbcb13359` | PRESENT / SOURCE-REVIEWED; typed policy flags and malformed DNS responses rejected; transport execution unverified |
 | `docs/adapter-contracts.md` | `4a90b194e970b194e63716fe601d68ef37d67b33` | PRESENT / defines adapter responsibilities, direct ToolCall dispatch and verification stage contracts |
 | `docs/tool-call-execution-runbook.md` | `2609d9c002bab9e843117547595ae0e0b4f5d81e` | PRESENT / controlled integration test procedure and acceptance criteria; not executed |
 | `docs/verification-stage-contracts.md` | `1030ad3901ea58524d09fcdfd1bcdebe74274415` | PRESENT / identity, source authority and currentness stage contracts |
-| `docs/attachment-stage-contracts.md` | `f5b17b5353339f20f7ada5f72bdad770a816763b` | PRESENT / attachment policy/fetch/inspection boundaries and limitations |
-| `README.md` | `72b0ec88c1a9650af9853c4f5ee2371ab02042a5` | PRESENT / links runbooks; 223 authored test functions documented |
+| `docs/attachment-stage-contracts.md` | `67b786a5a4845afb4a6a89e62e400f4ff15c0b27` | PRESENT / attachment policy/fetch/inspection boundaries and limitations |
+| `README.md` | `53285403562771ef0c3c8f194e5c6af961e62c78` | PRESENT / links runbooks; 224 authored test functions documented |
 | `docs/architecture.md` | `50d7d8ea2d73b9e3b9e97dbb217f9b74fa0c6aa1` | PRESENT / architecture status updated |
 | `docs/legacy-architecture-inventory.md` | `aba47610afa4586f4da68c6020b12b8db011fa1a` | PRESENT / complete tracked-path inventory, partial call graph |
 | `docs/target-architecture-and-migration-plan.md` | `1166785636961e63e8c6e7dbabde5e8fa5b4704b` | PRESENT / partial implementation status |
-| `docs/static-review-and-migration-status.md` | `1cfe446d0a57dffec275c38afcd47cbb96cd2bde` | PRESENT / static findings, migration disposition, legacy call-path, metric risks and search execution bridge; no execution claimed |
+| `docs/static-review-and-migration-status.md` | `8a3b2131444801f1e479243f0f6afe9e34c10fb7` | PRESENT / static findings, migration disposition, legacy call-path, metric risks and search execution bridge; no execution claimed |
 | `.github/workflows/unit-tests.yml` | `29b5c93e607bd3d26aa1a5395fe7a7d5d0510bc6` | PRESENT / workflow definition only |
 
 ## Authored test inventory
@@ -65,8 +65,8 @@
 | `tests/test_source_verification.py` | `f3de20bc2b5eea3f1d7b7d40d37c72c69a3472d1` | 14 |
 | `tests/test_currentness_verification.py` | `f51a0137b7357457268a5b826f5d640cd62d6da6` | 16 |
 | `tests/test_verification_stages.py` | `db56ff10c1b328d19790723288d35e0767733b65` | 5 |
-| `tests/test_attachment_stages.py` | `4bb8fafea28b2f00fd8e11f239d22474d1bfc79a` | 15 |
-| **Total** | | **223** |
+| `tests/test_attachment_stages.py` | `2a3cf9156e399d8bb05b8e3dc1baa027f902b023` | 16 |
+| **Total** | | **224** |
 
 This is a count of declared test functions by source inspection, not a count of passing tests.
 
@@ -89,7 +89,7 @@ This is a count of declared test functions by source inspection, not a count of 
 - Eligibility evaluation now rejects malformed collections and duplicate requirement IDs; a critical requirement needs both candidate and recruitment evidence domains plus at least two distinct evidence references before its status can decide eligibility.
 - Ranking rejects duplicate opportunity IDs rather than silently allowing ambiguous duplicate entries.
 - Attachment policy flags must be booleans; DNS resolver output is shape-validated and malformed socket-address tuples return a sanitized policy error.
-- Added eight test functions covering these boundaries. They are authored only; **not executed**. Current authored test count: 223.
+- Added eight test functions covering these boundaries. They are authored only; **not executed**. Current authored test count: 224.
 
 ## Search execution budget evidence (2026-10-19)
 
@@ -110,7 +110,7 @@ This is a count of declared test functions by source inspection, not a count of 
 
 ## Remaining merge/integration gates
 
-1. Execute all 223 authored tests and retain actual output.
+1. Execute all 224 authored tests and retain actual output.
 2. Exercise the DNS-pinned transport with TLS hostname mismatch, controlled redirects, IPv4/IPv6, DNS changes and proxy configuration.
 3. Implement and authorize actual external stage adapters; verify each adapter's source identity, observation time, access basis and evidence receipts.
 4. Execute the synthetic full workflow through `run_analysis`, then integration tests with controlled adapters.
@@ -127,7 +127,7 @@ Repository content presence is not runtime evidence. Authored tests are not pass
 
 - `src/recruit_match/search_stage.py` defines injected `search_plan` and `discovery` stage handlers. It does not select a provider or planner by default.
 - `tests/test_search_stage.py` adds 12 test functions; `tests/test_runner.py` adds one test to preserve diagnostics from a blocked stage while still stopping downstream execution.
-- Current authored test inventory is 223 functions across sixteen test files. This count is based on source inspection; none of these tests is claimed to have run.
+- Current authored test inventory is 224 functions across sixteen test files. This count is based on source inspection; none of these tests is claimed to have run.
 - The search stage can be composed into `run_analysis()` by passing `build_search_handlers(...)` with the caller's request-scope and candidate-context handlers. Actual provider connectivity, provider-internal call counts, and runtime behavior remain unverified.
 
 
@@ -165,3 +165,6 @@ Repository content presence is not runtime evidence. Authored tests are not pass
 - Complete scans with no attachment links and policy outcomes with no approved attachments use explicit evidence-backed no-op states. Unknown policy, partial scan, fetch/store failure, or incomplete inspection blocks downstream processing.
 - Added `docs/attachment-stage-contracts.md` and `tests/test_attachment_stages.py` with 15 authored test functions. Tests are not executed; no attachment discoverer, policy evaluator, fetcher, private sink, or parser is configured.
 - Parser isolation, ZIP entry/expanded-size limits, OCR quality, durable storage/reconciliation, and live transport behavior remain unverified.
+
+
+- Added a fetch-stage preflight requiring every approved attachment to match a typed ALLOW policy receipt before any fetch/storage side effect. Final URL host, content magic, byte size, timestamp, and SHA-256 are validated before the private sink is called. Added one regression test; total is 224 authored tests across sixteen files, all unexecuted.
