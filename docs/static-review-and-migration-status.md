@@ -39,7 +39,7 @@ These are code changes, not verified fixes. No runtime result is claimed.
 | Host ToolCall dispatch | **IMPLEMENTED-SOURCE-REVIEWED / UNVERIFIED** | `tool_call_adapter.py` adds allowlisted direct dispatch, a hard dispatcher-invocation budget, and separate dispatch-confirmation/response-validation receipts. No host tool is configured; tests are authored, not executed. |
 | Identity resolution | **IMPLEMENTED-SOURCE-REVIEWED / UNVERIFIED** | `identity_resolution.py` requires stable opportunity, cycle, posting, organization and position identity with evidence; conflicts block. Resolver is injected. |
 | Source authority verification | **IMPLEMENTED-SOURCE-REVIEWED / UNVERIFIED** | `source_verification.py` consumes identity-resolved records and separates official, non-official and unknown. The authority verifier is injected. |
-| Currentness verification | **IMPLEMENTED-SOURCE-REVIEWED / UNVERIFIED** | `currentness_verification.py` requires a matching verified-official receipt and typed currentness evidence. The verifier is injected. |
+| Currentness verification | **IMPLEMENTED-SOURCE-REVIEWED / UNVERIFIED** | `currentness_verification.py` requires a typed verified-official receipt bound to the exact source URL and typed currentness evidence. The verifier is injected. |
 | Multi-source acquisition and source coverage | **CONTRACT-ONLY** | Discovery adapter contract exists; no authorized live source adapters or retrieval receipts configured. |
 | Opportunity identity, recruitment cycle and duplicate resolution | **PARTIAL / CONTRACT-ONLY** | IDs and duplicate-state contracts exist. Canonical identity keys, cycle matching, conflict policy, and real source-level resolution are not implemented. |
 | Official source verification and currentness | **CONTRACT-ONLY** | Typed states and recommendation gates exist; no independent official-source verification adapter is configured. |
@@ -55,7 +55,7 @@ These are code changes, not verified fixes. No runtime result is claimed.
 | GitHub Registry CRUD / sync | **OUT OF SCOPE BY DEFAULT** | Do not port the legacy writer/sync merely because it exists in the old architecture. No candidate-linked data or source documents should be stored in GitHub. |
 | Human decision, application execution and outcome | **BOUNDARY PRESERVED / NOT IMPLEMENTED** | Analysis does not submit applications or send emails. Execution readiness, human approval, external action and application outcome remain distinct. |
 | Observability, audit and feedback metrics | **PARTIAL / UNVERIFIED** | Receipts and an evidence ledger contract exist; there is no durable redacted telemetry, measured baseline, operational alerting, or quality feedback loop. |
-| CI and tests | **TEST-AUTHORED / EXECUTION UNKNOWN** | 204 test functions are present by source inspection across fifteen files. No assertions have been executed and no passing count is known. |
+| CI and tests | **TEST-AUTHORED / EXECUTION UNKNOWN** | 205 test functions are present by source inspection across fifteen files. No assertions have been executed and no passing count is known. |
 
 ## Search execution bridge: source-reviewed contract
 
