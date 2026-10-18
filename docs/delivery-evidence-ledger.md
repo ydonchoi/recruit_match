@@ -60,7 +60,7 @@
 | `tests/test_application.py` | `b525c98df09b67f8397c5e92f9045197ee9a93c9` | 4 |
 | `tests/test_search_execution.py` | `8054cc3e1b66b37aa93a051da31baca39265b386` | 12 |
 | `tests/test_search_stage.py` | `d40c2e414483d72762beef5a29bb0a3940923664` | 14 |
-| `tests/test_tool_call_adapter.py` | `e4c08d6af7c9b46180cc401a0867c5af6c9de6b8` | 12 |
+| `tests/test_tool_call_adapter.py` | updated in follow-up commit | 14 |
 | `tests/test_identity_resolution.py` | `3f7add5cfc19f2619a8750018cbcc6c939812f01` | 13 |
 | `tests/test_source_verification.py` | `f3de20bc2b5eea3f1d7b7d40d37c72c69a3472d1` | 14 |
 | `tests/test_currentness_verification.py` | `f51a0137b7357457268a5b826f5d640cd62d6da6` | 16 |
@@ -168,3 +168,11 @@ Repository content presence is not runtime evidence. Authored tests are not pass
 
 
 - Added a fetch-stage preflight requiring every approved attachment to match a typed ALLOW policy receipt before any fetch/storage side effect. Final URL host, content magic, byte size, timestamp, and SHA-256 are validated before the private sink is called. Added one regression test; total is 224 authored tests across sixteen files, all unexecuted.
+
+
+## Follow-up static validation change (2026-10-19)
+
+- Added strict validation in `ToolCallPlan` requiring `query_sha256` to be exactly 64 lowercase hexadecimal characters. This rejects malformed hashes at plan construction instead of merely requiring a non-empty string.
+- Added two authored regression tests for malformed and canonical SHA-256 strings. Current authored inventory: 226 test functions across sixteen test files by source inspection.
+- Changes were committed to `bootstrap/verification-first-architecture` in commit `13d39f1078dc05684b68d4694902dde40e38b3ee`; README inventory update followed in `24d010f2865ecde7038ff53964c30e80d743b0d6`.
+- The source and test files were fetched again after the writes, confirming the new content is present on the branch. Tests have **not** been executed. Runtime correctness remains UNVERIFIED.
