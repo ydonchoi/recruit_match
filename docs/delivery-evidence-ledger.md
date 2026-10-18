@@ -32,11 +32,13 @@
 | `src/recruit_match/identity_resolution.py` | `fcc3addb5046f0d07ad61b7c151ca0ce2e6b516d` | PRESENT / SOURCE-REVIEWED; evidence-backed identity and duplicate-conflict gate; resolver injected |
 | `src/recruit_match/source_verification.py` | `ca41e2dc2cc1f0f693aa76b100d1d19a92e9e3f4` | PRESENT / SOURCE-REVIEWED; requires identity-resolved records; official/non-official/unknown authority gate; verifier injected |
 | `src/recruit_match/currentness_verification.py` | `b4b9089a99645d33758bc0671eacd982152a315f` | PRESENT / SOURCE-REVIEWED; requires typed verified-official receipts bound to the exact source URL and typed currentness evidence; verifier injected |
-| `src/recruit_match/verification_stages.py` | `057972a5e2515135365aa48e80713012b401513c` | PRESENT / composes identity, source authority and currentness handlers; external verifiers injected |\n| `src/recruit_match/attachment_stages.py` | `ced68f15f2857ca8344cd21f377102a0047eb56e` | PRESENT / SOURCE-REVIEWED; policy-gated fetch, private content sink and injected inspection; no adapters configured |
+| `src/recruit_match/verification_stages.py` | `057972a5e2515135365aa48e80713012b401513c` | PRESENT / composes identity, source authority and currentness handlers; external verifiers injected |
+| `src/recruit_match/attachment_stages.py` | `ced68f15f2857ca8344cd21f377102a0047eb56e` | PRESENT / SOURCE-REVIEWED; policy-gated fetch, private content sink and injected inspection; no adapters configured |
 | `src/recruit_match/attachments.py` | `9c0af749e909ec59e8bbcfd1a17fa3efbcb13359` | PRESENT / SOURCE-REVIEWED; typed policy flags and malformed DNS responses rejected; transport execution unverified |
 | `docs/adapter-contracts.md` | `4a90b194e970b194e63716fe601d68ef37d67b33` | PRESENT / defines adapter responsibilities, direct ToolCall dispatch and verification stage contracts |
 | `docs/tool-call-execution-runbook.md` | `2609d9c002bab9e843117547595ae0e0b4f5d81e` | PRESENT / controlled integration test procedure and acceptance criteria; not executed |
-| `docs/verification-stage-contracts.md` | `1030ad3901ea58524d09fcdfd1bcdebe74274415` | PRESENT / identity, source authority and currentness stage contracts |\n| `docs/attachment-stage-contracts.md` | `f5b17b5353339f20f7ada5f72bdad770a816763b` | PRESENT / attachment policy/fetch/inspection boundaries and limitations |
+| `docs/verification-stage-contracts.md` | `1030ad3901ea58524d09fcdfd1bcdebe74274415` | PRESENT / identity, source authority and currentness stage contracts |
+| `docs/attachment-stage-contracts.md` | `f5b17b5353339f20f7ada5f72bdad770a816763b` | PRESENT / attachment policy/fetch/inspection boundaries and limitations |
 | `README.md` | `72b0ec88c1a9650af9853c4f5ee2371ab02042a5` | PRESENT / links runbooks; 223 authored test functions documented |
 | `docs/architecture.md` | `50d7d8ea2d73b9e3b9e97dbb217f9b74fa0c6aa1` | PRESENT / architecture status updated |
 | `docs/legacy-architecture-inventory.md` | `aba47610afa4586f4da68c6020b12b8db011fa1a` | PRESENT / complete tracked-path inventory, partial call graph |
