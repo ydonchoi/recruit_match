@@ -18,7 +18,7 @@ This document specifies the boundary for adapters needed by the 18-stage workflo
 | `candidate_evidence_resolution` | Match minimum necessary candidate evidence to each requirement | Candidate evidence references, verification status, unresolved gaps | Missing/unauthorized candidate evidence or unsupported inference |
 | `revalidation` | Recheck source/currentness and invalidation triggers before recommendation | Revalidation timestamp, changed fields, decision invalidation status | Stale or changed source not reconciled |
 
-Pure assessment stages (`eligibility`, `fit_assessment`, `compensation_resolution`, `ranking`, `recommendation`) are implemented as deterministic domain functions and are protected from external-handler overrides.
+Pure assessment stages (`eligibility`, `fit_assessment`, `compensation_resolution`, `ranking`, `recommendation`) are implemented as deterministic domain functions and are protected from external-handler overrides. `src/recruit_match/search_stage.py` now provides injected `search_plan` and `discovery` stage-handler factories. `build_search_handlers(...)` returns the pair to pass to `run_analysis()` alongside request-scope and candidate-context handlers.
 
 ## Search call budget and execution receipts
 
@@ -36,7 +36,18 @@ The report enforces these accounting invariants:
 
 The unit of accounting is **one invocation of the injected callable**. If a provider adapter internally retries, fans out to multiple APIs, or invokes nested tools, those internal calls must be instrumented by that adapter; the outer receipt alone cannot establish their count. A returned sequence and its length are provider response data, not proof of relevance, freshness, or authoritative source verification.
 
-This is a newly authored execution boundary, not evidence of live Search Agent activation. No provider is configured by this module, and its tests remain unexecuted.
+This is a newly authored execution boundary, not evidence of live Search Agent activation. `search_stage.py` connects the plan and discovery stages when a caller explicitly injects a planner and provider callable, but the repository still configures neither by default. The tests for this stage adapter are authored but unexecuted.
+
+## Search stage adapter behavior
+
+- The planner is injected and may return Search Matrix combinations directly or legacy-style plan objects with a nested `combination` attribute.
+- The plan handler rejects empty plans, malformed combinations, duplicate IDs, and plans exceeding the configured maximum; it does not silently truncate.
+- The discovery handler requires a run ID, provider ID, callable, and positive call budget. Provider responses must be sequences of normalized `SearchProviderHit` values.
+- Each result records provider ID, stable combination ID, provider result ID, title, source URL, observation time, SHA-256 of the query, and a run-scoped result reference.
+- Each invocation receipt records start/end time, attempted status, result count, and outcome. When a budget leaves planned queries unexecuted or a provider call fails, discovery returns a non-success status and the pipeline stops rather than treating partial coverage as complete.
+- A valid HTTP(S) URL is only a discovered URL. It does not establish official-source authority, currentness, or recruitment validity; later verification stages must establish those independently.
+
+The adapter factory is available for application composition, but no concrete provider or legacy planner is selected by default. This keeps provider authorization and live credentials under caller control.
 
 ## Receipt contract
 
