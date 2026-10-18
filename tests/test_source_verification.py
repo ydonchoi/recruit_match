@@ -2,7 +2,7 @@ import unittest
 from types import SimpleNamespace
 
 from recruit_match.pipeline import StageStatus
-from recruit_match.search_stage import DiscoveredSearchResult
+from recruit_match.identity_resolution import ResolvedOpportunitySource
 from recruit_match.source_verification import (
     SourceAuthorityDecision,
     SourceAuthorityStatus,
@@ -12,15 +12,21 @@ from recruit_match.source_verification import (
 
 class SourceVerificationStageTests(unittest.TestCase):
     def result(self, result_ref="result-1", url="https://example.org/jobs/1"):
-        return DiscoveredSearchResult(
+        return ResolvedOpportunitySource(
+            source_result_ref=result_ref,
             provider_id="synthetic-search",
-            combination_id="matrix-A",
             provider_result_id="provider-result-1",
             title="Recruitment notice",
             source_url=url,
             observed_at="2026-10-19T12:00:00+00:00",
             query_sha256="a" * 64,
-            result_ref=result_ref,
+            opportunity_id="opportunity-1",
+            organization="Synthetic University",
+            position="Research Administrator",
+            recruitment_cycle="2026-fall",
+            posting_id="posting-1",
+            identity_basis="Synthetic identity test",
+            identity_evidence_refs=("synthetic:identity",),
         )
 
     def official(self, result):
@@ -36,7 +42,7 @@ class SourceVerificationStageTests(unittest.TestCase):
         result = self.result()
         execution = build_source_verification_handler(
             self.official, default_verifier_id="fallback-verifier"
-        )({"discovered_search_results": (result,)})
+        )({"resolved_opportunity_sources": (result,)})
         self.assertEqual(execution.status, StageStatus.SUCCESS)
         self.assertEqual(execution.output["official_source_count"], 1)
         self.assertEqual(execution.output["official_source_results"], (result,))
@@ -57,7 +63,7 @@ class SourceVerificationStageTests(unittest.TestCase):
             )
         execution = build_source_verification_handler(
             verifier, default_verifier_id="fallback-verifier"
-        )({"discovered_search_results": (self.result(),)})
+        )({"resolved_opportunity_sources": (self.result(),)})
         self.assertEqual(execution.status, StageStatus.SUCCESS)
         self.assertEqual(execution.output["official_source_count"], 0)
         self.assertEqual(execution.output["official_source_results"], ())
@@ -104,14 +110,14 @@ class SourceVerificationStageTests(unittest.TestCase):
             self.official, default_verifier_id="fallback-verifier"
         )({})
         self.assertEqual(execution.status, StageStatus.BLOCKED)
-        self.assertEqual(execution.reason, "DISCOVERED_SEARCH_RESULTS_MISSING")
+        self.assertEqual(execution.reason, "RESOLVED_OPPORTUNITY_SOURCES_MISSING")
 
     def test_invalid_url_blocks_before_verifier_is_called(self):
         calls = []
         execution = build_source_verification_handler(
             lambda result: calls.append(result) or self.official(result),
             default_verifier_id="fallback-verifier",
-        )({"discovered_search_results": (self.result(url="file:///etc/passwd"),)})
+        )({"resolved_opportunity_sources": (self.result(url="file:///etc/passwd"),)})
         self.assertEqual(execution.status, StageStatus.BLOCKED)
         self.assertEqual(execution.reason, "DISCOVERED_SOURCE_URL_INVALID")
         self.assertEqual(calls, [])
@@ -121,7 +127,7 @@ class SourceVerificationStageTests(unittest.TestCase):
         execution = build_source_verification_handler(
             lambda result: calls.append(result) or self.official(result),
             default_verifier_id="fallback-verifier",
-        )({"discovered_search_results": (
+        )({"resolved_opportunity_sources": (
             self.result("same"),
             self.result("same", "https://example.org/jobs/2"),
         )})
@@ -176,7 +182,7 @@ class SourceVerificationStageTests(unittest.TestCase):
             )
         execution = build_source_verification_handler(
             verifier, default_verifier_id="fallback-verifier"
-        )({"discovered_search_results": results})
+        )({"resolved_opportunity_sources": results})
         self.assertEqual(execution.status, StageStatus.BLOCKED)
         self.assertEqual(execution.output["official_source_count"], 1)
         self.assertEqual(execution.output["source_verification_unknown_count"], 1)
