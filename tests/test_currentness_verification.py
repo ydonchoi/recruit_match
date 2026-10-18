@@ -132,6 +132,20 @@ class CurrentnessVerificationStageTests(unittest.TestCase):
         self.assertEqual(execution.status, StageStatus.BLOCKED)
         self.assertEqual(execution.reason, "OFFICIAL_SOURCE_AUTHORITY_NOT_CONFIRMED")
 
+    def test_untyped_source_receipt_cannot_authorize_currentness(self):
+        source = self.source()
+        forged = {
+            "source_result_ref": source.source_result_ref,
+            "status": "VERIFIED_OFFICIAL",
+            "evidence_refs": ("fake-evidence",),
+        }
+        execution = self.handler(lambda item: self.decision(item))({
+            "official_source_results": (source,),
+            "source_verification_receipts": (forged,),
+        })
+        self.assertEqual(execution.status, StageStatus.BLOCKED)
+        self.assertEqual(execution.reason, "OFFICIAL_SOURCE_AUTHORITY_NOT_CONFIRMED")
+
     def test_duplicate_source_refs_block_before_verifier(self):
         source = self.source()
         calls = []
