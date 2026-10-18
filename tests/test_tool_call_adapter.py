@@ -4,6 +4,7 @@ from datetime import datetime, timezone
 from types import SimpleNamespace
 
 from recruit_match.application import run_analysis
+from recruit_match.search_budget import DEFAULT_CALLS, MAX_CALLS
 from recruit_match.pipeline import StageStatus
 from recruit_match.runner import StageExecution
 from recruit_match.search_stage import SearchProviderHit
@@ -38,6 +39,46 @@ class ToolCallAdapterTests(unittest.TestCase):
             SearchProviderHit(str(item["id"]), str(item["title"]), str(item["url"]))
             for item in raw["results"]
         )
+
+    def test_default_budget_is_20_dispatches(self):
+        plans = tuple(
+            ToolCallPlan(i, f"run-1:{i}:web.search", f"combination-{i}", "web.search",
+                         {"query": f"query {i}"}, sha256(f"query {i}".encode()).hexdigest())
+            for i in range(25)
+        )
+        calls = []
+        batch = execute_tool_call_plan(
+            plans, lambda name, args: calls.append((name, args)) or {"results": []},
+            self.normalizer, allowed_tool_names=("web.search",), run_id="run-1",
+        )
+        self.assertEqual(DEFAULT_CALLS, 20)
+        self.assertEqual(batch.report.max_calls, 20)
+        self.assertEqual(batch.report.attempted_dispatch_count, 20)
+        self.assertEqual(len(calls), 20)
+        self.assertEqual(batch.report.skipped_call_count, 5)
+
+    def test_maximum_budget_is_100_and_values_above_are_rejected(self):
+        plans = tuple(
+            ToolCallPlan(i, f"run-1:{i}:web.search", f"combination-{i}", "web.search",
+                         {"query": f"query {i}"}, sha256(f"query {i}".encode()).hexdigest())
+            for i in range(101)
+        )
+        calls = []
+        batch = execute_tool_call_plan(
+            plans, lambda name, args: calls.append((name, args)) or {"results": []},
+            self.normalizer, max_calls=MAX_CALLS,
+            allowed_tool_names=("web.search",), run_id="run-1",
+        )
+        self.assertEqual(MAX_CALLS, 100)
+        self.assertEqual(batch.report.attempted_dispatch_count, 100)
+        self.assertEqual(len(calls), 100)
+        with self.assertRaisesRegex(ValueError, "TOOL_CALL_BUDGET_MUST_BE_BETWEEN_1_AND_100"):
+            execute_tool_call_plan(
+                self.plans, lambda name, args: calls.append((name, args)) or {"results": []},
+                self.normalizer, max_calls=101,
+                allowed_tool_names=("web.search",), run_id="run-1",
+            )
+        self.assertEqual(len(calls), 100)
 
     def test_dispatches_plans_and_records_confirmed_validated_receipts(self):
         calls = []
@@ -169,7 +210,7 @@ class ToolCallAdapterTests(unittest.TestCase):
                     )
 
     def test_bool_budget_is_rejected(self):
-        with self.assertRaisesRegex(ValueError, "TOOL_CALL_BUDGET_MUST_BE_POSITIVE_INTEGER"):
+        with self.assertRaisesRegex(ValueError, "TOOL_CALL_BUDGET_MUST_BE_BETWEEN_1_AND_100"):
             execute_tool_call_plan(
                 self.plans, lambda name, args: {}, self.normalizer,
                 max_calls=True, allowed_tool_names=("web.search",), run_id="run-1",
