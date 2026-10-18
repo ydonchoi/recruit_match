@@ -49,6 +49,17 @@ This is a newly authored execution boundary, not evidence of live Search Agent a
 
 The adapter factory is available for application composition, but no concrete provider or legacy planner is selected by default. This keeps provider authorization and live credentials under caller control.
 
+## Identity, source authority and currentness gates
+
+Three additional stage adapters are now defined:
+- `identity_resolution` in `src/recruit_match/identity_resolution.py` requires a stable opportunity ID, organization, position, recruitment cycle, posting ID, identity basis, evidence references, and a timezone-aware observation time. Conflicting identities block; exact duplicates with the same identity fields and URL are deduplicated with a receipt.
+- `source_verification` in `src/recruit_match/source_verification.py` consumes identity-resolved sources and classifies each as verified official, verified non-official, or unknown. Unknown authority blocks; non-official results are not forwarded as official sources.
+- `currentness_verification` in `src/recruit_match/currentness_verification.py` requires a corresponding verified-official receipt and an explicit typed `CurrentnessState` decision with evidence. Unknown currentness blocks.
+
+`src/recruit_match/verification_stages.py` composes these handlers. All resolvers and verifiers are injected; the modules do not independently fetch pages, inspect official-domain registries, or infer truth from URLs. Their contracts enforce evidence shape and stage separation, not the correctness of an injected verifier. The detailed contracts are in [verification-stage-contracts.md](verification-stage-contracts.md).
+
+`tests/test_identity_resolution.py`, `tests/test_source_verification.py`, `tests/test_currentness_verification.py`, and `tests/test_verification_stages.py` contain authored test cases for these boundaries and a synthetic bounded pipeline. They have not been executed.
+
 ## Direct host ToolCall dispatch adapter
 
 `src/recruit_match/tool_call_adapter.py` adds an explicit path for a Search Matrix plan to dispatch through an injected host ToolCall dispatcher, rather than requiring every host integration to be wrapped as a generic search callable.
