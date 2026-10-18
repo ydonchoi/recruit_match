@@ -1,6 +1,7 @@
 import unittest
 from types import SimpleNamespace
 
+from recruit_match.search_budget import DEFAULT_CALLS, MAX_CALLS
 from recruit_match.search_execution import (
     SearchCallStatus,
     SearchQueryPlan,
@@ -16,6 +17,30 @@ class SearchExecutionBudgetTests(unittest.TestCase):
             SearchQueryPlan(i, f"combination-{i}", f"query {i}")
             for i in range(count)
         )
+
+    def test_default_budget_is_20_calls(self):
+        calls = []
+        batch = execute_search_plan(
+            self.plans(25), lambda query: calls.append(query) or (),
+        )
+        self.assertEqual(DEFAULT_CALLS, 20)
+        self.assertEqual(batch.report.max_calls, 20)
+        self.assertEqual(batch.report.attempted_call_count, 20)
+        self.assertEqual(len(calls), 20)
+        self.assertEqual(batch.report.skipped_query_count, 5)
+
+    def test_maximum_budget_is_100_and_values_above_are_rejected(self):
+        calls = []
+        batch = execute_search_plan(
+            self.plans(101), lambda query: calls.append(query) or (),
+            max_calls=MAX_CALLS,
+        )
+        self.assertEqual(MAX_CALLS, 100)
+        self.assertEqual(batch.report.attempted_call_count, 100)
+        self.assertEqual(len(calls), 100)
+        with self.assertRaisesRegex(ValueError, "SEARCH_CALL_BUDGET_MUST_BE_BETWEEN_1_AND_100"):
+            execute_search_plan(self.plans(1), lambda query: calls.append(query) or (), max_calls=101)
+        self.assertEqual(len(calls), 100)
 
     def test_executes_all_plans_when_budget_is_sufficient(self):
         calls = []
@@ -109,7 +134,7 @@ class SearchExecutionBudgetTests(unittest.TestCase):
 
     def test_invalid_budget_is_rejected_before_calls(self):
         calls = []
-        with self.assertRaisesRegex(ValueError, "SEARCH_CALL_BUDGET_MUST_BE_POSITIVE_INTEGER"):
+        with self.assertRaisesRegex(ValueError, "SEARCH_CALL_BUDGET_MUST_BE_BETWEEN_1_AND_100"):
             execute_search_plan(self.plans(1), lambda q: calls.append(q) or (), max_calls=True)
         self.assertEqual(calls, [])
 
