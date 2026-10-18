@@ -1,0 +1,386 @@
+"""Pure assessment contracts with explicit uncertainty and hard eligibility gates.
+
+No source acquisition, candidate storage, network access, persistence or external
+mutation is performed here. Missing measurements remain UNKNOWN/None.
+"""
+from __future__ import annotations
+
+from dataclasses import dataclass
+from enum import StrEnum
+from math import isfinite
+from typing import Iterable, Sequence
+
+from .domain import CurrentnessState, EligibilityState, RecommendationState
+
+
+class EvidenceDomain(StrEnum):
+    CANDIDATE = "CANDIDATE"
+    RECRUITMENT = "RECRUITMENT"
+
+
+class VerificationState(StrEnum):
+    UNKNOWN = "UNKNOWN"
+    VERIFIED = "VERIFIED"
+    FAILED = "FAILED"
+
+
+class RequirementStatus(StrEnum):
+    UNKNOWN = "UNKNOWN"
+    PASS = "PASS"
+    FAIL = "FAIL"
+
+
+class DuplicateState(StrEnum):
+    UNKNOWN = "UNKNOWN"
+    CONFLICT = "CONFLICT"
+    RESOLVED = "RESOLVED"
+
+
+class CompensationTier(StrEnum):
+    OFFICIAL = "OFFICIAL"
+    INSTITUTION_TABLE = "INSTITUTION_TABLE"
+    PUBLIC_BENCHMARK = "PUBLIC_BENCHMARK"
+    ESTIMATE = "ESTIMATE"
+    UNKNOWN = "UNKNOWN"
+
+
+@dataclass(frozen=True, slots=True)
+class RequirementCheck:
+    requirement_id: str
+    critical: bool
+    status: RequirementStatus
+    evidence_domains: tuple[EvidenceDomain, ...] = ()
+    evidence_refs: tuple[str, ...] = ()
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.requirement_id, str) or not self.requirement_id.strip():
+            raise ValueError("REQUIREMENT_ID_REQUIRED")
+        if not isinstance(self.critical, bool):
+            raise ValueError("INVALID_CRITICAL_FLAG")
+        if not isinstance(self.status, RequirementStatus):
+            raise ValueError("INVALID_REQUIREMENT_STATUS")
+        if not isinstance(self.evidence_domains, tuple) or any(
+            not isinstance(item, EvidenceDomain) for item in self.evidence_domains
+        ):
+            raise ValueError("INVALID_EVIDENCE_DOMAIN")
+        if not isinstance(self.evidence_refs, tuple) or any(
+            not isinstance(ref, str) or not ref.strip() for ref in self.evidence_refs
+        ):
+            raise ValueError("INVALID_EVIDENCE_REFERENCE")
+
+
+def evaluate_eligibility(requirements: Iterable[RequirementCheck]) -> EligibilityState:
+    """Evaluate mandatory requirements; an empty/unresolved set never passes."""
+    try:
+        checks = tuple(requirements)
+    except TypeError as exc:
+        raise ValueError("INVALID_REQUIREMENT_COLLECTION") from exc
+    if any(not isinstance(item, RequirementCheck) for item in checks):
+        raise ValueError("INVALID_REQUIREMENT_CHECK")
+    requirement_ids = [item.requirement_id for item in checks]
+    if len(requirement_ids) != len(set(requirement_ids)):
+        raise ValueError("DUPLICATE_REQUIREMENT_ID")
+    critical = tuple(item for item in checks if item.critical)
+    if not critical:
+        return EligibilityState.UNKNOWN
+    required_domains = {EvidenceDomain.CANDIDATE, EvidenceDomain.RECRUITMENT}
+
+    def has_decision_evidence(item: RequirementCheck) -> bool:
+        # The contract requires separately traceable candidate-side and
+        # recruitment-side evidence references, not a single opaque pointer.
+        return (
+            len(set(item.evidence_refs)) >= 2
+            and len(set(item.evidence_domains)) == len(item.evidence_domains)
+            and required_domains.issubset(set(item.evidence_domains))
+        )
+
+    # A documented critical failure is decisive even if another requirement is
+    # unknown. A failure without adequate evidence is not a confirmed failure.
+    if any(
+        item.status is RequirementStatus.FAIL and has_decision_evidence(item)
+        for item in critical
+    ):
+        return EligibilityState.FAIL
+
+    if any(
+        item.status is RequirementStatus.UNKNOWN or not has_decision_evidence(item)
+        for item in critical
+    ):
+        return EligibilityState.UNKNOWN
+
+    return EligibilityState.PASS
+
+
+@dataclass(frozen=True, slots=True)
+class FitDimensions:
+    job_fit: float | None
+    career_education_fit: float | None
+    preference_fit: float | None
+    location_fit: float | None
+
+    def __post_init__(self) -> None:
+        for name, value in (
+            ("job_fit", self.job_fit),
+            ("career_education_fit", self.career_education_fit),
+            ("preference_fit", self.preference_fit),
+            ("location_fit", self.location_fit),
+        ):
+            if value is not None and (
+                isinstance(value, bool)
+                or not isinstance(value, (int, float))
+                or not isfinite(value)
+                or not 0.0 <= value <= 100.0
+            ):
+                raise ValueError(f"FIT_SCORE_OUT_OF_RANGE:{name}")
+
+
+def weighted_fit_score(
+    dimensions: FitDimensions,
+    weights: tuple[float, float, float, float],
+) -> float | None:
+    """Return a weighted score only when all dimensions and weights are known."""
+    if not isinstance(dimensions, FitDimensions):
+        raise ValueError("INVALID_FIT_DIMENSIONS")
+    if not isinstance(weights, (tuple, list)) or len(weights) != 4:
+        raise ValueError("INVALID_FIT_WEIGHTS")
+    if any(
+        isinstance(weight, bool)
+        or not isinstance(weight, (int, float))
+        or not isfinite(weight)
+        or weight < 0
+        for weight in weights
+    ):
+        raise ValueError("INVALID_FIT_WEIGHTS")
+    total_weight = sum(weights)
+    if total_weight <= 0 or not isfinite(total_weight):
+        raise ValueError("INVALID_FIT_WEIGHTS")
+    values = (
+        dimensions.job_fit,
+        dimensions.career_education_fit,
+        dimensions.preference_fit,
+        dimensions.location_fit,
+    )
+    if any(value is None for value in values):
+        return None
+    score = sum(value * weight for value, weight in zip(values, weights)) / total_weight
+    if not isfinite(score):
+        raise ValueError("INVALID_FIT_SCORE")
+    return score
+
+
+@dataclass(frozen=True, slots=True)
+class CompensationQuote:
+    amount_or_range: str
+    source_ref: str
+    verification: VerificationState
+    assumptions: tuple[str, ...] = ()
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.amount_or_range, str) or not self.amount_or_range.strip():
+            raise ValueError("COMPENSATION_AMOUNT_REQUIRED")
+        if not isinstance(self.source_ref, str) or not self.source_ref.strip():
+            raise ValueError("COMPENSATION_SOURCE_REF_REQUIRED")
+        if not isinstance(self.verification, VerificationState):
+            raise ValueError("INVALID_COMPENSATION_VERIFICATION")
+        if not isinstance(self.assumptions, tuple) or any(
+            not isinstance(item, str) or not item.strip() for item in self.assumptions
+        ):
+            raise ValueError("INVALID_COMPENSATION_ASSUMPTIONS")
+
+
+@dataclass(frozen=True, slots=True)
+class CompensationEvidence:
+    tier: CompensationTier
+    amount_or_range: str | None
+    source_ref: str | None
+    assumptions: tuple[str, ...] = ()
+    confidence: str = "UNKNOWN"
+    reason: str = ""
+
+
+def resolve_compensation(
+    *,
+    official: CompensationQuote | None = None,
+    institution_table: CompensationQuote | None = None,
+    public_benchmark: CompensationQuote | None = None,
+    estimate: CompensationQuote | None = None,
+) -> CompensationEvidence:
+    """Resolve by evidence tier; every accepted value must carry a source ref."""
+    for quote, tier, confidence in (
+        (official, CompensationTier.OFFICIAL, "HIGH"),
+        (institution_table, CompensationTier.INSTITUTION_TABLE, "HIGH"),
+        (public_benchmark, CompensationTier.PUBLIC_BENCHMARK, "MEDIUM"),
+        (estimate, CompensationTier.ESTIMATE, "LOW"),
+    ):
+        if quote is None:
+            continue
+        if not isinstance(quote, CompensationQuote):
+            return CompensationEvidence(
+                CompensationTier.UNKNOWN, None, None, confidence="UNKNOWN",
+                reason=f"COMPENSATION_QUOTE_INVALID:{tier.value}",
+            )
+        if quote.verification is not VerificationState.VERIFIED:
+            return CompensationEvidence(
+                CompensationTier.UNKNOWN, None, None, confidence="UNKNOWN",
+                reason=f"COMPENSATION_SOURCE_NOT_VERIFIED:{tier.value}",
+            )
+        if (
+            not isinstance(quote.amount_or_range, str)
+            or not quote.amount_or_range.strip()
+            or not isinstance(quote.source_ref, str)
+            or not quote.source_ref.strip()
+        ):
+            return CompensationEvidence(
+                CompensationTier.UNKNOWN, None, None, confidence="UNKNOWN",
+                reason=f"COMPENSATION_EVIDENCE_INCOMPLETE:{tier.value}",
+            )
+        if tier is CompensationTier.ESTIMATE and not quote.assumptions:
+            return CompensationEvidence(
+                CompensationTier.UNKNOWN, None, None, confidence="UNKNOWN",
+                reason="ESTIMATE_ASSUMPTIONS_MISSING",
+            )
+        return CompensationEvidence(
+            tier, quote.amount_or_range, quote.source_ref, quote.assumptions, confidence
+        )
+    return CompensationEvidence(CompensationTier.UNKNOWN, None, None, confidence="UNKNOWN", reason="COMPENSATION_NOT_FOUND")
+
+
+@dataclass(frozen=True, slots=True)
+class RecommendationInputs:
+    eligibility: EligibilityState
+    source_verification: VerificationState
+    currentness: CurrentnessState
+    duplicate_state: DuplicateState
+    privacy_review: VerificationState
+    provenance: VerificationState
+    schema_validation: VerificationState
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.eligibility, EligibilityState):
+            raise ValueError("INVALID_RECOMMENDATION_ELIGIBILITY")
+        for name, value in (
+            ("source_verification", self.source_verification),
+            ("privacy_review", self.privacy_review),
+            ("provenance", self.provenance),
+            ("schema_validation", self.schema_validation),
+        ):
+            if not isinstance(value, VerificationState):
+                raise ValueError(f"INVALID_RECOMMENDATION_GATE:{name}")
+        if not isinstance(self.duplicate_state, DuplicateState):
+            raise ValueError("INVALID_RECOMMENDATION_DUPLICATE_STATE")
+        if not isinstance(self.currentness, CurrentnessState):
+            raise ValueError("INVALID_RECOMMENDATION_CURRENTNESS")
+
+
+def decide_recommendation(value: RecommendationInputs) -> RecommendationState:
+    """Only explicit all-green evidence can recommend; UNKNOWN is review, not pass."""
+    if not isinstance(value, RecommendationInputs):
+        raise ValueError("INVALID_RECOMMENDATION_INPUTS")
+    if value.eligibility is EligibilityState.FAIL:
+        return RecommendationState.NOT_RECOMMENDED
+    if value.duplicate_state is DuplicateState.CONFLICT:
+        return RecommendationState.NOT_RECOMMENDED
+    if value.source_verification is VerificationState.FAILED or value.provenance is VerificationState.FAILED:
+        return RecommendationState.NOT_RECOMMENDED
+    if value.privacy_review is VerificationState.FAILED or value.schema_validation is VerificationState.FAILED:
+        return RecommendationState.NOT_RECOMMENDED
+    if value.currentness in (
+        CurrentnessState.CLOSED,
+        CurrentnessState.ARCHIVED,
+        CurrentnessState.EXPIRED,
+    ):
+        return RecommendationState.NOT_RECOMMENDED
+
+    all_explicitly_valid = (
+        value.eligibility is EligibilityState.PASS
+        and value.source_verification is VerificationState.VERIFIED
+        and value.currentness in (
+            CurrentnessState.ACTIVE,
+            CurrentnessState.URGENT,
+            CurrentnessState.CLOSING_SOON,
+        )
+        and value.duplicate_state is DuplicateState.RESOLVED
+        and value.privacy_review is VerificationState.VERIFIED
+        and value.provenance is VerificationState.VERIFIED
+        and value.schema_validation is VerificationState.VERIFIED
+    )
+    if all_explicitly_valid:
+        return RecommendationState.RECOMMENDED
+    return RecommendationState.NEEDS_REVIEW
+
+
+@dataclass(frozen=True, slots=True)
+class RankingCandidate:
+    opportunity_id: str
+    eligibility: EligibilityState
+    job_fit: float | None
+    career_education_fit: float | None
+    total_score: float | None
+    location_priority: int | None
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.opportunity_id, str) or not self.opportunity_id.strip():
+            raise ValueError("OPPORTUNITY_ID_REQUIRED")
+        if not isinstance(self.eligibility, EligibilityState):
+            raise ValueError("INVALID_ELIGIBILITY_STATE")
+        for name, value in (
+            ("job_fit", self.job_fit),
+            ("career_education_fit", self.career_education_fit),
+        ):
+            if value is not None and (
+                isinstance(value, bool)
+                or not isinstance(value, (int, float))
+                or not isfinite(value)
+                or not 0.0 <= value <= 100.0
+            ):
+                raise ValueError(f"INVALID_RANKING_DIMENSION:{name}")
+        if self.total_score is not None and (
+            isinstance(self.total_score, bool)
+            or not isinstance(self.total_score, (int, float))
+            or not isfinite(self.total_score)
+        ):
+            raise ValueError("INVALID_TOTAL_SCORE")
+        if self.location_priority is not None and (
+            not isinstance(self.location_priority, int) or isinstance(self.location_priority, bool)
+        ):
+            raise ValueError("INVALID_LOCATION_PRIORITY")
+
+
+def rank_candidates(candidates: Sequence[RankingCandidate], *, limit: int = 50) -> tuple[RankingCandidate, ...]:
+    """Rank only supplied records; never pad and never coerce missing scores to zero."""
+    if not isinstance(limit, int) or isinstance(limit, bool) or limit < 0:
+        raise ValueError("RANK_LIMIT_MUST_BE_NONNEGATIVE_INTEGER")
+    if not isinstance(candidates, (tuple, list)) or any(
+        not isinstance(candidate, RankingCandidate) for candidate in candidates
+    ):
+        raise ValueError("INVALID_RANKING_CANDIDATES")
+    opportunity_ids = [candidate.opportunity_id for candidate in candidates]
+    if len(opportunity_ids) != len(set(opportunity_ids)):
+        raise ValueError("DUPLICATE_OPPORTUNITY_ID_IN_RANKING")
+
+    eligibility_order = {
+        EligibilityState.PASS: 0,
+        EligibilityState.UNKNOWN: 1,
+        EligibilityState.FAIL: 2,
+    }
+
+    def optional_desc(value: float | None) -> tuple[int, float]:
+        return (1, 0.0) if value is None else (0, -value)
+
+    def key(candidate: RankingCandidate) -> tuple:
+        return (
+            eligibility_order[candidate.eligibility],
+            optional_desc(candidate.job_fit),
+            optional_desc(candidate.career_education_fit),
+            candidate.location_priority is None,
+            candidate.location_priority if candidate.location_priority is not None else 0,
+            optional_desc(candidate.total_score),
+            candidate.opportunity_id,
+        )
+
+    # A failed mandatory gate is a hard exclusion, not merely a low ranking.
+    eligible_for_ranking = tuple(
+        candidate for candidate in candidates
+        if candidate.eligibility is not EligibilityState.FAIL
+    )
+    return tuple(sorted(eligible_for_ranking, key=key)[:limit])
