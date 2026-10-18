@@ -35,7 +35,7 @@ A clean, verification-first reimplementation of the recruitment matching system.
 - **Application entry point:** `src/recruit_match/application.py` executes the declared workflow through injected handlers; real external adapters are not configured
 - **Notion writes:** not implemented
 - **GitHub Registry CRUD/sync:** excluded from the default target
-- **Tests:** 145 test functions are authored across ten test files; execution and results are unverified
+- **Tests:** 146 test functions are authored across ten test files; execution and results are unverified
 - **GitHub Actions:** the latest run failed before any step/log was exposed (`runner_id=0`, no runner name); the exact infrastructure cause is unconfirmed, and test state remains unknown
 
 ## Repository layout
@@ -43,7 +43,7 @@ A clean, verification-first reimplementation of the recruitment matching system.
 - `src/recruit_match/domain.py`: provisional opportunity domain types and fail-closed validation.
 - `src/recruit_match/assessment.py`: pure evidence-gated eligibility, fit scoring, compensation tiering, recommendation and no-padding ranking contracts.
 - `src/recruit_match/pipeline.py`: typed stage receipts, fail-closed bounded-run validation and configurable evidence-reference requirements.
-- `src/recruit_match/runner.py`: injected, in-memory bounded pipeline runner with strict receipt-shape validation; no production handlers or persistence are configured.
+- `src/recruit_match/runner.py`: injected, in-memory bounded pipeline runner with strict receipt-shape validation; well-formed failed-stage outputs remain available for diagnostics while downstream execution stops.
 - `src/recruit_match/application.py`: explicit public entry point for full or bounded runs; missing external adapters fail closed.
 - `src/recruit_match/search_execution.py`: Search Matrix-shaped combination adapter, hard per-batch call budget, and per-query execution receipts; provider is still injected and no live search provider is configured.
 - `src/recruit_match/search_stage.py`: injected `search_plan` and `discovery` stage handlers with provider result normalization, observed timestamps, query hashes, invocation receipts, and explicit partial-run blocking.
