@@ -17,6 +17,7 @@ every listed platform can be queried automatically.
 | `gojobs` | 나라일터 | Civil service / public employment | 1 | Website identified | API and automated-access conditions unverified |
 | `cleaneye_jobplus` | 클린아이 잡플러스 | Local public institutions | 1 | Website identified | API availability unverified |
 | `hibrain` | 하이브레인넷 | University faculty / research | 1 | Website identified | Automated-access conditions unverified |
+| `jobs_ac_kr` | JOBS.ac.kr (잡스) | University faculty / research / global | 1 | Official platform homepage identified | API and automated-access conditions unverified |
 | `university_official_boards` | University official recruitment boards | Faculty / staff / research | 1 | Institution discovery aid identified | Each institution's original recruitment URL must be registered separately |
 | `rndjob` | 이공계인력중개센터 | Research / career | 2 | Website identified | API and automated-access conditions unverified |
 | `jobaba` | 잡아바 | Regional / general / public employment | 2 | Official API guide identified | Regional scope, authentication and limits require validation |
