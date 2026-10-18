@@ -3,7 +3,7 @@
 - Snapshot date: 2026-10-19
 - Target repository: `ydonchoi/recruit_match` (private)
 - Target branch: `bootstrap/verification-first-architecture`
-- Target branch head before this ledger update: `9aa24e98f94e693fb36ee1aa480861d36c15f8c4`
+- Target branch head before this ledger update: `3fa59f685685732da8075e49e7c3ad33461f833b`
 - Legacy source revision: `ydonchoi/recruitment_matching@89899ee3b0719d73f36311004ac32f87e8a78dee`
 - PR: [#1](https://github.com/ydonchoi/recruit_match/pull/1), Draft, not merged
 
@@ -23,12 +23,14 @@
 | `src/recruit_match/assessment.py` | `afbedb21fde8c62c298c510d55904a0eb9ae6f9f` | PRESENT / SOURCE-REVIEWED; typed currentness, duplicate-ID checks, stricter requirement evidence contract |
 | `src/recruit_match/assessment_handlers.py` | `9cdb686c54ec8c4de1950935174ea1753b7a2b92` | PRESENT / SOURCE-REVIEWED; recommendation gates derived from upstream context and typed currentness |
 | `src/recruit_match/pipeline.py` | `febb2053779d3a98610c607f2d03c94cbb009fb5` | PRESENT / SOURCE-REVIEWED; strict stage and receipt contracts |
-| `src/recruit_match/runner.py` | `77d4503e62e1d728666177df53b846653bef3f2c` | PRESENT / SOURCE-REVIEWED; malformed handler output fails closed |
+| `src/recruit_match/runner.py` | `d3c3c293d0729615a19cf45b7210dd3795807d90` | PRESENT / SOURCE-REVIEWED; malformed handler output fails closed |
 | `src/recruit_match/workflow.py` | `c6f4c6e01cec500a287dd5d2383f5463b373d582` | PRESENT / 18-stage contract; real adapters not configured |
 | `src/recruit_match/application.py` | `8d0318d8689b28ba7655d7d692c9f8c03cb11147` | PRESENT / SOURCE-REVIEWED; injectable full/bounded entry point |
 | `src/recruit_match/search_execution.py` | `fd6cb37dd320e25faf3ca9a87b6b5f3cd36b79c6` | PRESENT / SOURCE-REVIEWED; Search Matrix-shaped plan adapter, hard callable-invocation budget, per-query in-memory receipts; no provider configured |
+| `src/recruit_match/search_stage.py` | `5daadf05f17782cf657f7ef247e53b487eb17591` | PRESENT / SOURCE-REVIEWED; injected plan/discovery stage factories; no default provider/planner |
+
 | `src/recruit_match/attachments.py` | `9c0af749e909ec59e8bbcfd1a17fa3efbcb13359` | PRESENT / SOURCE-REVIEWED; typed policy flags and malformed DNS responses rejected; transport execution unverified |
-| `docs/adapter-contracts.md` | `f5f17770095edd341b972fa6ad93019cfbd6515d` | PRESENT / defines adapter responsibilities, search-call budget and receipt invariants |
+| `docs/adapter-contracts.md` | `f539095730f435d93ce6c0e8c9515ca355a7acc2` | PRESENT / defines adapter responsibilities, search-call budget, receipt invariants and stage adapter behavior |
 | `docs/architecture.md` | `50d7d8ea2d73b9e3b9e97dbb217f9b74fa0c6aa1` | PRESENT / architecture status updated |
 | `docs/legacy-architecture-inventory.md` | `aba47610afa4586f4da68c6020b12b8db011fa1a` | PRESENT / complete tracked-path inventory, partial call graph |
 | `docs/target-architecture-and-migration-plan.md` | `1166785636961e63e8c6e7dbabde5e8fa5b4704b` | PRESENT / partial implementation status |
@@ -42,12 +44,13 @@
 | `tests/test_domain.py` | `475a44ec268f4610a31daeb9f22cf62649bb34b9` | 14 |
 | `tests/test_assessment.py` | `b64617a5944861525bb379e44127dcaaba9e8adb` | 34 |
 | `tests/test_pipeline.py` | `cf45abcc382306e69bd43f51dc87716c71b76b3a` | 16 |
-| `tests/test_runner.py` | `16454356b842d8127b7e27b53d849d161140178a` | 12 |
+| `tests/test_runner.py` | `6744b0316ea64e37ab27bd38a9c7b34f15f59900` | 13 |
 | `tests/test_attachments.py` | `fed630df097903273229d1ca29bf7b63030c1c19` | 22 |
 | `tests/test_workflow.py` | `42aa6a5a64f2d49eea1a4df6fe0ea6959bdbfd1d` | 10 |
 | `tests/test_assessment_handlers.py` | `4b925b009e484b7c657619f3aa976b0eda2b765d` | 9 |
 | `tests/test_application.py` | `b525c98df09b67f8397c5e92f9045197ee9a93c9` | 4 |
 | `tests/test_search_execution.py` | `8054cc3e1b66b37aa93a051da31baca39265b386` | 12 |
+| `tests/test_search_stage.py` | `9d3e5b47989d2470ae40e25703757886ecbcb2a7` | 12 |
 | **Total** | | **146** |
 
 This is a count of declared test functions by source inspection, not a count of passing tests.
@@ -92,7 +95,7 @@ This is a count of declared test functions by source inspection, not a count of 
 
 ## Remaining merge/integration gates
 
-1. Execute all 133 authored tests and retain actual output.
+1. Execute all 146 authored tests and retain actual output.
 2. Exercise the DNS-pinned transport with TLS hostname mismatch, controlled redirects, IPv4/IPv6, DNS changes and proxy configuration.
 3. Implement and authorize actual external stage adapters; verify each adapter's source identity, observation time, access basis and evidence receipts.
 4. Execute the synthetic full workflow through `run_analysis`, then integration tests with controlled adapters.
