@@ -1,4 +1,5 @@
 import unittest
+from hashlib import sha256
 from datetime import datetime, timezone
 from types import SimpleNamespace
 
@@ -22,9 +23,9 @@ class ToolCallAdapterTests(unittest.TestCase):
     def setUp(self):
         self.plans = (
             ToolCallPlan(0, "run-1:matrix-A:web.search", "matrix-A", "web.search",
-                         {"query": "university admin"}, "a" * 64),
+                         {"query": "university admin"}, sha256(b"university admin").hexdigest()),
             ToolCallPlan(1, "run-1:matrix-B:web.search", "matrix-B", "web.search",
-                         {"query": "research support"}, "b" * 64),
+                         {"query": "research support"}, sha256(b"research support").hexdigest()),
         )
 
     def clock(self):
@@ -63,7 +64,7 @@ class ToolCallAdapterTests(unittest.TestCase):
         calls = []
         batch = execute_tool_call_plan(
             self.plans + (ToolCallPlan(2, "run-1:matrix-C:web.search", "matrix-C", "web.search",
-                                      {"query": "policy research"}, "c" * 64),),
+                                      {"query": "policy research"}, sha256(b"policy research").hexdigest()),),
             lambda name, args: calls.append(args) or {"results": []},
             self.normalizer,
             max_calls=1,
@@ -118,7 +119,7 @@ class ToolCallAdapterTests(unittest.TestCase):
     def test_duplicate_call_ids_are_rejected_before_dispatch(self):
         duplicate = (self.plans[0], ToolCallPlan(
             1, self.plans[0].call_id, "matrix-B", "web.search",
-            {"query": "another"}, "b" * 64
+            {"query": "another"}, sha256(b"another").hexdigest()
         ))
         calls = []
         with self.assertRaisesRegex(ValueError, "TOOL_CALL_DUPLICATE_CALL_ID"):
@@ -147,9 +148,25 @@ class ToolCallAdapterTests(unittest.TestCase):
 
     def test_query_hash_accepts_canonical_sha256(self):
         plan = ToolCallPlan(
-            0, "call", "matrix-A", "web.search", {"query": "one"}, "a" * 64
+            0, "call", "matrix-A", "web.search", {"query": "one"}, sha256(b"one").hexdigest()
         )
         self.assertEqual(len(plan.query_sha256), 64)
+
+    def test_query_hash_must_match_exact_dispatched_query(self):
+        with self.assertRaisesRegex(ValueError, "TOOL_CALL_QUERY_HASH_MISMATCH"):
+            ToolCallPlan(
+                0, "call", "matrix-A", "web.search",
+                {"query": "different query"}, sha256(b"one").hexdigest()
+            )
+
+    def test_query_argument_is_required_and_nonempty(self):
+        for arguments in ({}, {"query": ""}, {"query": 42}):
+            with self.subTest(arguments=arguments):
+                with self.assertRaisesRegex(ValueError, "TOOL_CALL_QUERY_REQUIRED"):
+                    ToolCallPlan(
+                        0, "call", "matrix-A", "web.search", arguments,
+                        sha256(b"one").hexdigest()
+                    )
 
     def test_bool_budget_is_rejected(self):
         with self.assertRaisesRegex(ValueError, "TOOL_CALL_BUDGET_MUST_BE_POSITIVE_INTEGER"):
@@ -160,7 +177,7 @@ class ToolCallAdapterTests(unittest.TestCase):
 
     def test_arguments_are_defensively_copied_before_dispatch(self):
         plan = ToolCallPlan(0, "call", "matrix-A", "web.search",
-                            {"query": "one", "filters": {"types": ["job"]}}, "a" * 64)
+                            {"query": "one", "filters": {"types": ["job"]}}, sha256(b"one").hexdigest())
         def dispatcher(name, args):
             args["filters"]["types"].append("mutated")
             return {"results": []}
