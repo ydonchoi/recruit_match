@@ -10,6 +10,7 @@ from recruit_match.attachment_stages import (
     AttachmentInspectionDecision,
     AttachmentInspectionStatus,
     AttachmentPolicyDecision,
+    AttachmentPolicyReceipt,
     AttachmentPolicyStatus,
     ApprovedAttachment,
     build_attachment_fetch_handler,
@@ -256,9 +257,18 @@ class AttachmentStageTests(unittest.TestCase):
         self.assertEqual(result.output["attachment_fetch_receipts"][0].error_code, "ATTACHMENT_FETCH_OR_STORE_FAILED")
 
     def test_no_approved_attachments_returns_not_applicable_with_evidence(self):
-        receipt = SimpleNamespace(
-            attachment_ref="attachment-1", policy_id="test-policy",
+        receipt = AttachmentPolicyReceipt(
+            attachment_ref="attachment-1",
+            source_result_ref="source-1",
+            attachment_url="https://official.example.org/files/job.pdf",
+            status=AttachmentPolicyStatus.DENY,
+            policy_id="test-policy",
+            allowed_hosts=(),
+            max_bytes=1024,
+            timeout_seconds=1.0,
+            robots_required=True,
             evidence_refs=("synthetic:denied",),
+            reason_code="HOST_NOT_APPROVED",
         )
         result = build_attachment_fetch_handler(
             fetcher_factory=lambda policy, limits: None,
