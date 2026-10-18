@@ -208,11 +208,15 @@ def execute_pipeline(
             break
         receipts.append(receipt)
 
+        # Preserve a well-formed unsuccessful stage's diagnostic output in the
+        # returned in-memory context. The runner still stops immediately, so no
+        # downstream handler can consume partial results as if the stage passed.
+        # This is needed to inspect search-budget receipts after a partial/failed
+        # discovery stage; it does not mark the run valid.
+        context.update(deepcopy(dict(result.output)))
         if result.status is StageStatus.SUCCESS:
-            context.update(deepcopy(dict(result.output)))
             continue
         if result.status is StageStatus.NOT_APPLICABLE and spec.allow_not_applicable:
-            context.update(deepcopy(dict(result.output)))
             continue
         break
 
