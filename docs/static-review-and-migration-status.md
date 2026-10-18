@@ -33,6 +33,8 @@ These are code changes, not verified fixes. No runtime result is claimed.
 |---|---|---|
 | Candidate Ground Truth / privacy boundary | **CONTRACT-ONLY / BLOCKED** | No candidate-specific data copied. Approved private source, minimum fields, access, retention, deletion and redaction policy remain unresolved. |
 | Search axes, intent routing, randomized simulation and adaptive loop | **PARTIAL** | Legacy docs and selected files inspected. No live search planner/provider, adaptive loop, or independent utility-validator integration is wired into the target. Simulation must never count as source retrieval. |
+| Search Matrix planning | **LEGACY IMPLEMENTED / TARGET BRIDGE ADDED** | Legacy Search Matrix produces stable combination IDs and queries. Target now adapts combination-shaped objects into a budgeted executor, but no real planner/provider is wired to it. |
+| Search execution and call budget | **CONTRACT IMPLEMENTED / UNVERIFIED** | Target `search_execution.py` caps callable invocations and emits one receipt per planned query. Provider-internal retries/fan-out are outside this counter unless separately instrumented. Tests authored, not executed. |
 | Multi-source acquisition and source coverage | **CONTRACT-ONLY** | Discovery adapter contract exists; no authorized live source adapters or retrieval receipts configured. |
 | Opportunity identity, recruitment cycle and duplicate resolution | **PARTIAL / CONTRACT-ONLY** | IDs and duplicate-state contracts exist. Canonical identity keys, cycle matching, conflict policy, and real source-level resolution are not implemented. |
 | Official source verification and currentness | **CONTRACT-ONLY** | Typed states and recommendation gates exist; no independent official-source verification adapter is configured. |
@@ -48,7 +50,21 @@ These are code changes, not verified fixes. No runtime result is claimed.
 | GitHub Registry CRUD / sync | **OUT OF SCOPE BY DEFAULT** | Do not port the legacy writer/sync merely because it exists in the old architecture. No candidate-linked data or source documents should be stored in GitHub. |
 | Human decision, application execution and outcome | **BOUNDARY PRESERVED / NOT IMPLEMENTED** | Analysis does not submit applications or send emails. Execution readiness, human approval, external action and application outcome remain distinct. |
 | Observability, audit and feedback metrics | **PARTIAL / UNVERIFIED** | Receipts and an evidence ledger contract exist; there is no durable redacted telemetry, measured baseline, operational alerting, or quality feedback loop. |
-| CI and tests | **TEST-AUTHORED / EXECUTION UNKNOWN** | 121 test functions are present by source inspection. No assertions have been executed and no passing count is known. |
+| CI and tests | **TEST-AUTHORED / EXECUTION UNKNOWN** | 133 test functions are present by source inspection across nine files. No assertions have been executed and no passing count is known. |
+
+## Search execution bridge: source-reviewed contract
+
+A new target module, `src/recruit_match/search_execution.py`, accepts Search Matrix-like combinations exposing `combination_id` and `query`, converts them to stable ordered plans, and calls an injected search callable under a positive per-batch budget. It records success, failure, result count and budget-skipped status for every planned query. The report validates plan/receipt accounting and refuses duplicate ordinals or combination IDs before invoking the provider.
+
+This improves the *observability and enforcement contract*, but does not complete Search Agent activation:
+
+- The legacy `SearchMatrixPlanner.derive` is not imported or wired into the target application.
+- No real search provider or tool adapter is configured.
+- The executor counts each invocation of its injected callable as one call. Provider-internal retries, multi-tool fan-out, or calls outside this boundary are not counted unless the provider adapter instruments them.
+- The call receipts are in-memory objects; no durable receipt store or production telemetry is configured.
+- The new search execution tests are authored only and have not been executed.
+
+Therefore the actual call count and adherence to a user-facing Search Matrix call budget remain **UNVERIFIED**.
 
 ## High-priority unresolved issues
 
