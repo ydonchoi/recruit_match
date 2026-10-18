@@ -6,6 +6,7 @@ from recruit_match.identity_resolution import ResolvedOpportunitySource
 from recruit_match.source_verification import (
     SourceAuthorityDecision,
     SourceAuthorityStatus,
+    SourceVerificationReceipt,
     build_source_verification_handler,
 )
 
@@ -149,6 +150,30 @@ class SourceVerificationStageTests(unittest.TestCase):
         )({"resolved_opportunity_sources": (self.result(),)})
         self.assertEqual(execution.status, StageStatus.BLOCKED)
         self.assertEqual(execution.output["source_verification_unknown_count"], 1)
+
+    def test_receipt_rejects_naive_observation_timestamp(self):
+        with self.assertRaisesRegex(ValueError, "SOURCE_RECEIPT_TIMESTAMP_MUST_BE_AWARE"):
+            SourceVerificationReceipt(
+                source_result_ref="result",
+                source_url="https://example.org/job",
+                status=SourceAuthorityStatus.VERIFIED_OFFICIAL,
+                verifier_id="verifier",
+                observed_at="2026-10-19T12:01:00",
+                authority_basis="official registry",
+                evidence_refs=("evidence",),
+            )
+
+    def test_receipt_rejects_verified_status_without_evidence(self):
+        with self.assertRaisesRegex(ValueError, "VERIFIED_SOURCE_REQUIRES_EVIDENCE_REFS"):
+            SourceVerificationReceipt(
+                source_result_ref="result",
+                source_url="https://example.org/job",
+                status=SourceAuthorityStatus.VERIFIED_OFFICIAL,
+                verifier_id="verifier",
+                observed_at="2026-10-19T12:01:00+00:00",
+                authority_basis="official registry",
+                evidence_refs=(),
+            )
 
     def test_naive_timestamp_is_rejected_at_contract_construction(self):
         with self.assertRaisesRegex(ValueError, "SOURCE_VERIFICATION_TIMESTAMP_MUST_BE_AWARE"):
