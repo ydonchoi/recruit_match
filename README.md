@@ -15,6 +15,7 @@ A clean, verification-first reimplementation of the recruitment matching system.
 - Attachment retrieval limits: [docs/attachment-retrieval-boundary.md](docs/attachment-retrieval-boundary.md)
 - Verification evidence: [docs/delivery-evidence-ledger.md](docs/delivery-evidence-ledger.md)
 - Controlled ToolCall integration test procedure: [docs/tool-call-execution-runbook.md](docs/tool-call-execution-runbook.md)
+- Identity/source/currentness verification contracts: [docs/verification-stage-contracts.md](docs/verification-stage-contracts.md)
 - Static review and migration status: [docs/static-review-and-migration-status.md](docs/static-review-and-migration-status.md)
 
 ## Verification principles
@@ -36,7 +37,7 @@ A clean, verification-first reimplementation of the recruitment matching system.
 - **Application entry point:** `src/recruit_match/application.py` executes the declared workflow through injected handlers; real external adapters are not configured
 - **Notion writes:** not implemented
 - **GitHub Registry CRUD/sync:** excluded from the default target
-- **Tests:** 160 test functions are authored across eleven test files; execution and results are unverified
+- **Tests:** 203 test functions are authored across fourteen test files; execution and results are unverified
 - **GitHub Actions:** the latest run failed before any step/log was exposed (`runner_id=0`, no runner name); the exact infrastructure cause is unconfirmed, and test state remains unknown
 
 ## Repository layout
@@ -48,7 +49,9 @@ A clean, verification-first reimplementation of the recruitment matching system.
 - `src/recruit_match/application.py`: explicit public entry point for full or bounded runs; missing external adapters fail closed.
 - `src/recruit_match/search_execution.py`: Search Matrix-shaped combination adapter, hard per-batch call budget, and per-query execution receipts; provider is still injected and no live search provider is configured.
 - `src/recruit_match/search_stage.py`: injected `search_plan` and `discovery` stage handlers, including an explicit bridge for the legacy `AdaptiveSearchPlanner.plan(evidence, query)` interface.
+- `src/recruit_match/verification_stages.py`: composes the identity, source-authority, and currentness verification stages.
 - `src/recruit_match/tool_call_adapter.py`: direct allowlisted host ToolCall dispatch with a hard dispatch budget, separate dispatch/response-validation states, ambiguous-outcome handling, and auditable receipts.
+- `src/recruit_match/identity_resolution.py`, `source_verification.py`, `currentness_verification.py`: injected, evidence-backed gates for stable opportunity identity, official-source authority, and recruitment currentness.
 - `docs/adapter-contracts.md`: required external adapter contracts and live-integration acceptance gate.
 - `src/recruit_match/workflow.py`: canonical 18-stage analysis contract with explicit bounded-run scope and evidence requirements for source/provenance stages.
 - `src/recruit_match/assessment_handlers.py`: fail-closed adapters that bind pure assessment functions to the runner; recommendation gates are derived from upstream stage outputs rather than a separately supplied aggregate.
