@@ -120,6 +120,11 @@ PLATFORM_REGISTRY: tuple[PlatformSource, ...] = (
         notes="교수 초빙·연구원 등 학술 채용 후보. 자동 수집 조건은 미확인.",
     ),
     PlatformSource(
+        "jobs_ac_kr", "JOBS.ac.kr (잡스)", ("university_faculty", "research", "global"),
+        "https://new.jobs.ac.kr/", "web", "candidate_unverified", 1,
+        notes="석·박사 대상 국내외 교수·연구직 중심 채용 플랫폼. 공개 API 및 자동 수집 조건은 미확인.",
+    ),
+    PlatformSource(
         "university_official_boards", "대학별 공식 채용 게시판",
         ("university_faculty", "university_staff", "research"),
         None, "institution_specific", "manual_registration_required", 1,
