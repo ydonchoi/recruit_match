@@ -3,7 +3,7 @@
 - Snapshot date: 2026-10-19
 - Target repository: `ydonchoi/recruit_match` (private)
 - Target branch: `bootstrap/verification-first-architecture`
-- Target branch head before this ledger update: `402a201a4631aba9a6dd0861b429dd000ac27cf0`
+- Target branch head before this ledger update: `a34d6e5212c87e222627b4f0a2fcee5c93c36293`
 - Legacy source revision: `ydonchoi/recruitment_matching@89899ee3b0719d73f36311004ac32f87e8a78dee`
 - PR: [#1](https://github.com/ydonchoi/recruit_match/pull/1), Draft, not merged
 
@@ -30,20 +30,20 @@
 | `src/recruit_match/search_stage.py` | `2044f16d8142644dfea22d3fe639cc1b3889633d` | PRESENT / SOURCE-REVIEWED; injected plan/discovery factories plus legacy adaptive planner bridge; no default provider |
 | `src/recruit_match/tool_call_adapter.py` | `76dfbe1e01fed01d1601532b614d09fa6983590e` | PRESENT / SOURCE-REVIEWED; allowlisted host ToolCall dispatcher, hard dispatch budget, separate execution/response states; no host tool configured |
 | `src/recruit_match/identity_resolution.py` | `fcc3addb5046f0d07ad61b7c151ca0ce2e6b516d` | PRESENT / SOURCE-REVIEWED; evidence-backed identity and duplicate-conflict gate; resolver injected |
-| `src/recruit_match/source_verification.py` | `457309cb37c2e6c3896972d087b1991cc08d0002` | PRESENT / SOURCE-REVIEWED; requires identity-resolved records; official/non-official/unknown authority gate; verifier injected |
-| `src/recruit_match/currentness_verification.py` | `4baadcab4f6d8a2c2b9b248d4d89b6ebe9678ba1` | PRESENT / SOURCE-REVIEWED; requires typed verified-official receipts bound to the exact source URL and typed currentness evidence; verifier injected |
+| `src/recruit_match/source_verification.py` | `ca41e2dc2cc1f0f693aa76b100d1d19a92e9e3f4` | PRESENT / SOURCE-REVIEWED; requires identity-resolved records; official/non-official/unknown authority gate; verifier injected |
+| `src/recruit_match/currentness_verification.py` | `b4b9089a99645d33758bc0671eacd982152a315f` | PRESENT / SOURCE-REVIEWED; requires typed verified-official receipts bound to the exact source URL and typed currentness evidence; verifier injected |
 | `src/recruit_match/verification_stages.py` | `057972a5e2515135365aa48e80713012b401513c` | PRESENT / composes identity, source authority and currentness handlers; external verifiers injected |
 | `src/recruit_match/tool_call_adapter.py` | `76dfbe1e01fed01d1601532b614d09fa6983590e` | PRESENT / SOURCE-REVIEWED; allowlisted host ToolCall dispatch, hard budget, separate execution/response states; no host tool configured |
 
 | `src/recruit_match/attachments.py` | `9c0af749e909ec59e8bbcfd1a17fa3efbcb13359` | PRESENT / SOURCE-REVIEWED; typed policy flags and malformed DNS responses rejected; transport execution unverified |
 | `docs/adapter-contracts.md` | `7ba6ce8c75ca6ada22f5cdec95269571133a85b5` | PRESENT / defines adapter responsibilities, direct ToolCall dispatch and verification stage contracts |
 | `docs/tool-call-execution-runbook.md` | `2609d9c002bab9e843117547595ae0e0b4f5d81e` | PRESENT / controlled integration test procedure and acceptance criteria; not executed |
-| `docs/verification-stage-contracts.md` | `01e8162b44b9c975d2648deda652391cf9f1025b` | PRESENT / identity, source authority and currentness stage contracts |
-| `README.md` | `4272a4206116ef86152d37a2347abcfe646782a9` | PRESENT / links runbooks; 205 authored test functions documented |
+| `docs/verification-stage-contracts.md` | `1030ad3901ea58524d09fcdfd1bcdebe74274415` | PRESENT / identity, source authority and currentness stage contracts |
+| `README.md` | `f5092a90a8f3bb639897830b595a2c132aea362f` | PRESENT / links runbooks; 208 authored test functions documented |
 | `docs/architecture.md` | `50d7d8ea2d73b9e3b9e97dbb217f9b74fa0c6aa1` | PRESENT / architecture status updated |
 | `docs/legacy-architecture-inventory.md` | `aba47610afa4586f4da68c6020b12b8db011fa1a` | PRESENT / complete tracked-path inventory, partial call graph |
 | `docs/target-architecture-and-migration-plan.md` | `1166785636961e63e8c6e7dbabde5e8fa5b4704b` | PRESENT / partial implementation status |
-| `docs/static-review-and-migration-status.md` | `a80c18d14c4adb9ac87da3515d5c4e5597aeb3ed` | PRESENT / static findings, migration disposition, legacy call-path, metric risks and search execution bridge; no execution claimed |
+| `docs/static-review-and-migration-status.md` | `6ca32a422b19dbb29227dc9a7cf4c412bbf9804c` | PRESENT / static findings, migration disposition, legacy call-path, metric risks and search execution bridge; no execution claimed |
 | `.github/workflows/unit-tests.yml` | `29b5c93e607bd3d26aa1a5395fe7a7d5d0510bc6` | PRESENT / workflow definition only |
 
 ## Authored test inventory
@@ -62,10 +62,10 @@
 | `tests/test_search_stage.py` | `d40c2e414483d72762beef5a29bb0a3940923664` | 14 |
 | `tests/test_tool_call_adapter.py` | `e4c08d6af7c9b46180cc401a0867c5af6c9de6b8` | 12 |
 | `tests/test_identity_resolution.py` | `3f7add5cfc19f2619a8750018cbcc6c939812f01` | 13 |
-| `tests/test_source_verification.py` | `0abe7fb3540e700916408fa5ad713f361f230801` | 12 |
-| `tests/test_currentness_verification.py` | `7fe399bba0522c93379bf989998931779dc16fe0` | 15 |
+| `tests/test_source_verification.py` | `f3de20bc2b5eea3f1d7b7d40d37c72c69a3472d1` | 14 |
+| `tests/test_currentness_verification.py` | `f51a0137b7357457268a5b826f5d640cd62d6da6` | 16 |
 | `tests/test_verification_stages.py` | `db56ff10c1b328d19790723288d35e0767733b65` | 5 |
-| **Total** | | **205** |
+| **Total** | | **208** |
 
 This is a count of declared test functions by source inspection, not a count of passing tests.
 
@@ -88,7 +88,7 @@ This is a count of declared test functions by source inspection, not a count of 
 - Eligibility evaluation now rejects malformed collections and duplicate requirement IDs; a critical requirement needs both candidate and recruitment evidence domains plus at least two distinct evidence references before its status can decide eligibility.
 - Ranking rejects duplicate opportunity IDs rather than silently allowing ambiguous duplicate entries.
 - Attachment policy flags must be booleans; DNS resolver output is shape-validated and malformed socket-address tuples return a sanitized policy error.
-- Added eight test functions covering these boundaries. They are authored only; **not executed**. Current authored test count: 205.
+- Added eight test functions covering these boundaries. They are authored only; **not executed**. Current authored test count: 208.
 
 ## Search execution budget evidence (2026-10-19)
 
@@ -109,7 +109,7 @@ This is a count of declared test functions by source inspection, not a count of 
 
 ## Remaining merge/integration gates
 
-1. Execute all 205 authored tests and retain actual output.
+1. Execute all 208 authored tests and retain actual output.
 2. Exercise the DNS-pinned transport with TLS hostname mismatch, controlled redirects, IPv4/IPv6, DNS changes and proxy configuration.
 3. Implement and authorize actual external stage adapters; verify each adapter's source identity, observation time, access basis and evidence receipts.
 4. Execute the synthetic full workflow through `run_analysis`, then integration tests with controlled adapters.
@@ -126,7 +126,7 @@ Repository content presence is not runtime evidence. Authored tests are not pass
 
 - `src/recruit_match/search_stage.py` defines injected `search_plan` and `discovery` stage handlers. It does not select a provider or planner by default.
 - `tests/test_search_stage.py` adds 12 test functions; `tests/test_runner.py` adds one test to preserve diagnostics from a blocked stage while still stopping downstream execution.
-- Current authored test inventory is 205 functions across fifteen test files. This count is based on source inspection; none of these tests is claimed to have run.
+- Current authored test inventory is 208 functions across fifteen test files. This count is based on source inspection; none of these tests is claimed to have run.
 - The search stage can be composed into `run_analysis()` by passing `build_search_handlers(...)` with the caller's request-scope and candidate-context handlers. Actual provider connectivity, provider-internal call counts, and runtime behavior remain unverified.
 
 
@@ -152,3 +152,6 @@ Repository content presence is not runtime evidence. Authored tests are not pass
 
 
 - Added one additional currentness regression test requiring the verified-official receipt to match the exact source URL. Current total: 205 authored test functions across fifteen test files; all remain unexecuted.
+
+
+- Strengthened `SourceVerificationReceipt` validation and revalidated the typed official-source receipt at the currentness boundary, including exact URL equality. Added three authored regression tests (two for source receipts, one for currentness receipt integrity). Current authored total: 208 across fifteen files; all remain unexecuted.
