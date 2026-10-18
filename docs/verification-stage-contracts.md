@@ -54,7 +54,7 @@ The adapter does not infer official status from a URL suffix, page title, HTTP s
 
 Module: `src/recruit_match/currentness_verification.py`
 
-The stage requires non-empty `official_source_results` and corresponding source-verification receipts whose status is `VERIFIED_OFFICIAL` and which include evidence references. It rejects duplicate source-result or opportunity IDs before invoking the currentness verifier.
+The stage requires non-empty `official_source_results` and corresponding typed source-verification receipts whose status is `VERIFIED_OFFICIAL`, whose source URL exactly matches the opportunity source URL, and which pass receipt revalidation with evidence references and a timezone-aware observation timestamp. It rejects duplicate source-result or opportunity IDs before invoking the currentness verifier.
 
 The verifier must return a typed `CurrentnessDecision` using the canonical `CurrentnessState` enum. Classified states require a basis and evidence references. Observation timestamps and optional deadlines must be timezone-aware. `UNKNOWN`, malformed responses, mismatched identities, or verifier exceptions block the stage.
 
