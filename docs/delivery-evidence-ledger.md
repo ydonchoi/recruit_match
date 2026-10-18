@@ -3,7 +3,7 @@
 - Snapshot date: 2026-10-19
 - Target repository: `ydonchoi/recruit_match` (private)
 - Target branch: `bootstrap/verification-first-architecture`
-- Target branch head before this ledger update: `eb3d41920ead4c77c9baf17fac7615048ce83266`
+- Target branch head before this ledger update: `56e0f0116fcb4d93270e6484d34f4c622b66369e`
 - Legacy source revision: `ydonchoi/recruitment_matching@89899ee3b0719d73f36311004ac32f87e8a78dee`
 - PR: [#1](https://github.com/ydonchoi/recruit_match/pull/1), Draft, not merged
 
@@ -32,16 +32,16 @@
 | `src/recruit_match/identity_resolution.py` | `fcc3addb5046f0d07ad61b7c151ca0ce2e6b516d` | PRESENT / SOURCE-REVIEWED; evidence-backed identity and duplicate-conflict gate; resolver injected |
 | `src/recruit_match/source_verification.py` | `ca41e2dc2cc1f0f693aa76b100d1d19a92e9e3f4` | PRESENT / SOURCE-REVIEWED; requires identity-resolved records; official/non-official/unknown authority gate; verifier injected |
 | `src/recruit_match/currentness_verification.py` | `b4b9089a99645d33758bc0671eacd982152a315f` | PRESENT / SOURCE-REVIEWED; requires typed verified-official receipts bound to the exact source URL and typed currentness evidence; verifier injected |
-| `src/recruit_match/verification_stages.py` | `057972a5e2515135365aa48e80713012b401513c` | PRESENT / composes identity, source authority and currentness handlers; external verifiers injected |
+| `src/recruit_match/verification_stages.py` | `057972a5e2515135365aa48e80713012b401513c` | PRESENT / composes identity, source authority and currentness handlers; external verifiers injected |\n| `src/recruit_match/attachment_stages.py` | `ced68f15f2857ca8344cd21f377102a0047eb56e` | PRESENT / SOURCE-REVIEWED; policy-gated fetch, private content sink and injected inspection; no adapters configured |
 | `src/recruit_match/attachments.py` | `9c0af749e909ec59e8bbcfd1a17fa3efbcb13359` | PRESENT / SOURCE-REVIEWED; typed policy flags and malformed DNS responses rejected; transport execution unverified |
-| `docs/adapter-contracts.md` | `7ba6ce8c75ca6ada22f5cdec95269571133a85b5` | PRESENT / defines adapter responsibilities, direct ToolCall dispatch and verification stage contracts |
+| `docs/adapter-contracts.md` | `4a90b194e970b194e63716fe601d68ef37d67b33` | PRESENT / defines adapter responsibilities, direct ToolCall dispatch and verification stage contracts |
 | `docs/tool-call-execution-runbook.md` | `2609d9c002bab9e843117547595ae0e0b4f5d81e` | PRESENT / controlled integration test procedure and acceptance criteria; not executed |
-| `docs/verification-stage-contracts.md` | `1030ad3901ea58524d09fcdfd1bcdebe74274415` | PRESENT / identity, source authority and currentness stage contracts |
-| `README.md` | `f5092a90a8f3bb639897830b595a2c132aea362f` | PRESENT / links runbooks; 208 authored test functions documented |
+| `docs/verification-stage-contracts.md` | `1030ad3901ea58524d09fcdfd1bcdebe74274415` | PRESENT / identity, source authority and currentness stage contracts |\n| `docs/attachment-stage-contracts.md` | `f5b17b5353339f20f7ada5f72bdad770a816763b` | PRESENT / attachment policy/fetch/inspection boundaries and limitations |
+| `README.md` | `72b0ec88c1a9650af9853c4f5ee2371ab02042a5` | PRESENT / links runbooks; 223 authored test functions documented |
 | `docs/architecture.md` | `50d7d8ea2d73b9e3b9e97dbb217f9b74fa0c6aa1` | PRESENT / architecture status updated |
 | `docs/legacy-architecture-inventory.md` | `aba47610afa4586f4da68c6020b12b8db011fa1a` | PRESENT / complete tracked-path inventory, partial call graph |
 | `docs/target-architecture-and-migration-plan.md` | `1166785636961e63e8c6e7dbabde5e8fa5b4704b` | PRESENT / partial implementation status |
-| `docs/static-review-and-migration-status.md` | `6ca32a422b19dbb29227dc9a7cf4c412bbf9804c` | PRESENT / static findings, migration disposition, legacy call-path, metric risks and search execution bridge; no execution claimed |
+| `docs/static-review-and-migration-status.md` | `1cfe446d0a57dffec275c38afcd47cbb96cd2bde` | PRESENT / static findings, migration disposition, legacy call-path, metric risks and search execution bridge; no execution claimed |
 | `.github/workflows/unit-tests.yml` | `29b5c93e607bd3d26aa1a5395fe7a7d5d0510bc6` | PRESENT / workflow definition only |
 
 ## Authored test inventory
@@ -86,7 +86,7 @@ This is a count of declared test functions by source inspection, not a count of 
 - Eligibility evaluation now rejects malformed collections and duplicate requirement IDs; a critical requirement needs both candidate and recruitment evidence domains plus at least two distinct evidence references before its status can decide eligibility.
 - Ranking rejects duplicate opportunity IDs rather than silently allowing ambiguous duplicate entries.
 - Attachment policy flags must be booleans; DNS resolver output is shape-validated and malformed socket-address tuples return a sanitized policy error.
-- Added eight test functions covering these boundaries. They are authored only; **not executed**. Current authored test count: 208.
+- Added eight test functions covering these boundaries. They are authored only; **not executed**. Current authored test count: 223.
 
 ## Search execution budget evidence (2026-10-19)
 
@@ -107,7 +107,7 @@ This is a count of declared test functions by source inspection, not a count of 
 
 ## Remaining merge/integration gates
 
-1. Execute all 208 authored tests and retain actual output.
+1. Execute all 223 authored tests and retain actual output.
 2. Exercise the DNS-pinned transport with TLS hostname mismatch, controlled redirects, IPv4/IPv6, DNS changes and proxy configuration.
 3. Implement and authorize actual external stage adapters; verify each adapter's source identity, observation time, access basis and evidence receipts.
 4. Execute the synthetic full workflow through `run_analysis`, then integration tests with controlled adapters.
@@ -124,7 +124,7 @@ Repository content presence is not runtime evidence. Authored tests are not pass
 
 - `src/recruit_match/search_stage.py` defines injected `search_plan` and `discovery` stage handlers. It does not select a provider or planner by default.
 - `tests/test_search_stage.py` adds 12 test functions; `tests/test_runner.py` adds one test to preserve diagnostics from a blocked stage while still stopping downstream execution.
-- Current authored test inventory is 208 functions across fifteen test files. This count is based on source inspection; none of these tests is claimed to have run.
+- Current authored test inventory is 223 functions across sixteen test files. This count is based on source inspection; none of these tests is claimed to have run.
 - The search stage can be composed into `run_analysis()` by passing `build_search_handlers(...)` with the caller's request-scope and candidate-context handlers. Actual provider connectivity, provider-internal call counts, and runtime behavior remain unverified.
 
 
@@ -153,3 +153,12 @@ Repository content presence is not runtime evidence. Authored tests are not pass
 
 
 - Strengthened `SourceVerificationReceipt` validation and revalidated the typed official-source receipt at the currentness boundary, including exact URL equality. Added three authored regression tests (two for source receipts, one for currentness receipt integrity). Current authored total: 208 across fifteen files; all remain unexecuted.
+
+
+## Attachment stages (2026-10-19)
+
+- Added `src/recruit_match/attachment_stages.py` with injected attachment discovery and policy evaluation, explicit host allowlists, bounded fetch validation, required private content sink, and injected requirement-level inspection.
+- Raw document bytes are never returned in pipeline context. Before the sink is called, the fetch adapter checks the requested URL, final URL host, content size, media kind, finite timestamp, and SHA-256. The private sink must return a non-empty content reference.
+- Complete scans with no attachment links and policy outcomes with no approved attachments use explicit evidence-backed no-op states. Unknown policy, partial scan, fetch/store failure, or incomplete inspection blocks downstream processing.
+- Added `docs/attachment-stage-contracts.md` and `tests/test_attachment_stages.py` with 15 authored test functions. Tests are not executed; no attachment discoverer, policy evaluator, fetcher, private sink, or parser is configured.
+- Parser isolation, ZIP entry/expanded-size limits, OCR quality, durable storage/reconciliation, and live transport behavior remain unverified.
