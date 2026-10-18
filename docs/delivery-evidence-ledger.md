@@ -60,13 +60,13 @@
 | `tests/test_application.py` | `b525c98df09b67f8397c5e92f9045197ee9a93c9` | 4 |
 | `tests/test_search_execution.py` | `8054cc3e1b66b37aa93a051da31baca39265b386` | 12 |
 | `tests/test_search_stage.py` | `d40c2e414483d72762beef5a29bb0a3940923664` | 14 |
-| `tests/test_tool_call_adapter.py` | updated in follow-up commit | 14 |
+| `tests/test_tool_call_adapter.py` | updated in follow-up commit | 16 |
 | `tests/test_identity_resolution.py` | `3f7add5cfc19f2619a8750018cbcc6c939812f01` | 13 |
 | `tests/test_source_verification.py` | `f3de20bc2b5eea3f1d7b7d40d37c72c69a3472d1` | 14 |
 | `tests/test_currentness_verification.py` | `f51a0137b7357457268a5b826f5d640cd62d6da6` | 16 |
 | `tests/test_verification_stages.py` | `db56ff10c1b328d19790723288d35e0767733b65` | 5 |
 | `tests/test_attachment_stages.py` | `2a3cf9156e399d8bb05b8e3dc1baa027f902b023` | 16 |
-| **Total** | | **224** |
+| **Total** | | **228** |
 
 This is a count of declared test functions by source inspection, not a count of passing tests.
 
@@ -176,3 +176,12 @@ Repository content presence is not runtime evidence. Authored tests are not pass
 - Added two authored regression tests for malformed and canonical SHA-256 strings. Current authored inventory: 226 test functions across sixteen test files by source inspection.
 - Changes were committed to `bootstrap/verification-first-architecture` in commit `13d39f1078dc05684b68d4694902dde40e38b3ee`; README inventory update followed in `24d010f2865ecde7038ff53964c30e80d743b0d6`.
 - The source and test files were fetched again after the writes, confirming the new content is present on the branch. Tests have **not** been executed. Runtime correctness remains UNVERIFIED.
+
+
+## Query-to-digest binding follow-up (2026-10-19)
+
+- Further static review found that the prior validation checked only SHA-256 syntax, not whether the digest matched the query passed in ToolCall arguments.
+- `ToolCallPlan` now requires a non-empty string `arguments["query"]` and recomputes SHA-256 over its UTF-8 bytes; a mismatch is rejected with `TOOL_CALL_QUERY_HASH_MISMATCH` before dispatch.
+- Added two authored regression tests: digest/query mismatch rejection and missing/empty/non-string query rejection. Current source-inspected test inventory: 228 functions across sixteen test files.
+- Source change commit: `0b39c87e5a380f257addc51301d7f01ff8ee3ee8`; test change commit: `e2bea6fe76aa8ae29201d1a5f8d33f3ce4924bb9`; README inventory update: `879b11c7873afee43279c8d898a7fb407d8dc9bb`.
+- The source and test files were fetched again after writing. No test execution has been performed; this remains static evidence only.
