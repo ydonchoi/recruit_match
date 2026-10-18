@@ -336,6 +336,7 @@ def build_attachment_policy_handler(
                     "attachment_policy_receipts": (),
                     "approved_attachments": (),
                     "attachment_policy_state": "NO_ATTACHMENTS_FOUND",
+                    "attachment_discovery_evidence_refs": tuple(discovery_refs),
                 },
                 evidence_refs=tuple(discovery_refs),
             )
@@ -425,9 +426,12 @@ def build_attachment_fetch_handler(
         if not isinstance(policy_receipts, Sequence) or isinstance(policy_receipts, (str, bytes, bytearray, Mapping)):
             return StageExecution(StageStatus.BLOCKED, {}, reason="ATTACHMENT_POLICY_RECEIPTS_MISSING")
         policy_evidence = tuple(
-            f"attachment-policy:{r.attachment_ref}:{r.policy_id}"
-            for r in policy_receipts
-            if isinstance(r, AttachmentPolicyReceipt) and r.evidence_refs
+            list(context.get("attachment_discovery_evidence_refs", ()))
+            + [
+                f"attachment-policy:{r.attachment_ref}:{r.policy_id}"
+                for r in policy_receipts
+                if isinstance(r, AttachmentPolicyReceipt) and r.evidence_refs
+            ]
         )
         if not approved:
             if not policy_evidence:
