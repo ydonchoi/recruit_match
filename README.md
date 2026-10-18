@@ -16,6 +16,7 @@ A clean, verification-first reimplementation of the recruitment matching system.
 - Verification evidence: [docs/delivery-evidence-ledger.md](docs/delivery-evidence-ledger.md)
 - Controlled ToolCall integration test procedure: [docs/tool-call-execution-runbook.md](docs/tool-call-execution-runbook.md)
 - Identity/source/currentness verification contracts: [docs/verification-stage-contracts.md](docs/verification-stage-contracts.md)
+- Attachment policy/fetch/inspection contracts: [docs/attachment-stage-contracts.md](docs/attachment-stage-contracts.md)
 - Static review and migration status: [docs/static-review-and-migration-status.md](docs/static-review-and-migration-status.md)
 
 ## Verification principles
@@ -37,7 +38,7 @@ A clean, verification-first reimplementation of the recruitment matching system.
 - **Application entry point:** `src/recruit_match/application.py` executes the declared workflow through injected handlers; real external adapters are not configured
 - **Notion writes:** not implemented
 - **GitHub Registry CRUD/sync:** excluded from the default target
-- **Tests:** 208 test functions are authored across fifteen test files; execution and results are unverified
+- **Tests:** 222 test functions are authored across sixteen test files; execution and results are unverified
 - **GitHub Actions:** the latest run failed before any step/log was exposed (`runner_id=0`, no runner name); the exact infrastructure cause is unconfirmed, and test state remains unknown
 
 ## Repository layout
@@ -52,6 +53,7 @@ A clean, verification-first reimplementation of the recruitment matching system.
 - `src/recruit_match/verification_stages.py`: composes the identity, source-authority, and currentness verification stages.
 - `src/recruit_match/tool_call_adapter.py`: direct allowlisted host ToolCall dispatch with a hard dispatch budget, separate dispatch/response-validation states, ambiguous-outcome handling, and auditable receipts.
 - `src/recruit_match/identity_resolution.py`, `source_verification.py`, `currentness_verification.py`: injected, evidence-backed gates for stable opportunity identity, official-source authority, and recruitment currentness.
+- `src/recruit_match/attachment_stages.py`: injected attachment discovery/policy/fetch/inspection stages; raw document bytes must pass integrity checks and a private content sink before they are represented in pipeline context.
 - `docs/adapter-contracts.md`: required external adapter contracts and live-integration acceptance gate.
 - `src/recruit_match/workflow.py`: canonical 18-stage analysis contract with explicit bounded-run scope and evidence requirements for source/provenance stages.
 - `src/recruit_match/assessment_handlers.py`: fail-closed adapters that bind pure assessment functions to the runner; recommendation gates are derived from upstream stage outputs rather than a separately supplied aggregate.
