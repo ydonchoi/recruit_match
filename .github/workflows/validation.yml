@@ -1,0 +1,29 @@
+name: recruit_match validation
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Compile runtime and tests
+        run: python -m compileall -q run_pipeline.py search_engine.py search_orchestrator.py analysis_pipeline.py tests
+      - name: Run unit tests
+        run: python -m unittest discover -s tests -v
+      - name: Verify CLI and fail-closed gate
+        run: |
+          python run_pipeline.py --help
+          set +e
+          python run_pipeline.py --request "교육행정 연구지원 채용" --query-limit 5
+          code=$?
+          set -e
+          test "$code" -eq 2
