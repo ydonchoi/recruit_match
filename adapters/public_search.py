@@ -14,8 +14,8 @@ from urllib.request import Request, urlopen
 from dataclasses import dataclass
 from typing import Any
 
-DEFAULT_ENDPOINT = "https://api.bing.microsoft.com/v7.0/search"
-DEFAULT_HOSTS = {"api.bing.microsoft.com"}
+DEFAULT_ENDPOINT = ""
+DEFAULT_HOSTS: set[str] = set()
 
 PLATFORM_DOMAINS = {
     "JOB-ALIO": ("job.alio.go.kr", "alio.go.kr"),
@@ -55,8 +55,10 @@ def _config() -> SearchConfig:
     key = os.getenv("RECRUIT_MATCH_SEARCH_API_KEY", "").strip()
     parsed = urlparse(endpoint)
     allowed_hosts = {h.strip().lower() for h in os.getenv("RECRUIT_MATCH_SEARCH_ALLOWED_HOSTS", ",".join(DEFAULT_HOSTS)).split(",") if h.strip()}
-    if parsed.scheme != "https" or not parsed.hostname or parsed.hostname.lower() not in allowed_hosts:
-        raise AdapterConfigurationError("Search endpoint must be HTTPS and its host must be explicitly allowlisted.")
+    if not endpoint:
+        raise AdapterConfigurationError("Set RECRUIT_MATCH_SEARCH_ENDPOINT to an HTTPS search API endpoint.")
+    if parsed.scheme != "https" or not parsed.hostname or not allowed_hosts or parsed.hostname.lower() not in allowed_hosts:
+        raise AdapterConfigurationError("Search endpoint must be HTTPS and its host must be explicitly allowlisted in RECRUIT_MATCH_SEARCH_ALLOWED_HOSTS.")
     if not key:
         raise AdapterConfigurationError("Set RECRUIT_MATCH_SEARCH_API_KEY to enable the search adapter.")
     return SearchConfig(endpoint=endpoint, api_key=key)
