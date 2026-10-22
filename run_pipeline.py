@@ -1,13 +1,9 @@
 #!/usr/bin/env python3
-"""Integrated recruitment search runner.
+"""Independent recruitment search and canonical analysis runner.
 
-Integrates the legacy recruitment_matching Search Agent's query-planning layer
-with this repository's adapter execution, cumulative posting ledger, event log,
-and completion gate. It never simulates live search results.
-
-Python 3.10+, standard library only for the runner itself.
-Legacy planner integration is enabled with --legacy-root pointing to a checkout
-of ydonchoi/recruitment_matching. Platform adapters remain explicit dependencies.
+Search planning, query orchestration, evidence gates, and analysis stages are
+implemented in this repository. Platform adapters and evidence-dependent
+analysis services are explicit dependencies; missing services fail closed.
 """
 from __future__ import annotations
 
@@ -342,7 +338,8 @@ def run_pipeline(iteration: int, axes: list[str], user_query: str, query_limit: 
         print(json.dumps({
             "run_id": run_id, "status": run["status"],
             "planner_status": run["planner_status"],
-            "analysis_status": run.get("analysis_status", "NOT_RUN"),\n            "analysis_stages": run.get("analysis_stages", []),
+            "analysis_status": run.get("analysis_status", "NOT_RUN"),
+            "analysis_stages": run.get("analysis_stages", []),
             "analysis_errors": run.get("analysis_errors", []),
             "platforms_expected": run["platforms_expected"],
             "platforms_succeeded": len(succeeded_platforms), "platform_statuses": run["platform_statuses"],
