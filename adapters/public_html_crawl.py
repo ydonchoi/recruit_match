@@ -241,6 +241,9 @@ class CompositeAdapter:
             except Exception as exc:
                 errors.append(f"{type(adapter).__name__}:{type(exc).__name__}:{exc}")
         self.last_errors = tuple(errors)
+        if errors:
+            for row in hits:
+                row["source_discovery_errors"] = list(errors)
         if not hits and errors:
             raise RuntimeError("ALL_PLATFORM_DISCOVERY_SOURCES_FAILED|" + "|".join(errors))
         return hits
