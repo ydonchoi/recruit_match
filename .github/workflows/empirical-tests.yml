@@ -1,0 +1,88 @@
+name: Empirical integration tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    paths:
+      - "adapters/**"
+      - "analysis_*.py"
+      - "run_pipeline.py"
+      - "search_*.py"
+      - "tests/**"
+      - "docs/operations-readiness.md"
+      - "docs/empirical-test-plan.md"
+      - ".github/workflows/empirical-tests.yml"
+  workflow_dispatch:
+    inputs:
+      run_live_smoke:
+        description: "Run one low-volume live query across all baseline platforms (requires repository secrets)"
+        required: true
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  unit-and-contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Compile project modules
+        run: python -m compileall -q run_pipeline.py search_engine.py search_orchestrator.py analysis_pipeline.py analysis_services.py adapters tests
+      - name: Run offline unit and contract tests
+        run: python -m unittest discover -s tests -v
+
+  live-smoke:
+    if: github.event_name == 'workflow_dispatch' && inputs.run_live_smoke
+    needs: unit-and-contract
+    runs-on: ubuntu-latest
+    env:
+      RECRUIT_MATCH_SEARCH_ENDPOINT: ${{ secrets.RECRUIT_MATCH_SEARCH_ENDPOINT }}
+      RECRUIT_MATCH_SEARCH_API_KEY: ${{ secrets.RECRUIT_MATCH_SEARCH_API_KEY }}
+      RECRUIT_MATCH_SEARCH_ALLOWED_HOSTS: ${{ secrets.RECRUIT_MATCH_SEARCH_ALLOWED_HOSTS }}
+      RECRUIT_MATCH_ANALYSIS_SERVICE_BASE_URL: ${{ secrets.RECRUIT_MATCH_ANALYSIS_SERVICE_BASE_URL }}
+      RECRUIT_MATCH_ANALYSIS_SERVICE_ALLOWED_HOSTS: ${{ secrets.RECRUIT_MATCH_ANALYSIS_SERVICE_ALLOWED_HOSTS }}
+      RECRUIT_MATCH_ANALYSIS_SERVICE_TOKEN: ${{ secrets.RECRUIT_MATCH_ANALYSIS_SERVICE_TOKEN }}
+      RECRUIT_MATCH_ANALYSIS_SERVICE_TIMEOUT_SECONDS: "20"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Require explicit live-test credentials
+        shell: bash
+        run: |
+          set -euo pipefail
+          for key in RECRUIT_MATCH_SEARCH_ENDPOINT RECRUIT_MATCH_SEARCH_API_KEY RECRUIT_MATCH_SEARCH_ALLOWED_HOSTS RECRUIT_MATCH_ANALYSIS_SERVICE_BASE_URL RECRUIT_MATCH_ANALYSIS_SERVICE_ALLOWED_HOSTS RECRUIT_MATCH_ANALYSIS_SERVICE_TOKEN; do
+            if [[ -z "${!key}" ]]; then
+              echo "::error::Missing required secret-backed environment variable: ${key}"
+              exit 2
+            fi
+          done
+      - name: Execute one-query baseline live smoke test
+        shell: bash
+        run: |
+          set +e
+          python run_pipeline.py --iteration 1 --request "실증 테스트: 현재 교육행정 및 연구지원 채용공고 탐색" --axis "교육행정" --axis "연구지원" --query-limit 1
+          rc=$?
+          echo "PIPELINE_EXIT_CODE=$rc" | tee live-smoke-exit-code.txt
+          exit "$rc"
+      - name: Preserve run evidence even on failure
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: recruit-match-live-smoke-evidence
+          if-no-files-found: warn
+          path: |
+            logs/search_runs.jsonl
+            data/postings.jsonl
+            data/posting_events.jsonl
+            data/analysis_results.jsonl
+            data/source_artifacts/**
+            reports/latest_run_summary.md
+            live-smoke-exit-code.txt
