@@ -91,7 +91,7 @@ class RuntimeIntegrationTests(unittest.TestCase):
         )
         # Do not permit copied production adapter modules to shadow fixture adapters.
         for path in (self.root / "adapters").glob("*.py"):
-            if path.name not in {"__init__.py", "integration_fixture.py"}:
+            if path.name not in {"__init__.py", "integration_fixture.py", "public_html_crawl.py"}:
                 path.unlink()
         init = self.root / "adapters" / "__init__.py"
         if not init.exists():
