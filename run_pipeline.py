@@ -26,7 +26,8 @@ LOGS, DATA, REPORTS = ROOT / "logs", ROOT / "data", ROOT / "reports"
 RUN_LOG = LOGS / "search_runs.jsonl"
 POSTINGS_FILE = DATA / "postings.jsonl"
 EVENTS_FILE = DATA / "posting_events.jsonl"
-SUMMARY_FILE = REPORTS / "latest_run_summary.md"\nANALYSIS_FILE = DATA / "analysis_results.jsonl"
+SUMMARY_FILE = REPORTS / "latest_run_summary.md"
+ANALYSIS_FILE = DATA / "analysis_results.jsonl"
 
 BASELINE_PLATFORMS = [
     "JOB-ALIO", "NKIS", "나라일터", "고용24", "사람인", "잡코리아",
@@ -95,10 +96,10 @@ def write_jsonl(path: Path, rows: list[dict[str, Any]]) -> None:
     temp.replace(path)
 
 
-def load_adapters() -> list[Any]:
-    """Load adapters/*.py modules exposing PLATFORM and search(context)->list[dict]."""
+def load_adapters() -> dict[str, Any]:
+    """Load adapters/*.py; modules may expose ADAPTERS or PLATFORM+search."""
     folder = ROOT / "adapters"
-    adapters = []
+    adapters: dict[str, Any] = {}
     if not folder.is_dir():
         return adapters
     for path in sorted(folder.glob("*.py")):
@@ -108,11 +109,19 @@ def load_adapters() -> list[Any]:
         if spec is None or spec.loader is None:
             continue
         module = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(module)
-        if getattr(module, "PLATFORM", None) and callable(getattr(module, "search", None)):
-            adapters.append(module)
+        try:
+            spec.loader.exec_module(module)
+        except Exception as exc:
+            adapters[f"__LOAD_ERROR__:{path.stem}"] = exc
+            continue
+        provided = getattr(module, "ADAPTERS", None)
+        if isinstance(provided, dict):
+            for platform, adapter in provided.items():
+                if callable(getattr(adapter, "search", None)):
+                    adapters[str(platform)] = adapter
+        elif getattr(module, "PLATFORM", None) and callable(getattr(module, "search", None)):
+            adapters[str(module.PLATFORM)] = module
     return adapters
-
 
 def load_query_plan(user_query: str, axes: list[str], limit: int) -> list[str]:
     """Use the locally ported planner; no legacy repository path/import is allowed."""
@@ -230,7 +239,7 @@ def run_pipeline(iteration: int, axes: list[str], user_query: str, query_limit: 
         run["planner_status"] = "executed"
         run["queries_executed"] = queries
 
-        adapters = {str(a.PLATFORM): a for a in load_adapters()}
+        adapters = load_adapters()
         ledger_rows = read_jsonl(POSTINGS_FILE)
         index = {str(p.get("official_url") or p.get("posting_id")): p for p in ledger_rows}
         from search_orchestrator import execute_search_plan, summarize_executions
@@ -244,6 +253,9 @@ def run_pipeline(iteration: int, axes: list[str], user_query: str, query_limit: 
         raw_count = 0
         succeeded_platforms = set()
         attempted_platforms = set()
+        for adapter_key, adapter_error in adapters.items():
+            if adapter_key.startswith("__LOAD_ERROR__:"):
+                run["errors_or_limitations"].append(f"Adapter module {adapter_key.split(chr(58), 1)[1]} failed to load: {type(adapter_error).__name__}: {adapter_error}")
         for execution in executions:
             platform = execution.run.platform
             attempted_platforms.add(platform)
@@ -329,7 +341,9 @@ def run_pipeline(iteration: int, axes: list[str], user_query: str, query_limit: 
         write_summary(run, ledger)
         print(json.dumps({
             "run_id": run_id, "status": run["status"],
-            "planner_status": run["planner_status"],\n            "analysis_status": run.get("analysis_status", "NOT_RUN"),\n            "analysis_stages": run.get("analysis_stages", []),\n            "analysis_errors": run.get("analysis_errors", []),
+            "planner_status": run["planner_status"],
+            "analysis_status": run.get("analysis_status", "NOT_RUN"),\n            "analysis_stages": run.get("analysis_stages", []),
+            "analysis_errors": run.get("analysis_errors", []),
             "platforms_expected": run["platforms_expected"],
             "platforms_succeeded": succeeded, "platform_statuses": run["platform_statuses"],
             "raw_result_count": run["raw_result_count"], "new_postings": run["new_postings"],
