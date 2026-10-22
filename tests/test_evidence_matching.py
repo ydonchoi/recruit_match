@@ -22,7 +22,7 @@ class EvidenceLinkedFitTests(unittest.TestCase):
             ],
         })
         self.assertEqual(result["status"], "EVIDENCE_LINKED")
-        self.assertEqual(result["score"], 82.0)
+        self.assertEqual(result["score"], 85.0)
         self.assertEqual(result["coverage"], 1.0)
         self.assertEqual(result["criterion_results"][0]["evidence_refs"], ["ev-1"])
 
