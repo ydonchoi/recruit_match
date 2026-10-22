@@ -1,2 +1,11 @@
-# Generated latest-run summary (rebuild from the search logs and cumulative ledger)
+# Runtime search logs (regenerable; do not commit machine/session-specific logs)
+/logs/
+
+# Local/generated data only; keep the canonical cumulative ledger under version control
+/data/cache/
+/data/tmp/
+/data/*.local.jsonl
+/data/*.tmp
+
+# Generated latest-run summary (rebuild from search logs and cumulative ledger)
 /reports/latest_run_summary.md
