@@ -250,5 +250,9 @@ class CompositeAdapter:
 
 
 def build_crawl_adapters() -> dict[str, PublicHTMLCrawlAdapter]:
-    return {platform: PublicHTMLCrawlAdapter(config)
-            for platform, config in configs_from_environment().items()}
+    configs = configs_from_environment()
+    if not configs:
+        raise CrawlConfigurationError(
+            "NO_TERMS_REVIEWED_CRAWL_CONFIGS: set RECRUIT_MATCH_CRAWL_CONFIG_JSON with reviewed seed URLs and host allowlists"
+        )
+    return {platform: PublicHTMLCrawlAdapter(config) for platform, config in configs.items()}
