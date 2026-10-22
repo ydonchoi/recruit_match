@@ -221,60 +221,57 @@ def run_pipeline(iteration: int, axes: list[str], user_query: str, query_limit: 
         adapters = {str(a.PLATFORM): a for a in load_adapters()}
         ledger_rows = read_jsonl(POSTINGS_FILE)
         index = {str(p.get("official_url") or p.get("posting_id")): p for p in ledger_rows}
+        from search_orchestrator import execute_search_plan, summarize_executions
+        executions = execute_search_plan(
+            run_id=run_id, queries=queries, platforms=BASELINE_PLATFORMS,
+            adapters=adapters,
+            context={"iteration": iteration, "query_axes": axes,
+                     "user_query": user_query, "planner": "recruit_match.search_engine"},
+        )
+        run["orchestration_summary"] = summarize_executions(executions)
         raw_count = 0
-        succeeded = 0
-        attempted = 0
-
-        for platform in BASELINE_PLATFORMS:
-            adapter = adapters.get(platform)
-            if adapter is None:
-                run["platform_statuses"][platform] = "blocked"
-                run["errors_or_limitations"].append(f"{platform}: no installed adapter; not searched")
-                continue
-            attempted += 1
-            try:
-                found = adapter.search({
-                    "run_id": run_id, "iteration": iteration,
-                    "query_axes": axes, "queries": queries,
-                    "user_query": user_query, "platform": platform,
-                    "planner": "recruit_match.search_engine",
+        succeeded_platforms = set()
+        attempted_platforms = set()
+        for execution in executions:
+            platform = execution.run.platform
+            attempted_platforms.add(platform)
+            if execution.run.status == "COMPLETED":
+                succeeded_platforms.add(platform)
+                raw_count += len(execution.hits)
+            elif execution.run.status == "BLOCKED":
+                run["errors_or_limitations"].append(f"{platform}: no installed adapter; query not executed")
+            else:
+                run["errors_or_limitations"].append(f"{platform} query failed: {execution.run.error}")
+            for hit in execution.hits:
+                posting = normalize_posting(hit.raw, run_id, hit.observed_at)
+                key = posting["official_url"]
+                append_jsonl(EVENTS_FILE, {
+                    "event_id": uuid.uuid4().hex, "posting_id": posting["posting_id"],
+                    "run_id": run_id, "event_type": "discovered_or_verified",
+                    "occurred_at": hit.observed_at, "evidence_urls": [posting["official_url"]],
+                    "notes": f"Observed by search orchestrator on {platform}; verification depends on supplied evidence.",
                 })
-                if not isinstance(found, list):
-                    raise TypeError("adapter search(context) must return a list")
-                succeeded += 1
-                run["platform_statuses"][platform] = "completed"
-                raw_count += len(found)
-                for raw in found:
-                    if not isinstance(raw, dict):
-                        raise TypeError("adapter result must be an object")
-                    posting = normalize_posting(raw, run_id, now())
-                    key = posting["official_url"]
-                    append_jsonl(EVENTS_FILE, {
-                        "event_id": uuid.uuid4().hex, "posting_id": posting["posting_id"],
-                        "run_id": run_id, "event_type": "discovered_or_verified",
-                        "occurred_at": now(), "evidence_urls": [posting["official_url"]],
-                        "notes": "Adapter-returned result; official status/eligibility only as verified by its supplied evidence.",
-                    })
-                    if key in index:
-                        old = index[key]
-                        if old != posting:
-                            merged = {**old, **posting}
-                            merged["alternate_source_urls"] = sorted(set(old.get("alternate_source_urls", [])) | set(posting.get("alternate_source_urls", [])))
-                            index[key] = merged
-                            run["updated_postings"] += 1
-                        else:
-                            run["duplicates"] += 1
+                if key in index:
+                    old = index[key]
+                    if old != posting:
+                        merged = {**old, **posting}
+                        merged["alternate_source_urls"] = sorted(set(old.get("alternate_source_urls", [])) | set(posting.get("alternate_source_urls", [])))
+                        index[key] = merged
+                        run["updated_postings"] += 1
                     else:
-                        index[key] = posting
-                        run["new_postings"] += 1
-                    run["evidence_urls"].append(posting["official_url"])
-            except Exception as exc:
-                run["platform_statuses"][platform] = "failed"
-                run["errors_or_limitations"].append(f"{platform}: {type(exc).__name__}: {exc}")
-
-        run["platforms_attempted"] = attempted
-        run["platforms_succeeded"] = succeeded
-        run["raw_result_count"] = raw_count if succeeded else None
+                        run["duplicates"] += 1
+                else:
+                    index[key] = posting
+                    run["new_postings"] += 1
+                run["evidence_urls"].append(posting["official_url"])
+        run["platform_statuses"] = {
+            platform: ("completed" if platform in succeeded_platforms else
+                       "blocked" if platform not in adapters else "failed")
+            for platform in BASELINE_PLATFORMS
+        }
+        run["platforms_attempted"] = len(attempted_platforms)
+        run["platforms_succeeded"] = len(succeeded_platforms)
+        run["raw_result_count"] = raw_count if succeeded_platforms else None
         ledger = list(index.values())
         write_jsonl(POSTINGS_FILE, ledger)
 
