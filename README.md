@@ -31,7 +31,7 @@ python run_pipeline.py \
 
 ## 현재 제한
 
-아직 실제 플랫폼 어댑터가 포함되어 있지 않으므로, 어댑터를 추가하기 전 실행은 차단 또는 부분 완료로 기록됩니다. 쿼리 계획 생성만으로 실제 채용 검색이 완료되었다고 보고하지 않습니다.
+기본 공개 웹 검색 어댑터(`adapters/public_search.py`)를 이식했습니다. 이 어댑터는 검색 API를 통해 발견 결과를 수집하지만, 해당 결과가 공식 채용공고인지 또는 지원 가능한 공고인지는 검증하지 않습니다. 실제 실행에는 Bing Web Search 호환 JSON 응답을 제공하는 검색 API endpoint, API 키, endpoint 호스트 allowlist가 필요합니다. 플랫폼 사이트에 직접 접속하거나 접근 제한을 우회하지 않습니다. API 설정 또는 분석 서비스가 없으면 실행은 차단·부분 완료로 기록되며, 쿼리 계획 생성만으로 실제 검색이 완료되었다고 보고하지 않습니다.
 
 [필수 실행·로그·검증 워크플로](docs/mandatory-search-workflow.md)
 
@@ -44,3 +44,17 @@ python run_pipeline.py \
 - `analysis_services.py`: 외부 근거가 필요한 `opportunity_state_resolution`, `assessment_resolution`, `revalidation` 서비스를 `SERVICES` 딕셔너리로 제공하는 선택적 연결 파일
 
 필수 서비스나 플랫폼 어댑터가 없으면 전체 실행은 성공으로 표시되지 않습니다. 현재 저장소에는 실제 플랫폼 어댑터와 분석 서비스 연결이 없으므로 기본 실행 상태는 **차단**이어야 합니다. CI 워크플로는 추가했지만 실제 실행·통과 증거는 별도로 확인해야 합니다.
+
+
+## 공개 웹 검색 어댑터 설정
+
+환경 변수로 명시적으로 설정합니다. endpoint는 HTTPS여야 하고, 호스트가 allowlist에 정확히 포함되어야 합니다.
+
+```bash
+export RECRUIT_MATCH_SEARCH_ENDPOINT="https://your-approved-search-provider.example/v7/search"
+export RECRUIT_MATCH_SEARCH_API_KEY="(키를 안전한 환경변수로 주입)"
+export RECRUIT_MATCH_SEARCH_ALLOWED_HOSTS="your-approved-search-provider.example"
+python run_pipeline.py --request "교육행정 연구지원 채용" --query-limit 10
+```
+
+검색 provider는 `webPages.value` 배열에 `url`, `name`, `snippet`을 포함하는 JSON 응답을 반환해야 합니다. 이 형식과 호환되지 않는 provider는 별도 provider-specific parser가 필요합니다. 키는 저장소에 커밋하지 마세요. 실제 API endpoint와 키는 기본값으로 지정하지 않았습니다.
