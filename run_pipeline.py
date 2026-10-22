@@ -11,7 +11,6 @@ import argparse
 import importlib.util
 import json
 import sys
-import traceback
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
@@ -178,7 +177,7 @@ def run_pipeline(iteration: int, query_axes: list[str], queries: list[str]) -> i
         "evidence_urls": [], "platforms_expected": len(BASELINE_PLATFORMS),
         "platforms_attempted": 0, "platform_statuses": {},
     }
-    append_jsonl(RUN_LOG, {**run, "phase": "started"})
+    upsert_run_record(run)
 
     try:
         if not queries:
@@ -251,7 +250,7 @@ def run_pipeline(iteration: int, query_axes: list[str], queries: list[str]) -> i
             run["status"] = "blocked"
         run["ended_at"] = now()
         # Append final state only after result ledger and events are written.
-        append_jsonl(RUN_LOG, {**run, "phase": "finished"})
+        upsert_run_record(run)
         write_summary(run, ledger)
         print(json.dumps({
             "run_id": run_id, "status": run["status"],
