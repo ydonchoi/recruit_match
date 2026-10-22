@@ -183,6 +183,7 @@ def write_summary(run: dict[str, Any], ledger: list[dict[str, Any]]) -> None:
         f"- Ended: {run['ended_at']}",
         f"- Status: **{run['status']}**",
         f"- Local planner: {run['planner_status']}",
+        f"- Analysis status: {run.get('analysis_status', 'NOT_RUN')}",
         f"- Platforms with successful adapter calls: {run['platforms_succeeded']}/{run['platforms_expected']}",
         f"- Raw results: {run['raw_result_count'] if run['raw_result_count'] is not None else 'unknown'}",
         f"- New postings: {run['new_postings']}",
