@@ -34,3 +34,13 @@ python run_pipeline.py \
 아직 실제 플랫폼 어댑터가 포함되어 있지 않으므로, 어댑터를 추가하기 전 실행은 차단 또는 부분 완료로 기록됩니다. 쿼리 계획 생성만으로 실제 채용 검색이 완료되었다고 보고하지 않습니다.
 
 [필수 실행·로그·검증 워크플로](docs/mandatory-search-workflow.md)
+
+
+## 통합 실행 계층
+
+- `search_engine.py`: 레거시 검색 행렬·적응형 쿼리 계획을 선택적으로 이식한 로컬 구현
+- `search_orchestrator.py`: 쿼리별·플랫폼별 실제 어댑터 실행과 실행 상태 기록
+- `analysis_pipeline.py`: 정규 분석 단계, 근거·자격요건 게이트, 보상 분류, 순위, Top-N, Registry Writer 게이트, 재검증
+- `analysis_services.py`: 외부 근거가 필요한 `opportunity_state_resolution`, `assessment_resolution`, `revalidation` 서비스를 `SERVICES` 딕셔너리로 제공하는 선택적 연결 파일
+
+필수 서비스나 플랫폼 어댑터가 없으면 전체 실행은 성공으로 표시되지 않습니다. 현재 저장소에는 실제 플랫폼 어댑터와 분석 서비스 연결이 없으므로 기본 실행 상태는 **차단**이어야 합니다. CI 워크플로는 추가했지만 실제 실행·통과 증거는 별도로 확인해야 합니다.
