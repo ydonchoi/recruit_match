@@ -330,9 +330,9 @@ def run_pipeline(iteration: int, axes: list[str], user_query: str, query_limit: 
             )
             run["errors_or_limitations"].extend(analysis.errors)
 
-        if succeeded == len(BASELINE_PLATFORMS) and not run["errors_or_limitations"] and analysis.status == "COMPLETED":
+        if len(succeeded_platforms) == len(BASELINE_PLATFORMS) and not run["errors_or_limitations"] and analysis.status == "COMPLETED":
             run["status"] = "completed"
-        elif succeeded and analysis.status != "BLOCKED":
+        elif succeeded_platforms and analysis.status != "BLOCKED":
             run["status"] = "partially_completed"
         else:
             run["status"] = "blocked"
@@ -345,7 +345,7 @@ def run_pipeline(iteration: int, axes: list[str], user_query: str, query_limit: 
             "analysis_status": run.get("analysis_status", "NOT_RUN"),\n            "analysis_stages": run.get("analysis_stages", []),
             "analysis_errors": run.get("analysis_errors", []),
             "platforms_expected": run["platforms_expected"],
-            "platforms_succeeded": succeeded, "platform_statuses": run["platform_statuses"],
+            "platforms_succeeded": len(succeeded_platforms), "platform_statuses": run["platform_statuses"],
             "raw_result_count": run["raw_result_count"], "new_postings": run["new_postings"],
             "duplicates": run["duplicates"], "updated_postings": run["updated_postings"],
             "errors_or_limitations": run["errors_or_limitations"],
