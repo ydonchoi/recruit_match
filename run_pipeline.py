@@ -24,6 +24,7 @@ POSTINGS_FILE = DATA / "postings.jsonl"
 EVENTS_FILE = DATA / "posting_events.jsonl"
 SUMMARY_FILE = REPORTS / "latest_run_summary.md"
 ANALYSIS_FILE = DATA / "analysis_results.jsonl"
+JOB_MATCH_FILE = DATA / "job_match_evaluations.jsonl"
 
 BASELINE_PLATFORMS = [
     "JOB-ALIO", "NKIS", "나라일터", "고용24", "사람인", "잡코리아",
@@ -238,7 +239,7 @@ def write_summary(run: dict[str, Any], ledger: list[dict[str, Any]]) -> None:
     SUMMARY_FILE.write_text("\n".join(lines), encoding="utf-8")
 
 
-def run_pipeline(iteration: int, axes: list[str], user_query: str, query_limit: int) -> int:
+def run_pipeline(iteration: int, axes: list[str], user_query: str, query_limit: int, job_match_input: str | None = None) -> int:
     started = now()
     run_id = datetime.now().strftime("%Y%m%d-%H%M%S") + "-" + uuid.uuid4().hex[:8]
     for folder in (LOGS, DATA, REPORTS):
@@ -368,6 +369,27 @@ def run_pipeline(iteration: int, axes: list[str], user_query: str, query_limit: 
             require_all_services=True, top_n=50,
         )
         write_jsonl(ANALYSIS_FILE, [dict(row) for row in analysis.records])
+
+        # Optional requirement-centered candidate-material evaluation. Source
+        # documents are read on demand; no normalized applicant profile is built.
+        if job_match_input:
+            match_path = Path(job_match_input).expanduser()
+            if not match_path.is_absolute():
+                match_path = ROOT / match_path
+            payload = json.loads(match_path.read_text(encoding="utf-8"))
+            from analysis_pipeline import evaluate_job_matching_payload
+            match_result = evaluate_job_matching_payload(payload)
+            append_jsonl(JOB_MATCH_FILE, match_result)
+            run["job_matching_status"] = match_result.get("evaluation_status", "UNASSESSED")
+            run["job_matching_evaluation_id"] = match_result.get("evaluation_id")
+            run["job_matching_output"] = str(JOB_MATCH_FILE.relative_to(ROOT))
+            if match_result.get("evaluation_status") in {"UNASSESSED", "PROVISIONAL"}:
+                run["errors_or_limitations"].append(
+                    f"Job matching evaluation is {match_result.get('evaluation_status')}; review unresolved requirements and evidence."
+                )
+        else:
+            run["job_matching_status"] = "NOT_REQUESTED"
+
         run["analysis_status"] = analysis.status
         run["analysis_stages"] = [asdict(stage) for stage in analysis.stages]
         run["analysis_errors"] = list(analysis.errors)
@@ -422,6 +444,8 @@ def run_pipeline(iteration: int, axes: list[str], user_query: str, query_limit: 
             "run_id": run_id, "status": run["status"],
             "planner_status": run["planner_status"],
             "analysis_status": run.get("analysis_status", "NOT_RUN"),
+            "job_matching_status": run.get("job_matching_status", "NOT_REQUESTED"),
+            "job_matching_output": run.get("job_matching_output"),
             "analysis_stages": run.get("analysis_stages", []),
             "analysis_errors": run.get("analysis_errors", []),
             "platforms_expected": run["platforms_expected"],
@@ -447,6 +471,7 @@ def main() -> int:
     parser.add_argument("--axis", action="append", dest="axes", default=[], help="Search axis; repeat as needed.")
     parser.add_argument("--request", required=True, help="User's recruitment-search request.")
     parser.add_argument("--query-limit", type=int, default=120, help="Maximum planned queries per run (default: 120).")
+    parser.add_argument("--job-match-input", help="Optional JSON input with job requirements, source documents, and criterion decisions; no applicant profile is created.")
     args = parser.parse_args()
     if args.iteration < 1:
         parser.error("--iteration must be >= 1")
@@ -454,7 +479,7 @@ def main() -> int:
         args.axes = ["대학", "공공기관", "연구기관", "교육기관", "교육기업"]
     if args.query_limit < 1:
         parser.error("--query-limit must be >= 1")
-    return run_pipeline(args.iteration, args.axes, args.request, args.query_limit)
+    return run_pipeline(args.iteration, args.axes, args.request, args.query_limit, args.job_match_input)
 
 
 if __name__ == "__main__":

@@ -39,5 +39,54 @@ class AnalysisPipelineTests(unittest.TestCase):
         self.assertEqual(result.records[0]["eligibility_gate"], "HOLD")
 
 
+    def test_requirement_centered_matching_bridge_keeps_profile_unstructured(self):
+        from analysis_pipeline import evaluate_job_matching_payload
+        payload = {
+            "evaluation_id": "eval-bridge",
+            "job_id": "job-bridge",
+            "eligibility_status": "HOLD",
+            "requirements": [{
+                "requirement_id": "REQ-1",
+                "description": "SQL data analysis",
+                "requirement_type": "TECHNICAL",
+                "weight": 1.0,
+                "keywords": ["SQL", "analysis"],
+            }],
+            "documents": [{
+                "document_id": "DOC-1",
+                "text": "Used SQL for analysis and reporting.",
+                "source_url": "https://example.org/source",
+            }],
+            "decisions": [{
+                "requirement_id": "REQ-1",
+                "score": 4,
+                "status": "ASSESSED",
+                "evidence_refs": ["DOC-1:0-37"],
+                "rationale": "Specific evidence is present.",
+            }],
+        }
+        result = evaluate_job_matching_payload(payload)
+        self.assertEqual(result["evaluation_id"], "eval-bridge")
+        self.assertEqual(result["eligibility"]["status"], "HOLD")
+        self.assertNotIn("applicant_profile", result)
+        self.assertEqual(result["evaluation_status"], "ASSESSED")
+        self.assertEqual(result["fit_score"], 80.0)
+
+    def test_requirement_centered_bridge_rejects_unknown_requirement_type(self):
+        from analysis_pipeline import evaluate_job_matching_payload
+        with self.assertRaises(ValueError):
+            evaluate_job_matching_payload({
+                "evaluation_id": "eval-invalid",
+                "job_id": "job-invalid",
+                "requirements": [{
+                    "requirement_id": "REQ-1",
+                    "description": "Skill",
+                    "requirement_type": "UNKNOWN",
+                }],
+                "documents": [],
+                "decisions": [],
+            })
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -242,3 +242,77 @@ def run_analysis_pipeline(*, run_id: str, postings: Iterable[dict[str, Any]],
         "PARTIALLY_COMPLETED" if errors or any(stage.status == "UNVERIFIED" for stage in stages) else "COMPLETED"
     )
     return AnalysisRunResult(run_id, started, _now(), status, tuple(stages), tuple(records), tuple(errors))
+
+
+
+def evaluate_job_matching_payload(payload: dict[str, Any]) -> dict[str, Any]:
+    """Bridge requirement-centered matching into the canonical analysis layer.
+
+    The payload carries job requirements, raw source documents, and explicit
+    criterion decisions. It does not accept or create a normalized applicant
+    profile. Criterion scores must be supplied by a human or separately
+    validated assessment service; keyword retrieval alone never assigns scores.
+    """
+    from job_matching_model import (
+        CriterionDecision, JobRequirement, SourceDocument, build_evaluation_run,
+        retrieve_evidence_on_demand,
+    )
+    if not isinstance(payload, dict):
+        raise ValueError("job matching input must be a JSON object")
+    requirements_raw = payload.get("requirements", [])
+    documents_raw = payload.get("documents", [])
+    decisions_raw = payload.get("decisions", [])
+    if not all(isinstance(value, list) for value in (requirements_raw, documents_raw, decisions_raw)):
+        raise ValueError("requirements, documents, and decisions must be JSON arrays")
+    requirements = []
+    for item in requirements_raw:
+        if not isinstance(item, dict):
+            raise ValueError("each requirement must be a JSON object")
+        requirements.append(JobRequirement(
+            requirement_id=str(item.get("requirement_id", "")),
+            description=str(item.get("description", "")),
+            requirement_type=str(item.get("requirement_type", "")),
+            mandatory=bool(item.get("mandatory", False)),
+            weight=item.get("weight", 0.0),
+            keywords=tuple(item.get("keywords", [])),
+            target_level=item.get("target_level"),
+        ))
+    documents = []
+    for item in documents_raw:
+        if not isinstance(item, dict):
+            raise ValueError("each source document must be a JSON object")
+        documents.append(SourceDocument(
+            document_id=str(item.get("document_id", "")),
+            text=str(item.get("text", "")),
+            source_url=str(item.get("source_url", "")),
+            source_type=str(item.get("source_type", "applicant_material")),
+            observed_at=str(item.get("observed_at", "")),
+            content_hash=str(item.get("content_hash", "")),
+        ))
+    # Evidence IDs are deterministic within a given source document/version.
+    available_evidence = {}
+    for requirement in requirements:
+        for snippet in retrieve_evidence_on_demand(requirement, documents):
+            available_evidence[snippet.evidence_id] = snippet
+    decisions = []
+    for item in decisions_raw:
+        if not isinstance(item, dict):
+            raise ValueError("each criterion decision must be a JSON object")
+        decisions.append(CriterionDecision(
+            requirement_id=str(item.get("requirement_id", "")),
+            score=item.get("score"),
+            status=str(item.get("status", "UNASSESSED")),
+            evidence_refs=tuple(item.get("evidence_refs", [])),
+            counter_evidence_refs=tuple(item.get("counter_evidence_refs", [])),
+            rationale=str(item.get("rationale", "")),
+            uncertainty_notes=tuple(item.get("uncertainty_notes", [])),
+        ))
+    return build_evaluation_run(
+        evaluation_id=str(payload.get("evaluation_id", "")),
+        job_id=str(payload.get("job_id", "")),
+        requirements=requirements,
+        documents=documents,
+        decisions=decisions,
+        eligibility_status=str(payload.get("eligibility_status", "HOLD")),
+        evaluated_at=payload.get("evaluated_at"),
+    )
