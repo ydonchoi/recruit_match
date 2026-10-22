@@ -124,15 +124,21 @@ def load_legacy_query_plan(legacy_root: Path, user_query: str, axes: list[str]) 
         from search_agent.search_matrix import CandidateEvidence, SearchMatrixPlanner
         from search_agent.search_memory import SearchMemory
         from search_agent.adaptive_planner import AdaptiveSearchPlanner
+        from search_agent.router import TopLevelRouter
+        from search_agent.request_handler import CandidateEvidenceProvider, SearchAgentRequestHandler
     except Exception as exc:
         raise RuntimeError(f"Could not import legacy Search Agent: {type(exc).__name__}: {exc}") from exc
 
+    class _EvidenceProvider(CandidateEvidenceProvider):
+        def get(self) -> CandidateEvidence:
+            return CandidateEvidence(tuple(axes))
+
     planner = AdaptiveSearchPlanner(SearchMatrixPlanner(tuple(axes)), SearchMemory())
-    evidence = CandidateEvidence(tuple(axes))
-    plans = planner.plan(evidence, user_query)
+    handler = SearchAgentRequestHandler(TopLevelRouter(planner=planner), _EvidenceProvider())
+    request_plan = handler.plan(user_query, f"recruit-match-{uuid.uuid4().hex[:12]}")
     queries = []
-    for plan in plans:
-        query = str(plan.combination.query).strip()
+    for call in request_plan.calls:
+        query = str(call.arguments.get("query", "")).strip()
         if query and query not in queries:
             queries.append(query)
     if not queries:
