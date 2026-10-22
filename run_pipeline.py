@@ -12,6 +12,7 @@ of ydonchoi/recruitment_matching. Platform adapters remain explicit dependencies
 from __future__ import annotations
 
 import argparse
+from dataclasses import asdict
 import importlib.util
 import json
 import sys
@@ -25,7 +26,7 @@ LOGS, DATA, REPORTS = ROOT / "logs", ROOT / "data", ROOT / "reports"
 RUN_LOG = LOGS / "search_runs.jsonl"
 POSTINGS_FILE = DATA / "postings.jsonl"
 EVENTS_FILE = DATA / "posting_events.jsonl"
-SUMMARY_FILE = REPORTS / "latest_run_summary.md"
+SUMMARY_FILE = REPORTS / "latest_run_summary.md"\nANALYSIS_FILE = DATA / "analysis_results.jsonl"
 
 BASELINE_PLATFORMS = [
     "JOB-ALIO", "NKIS", "나라일터", "고용24", "사람인", "잡코리아",
@@ -277,9 +278,40 @@ def run_pipeline(iteration: int, axes: list[str], user_query: str, query_limit: 
         ledger = list(index.values())
         write_jsonl(POSTINGS_FILE, ledger)
 
-        if succeeded == len(BASELINE_PLATFORMS) and not run["errors_or_limitations"]:
+        # Run the canonical analysis stages over the observed cumulative ledger.
+        # External evidence-dependent services are explicit optional hooks; absent
+        # hooks block the full pipeline rather than fabricate verification.
+        from analysis_pipeline import run_analysis_pipeline
+        analysis_services = {}
+        service_path = ROOT / "analysis_services.py"
+        if service_path.is_file():
+            spec = importlib.util.spec_from_file_location("recruit_match_analysis_services", service_path)
+            if spec is None or spec.loader is None:
+                run["errors_or_limitations"].append("analysis_services.py exists but cannot be loaded")
+            else:
+                module = importlib.util.module_from_spec(spec)
+                spec.loader.exec_module(module)
+                supplied = getattr(module, "SERVICES", {})
+                if not isinstance(supplied, dict):
+                    raise TypeError("analysis_services.py SERVICES must be a dict")
+                analysis_services = supplied
+        analysis = run_analysis_pipeline(
+            run_id=run_id, postings=ledger, services=analysis_services,
+            require_all_services=True, top_n=50,
+        )
+        write_jsonl(ANALYSIS_FILE, [dict(row) for row in analysis.records])
+        run["analysis_status"] = analysis.status
+        run["analysis_stages"] = [asdict(stage) for stage in analysis.stages]
+        run["analysis_errors"] = list(analysis.errors)
+        if analysis.status != "COMPLETED":
+            run["errors_or_limitations"].append(
+                f"Canonical analysis pipeline status: {analysis.status}"
+            )
+            run["errors_or_limitations"].extend(analysis.errors)
+
+        if succeeded == len(BASELINE_PLATFORMS) and not run["errors_or_limitations"] and analysis.status == "COMPLETED":
             run["status"] = "completed"
-        elif succeeded:
+        elif succeeded and analysis.status != "BLOCKED":
             run["status"] = "partially_completed"
         else:
             run["status"] = "blocked"
@@ -288,7 +320,7 @@ def run_pipeline(iteration: int, axes: list[str], user_query: str, query_limit: 
         write_summary(run, ledger)
         print(json.dumps({
             "run_id": run_id, "status": run["status"],
-            "planner_status": run["planner_status"],
+            "planner_status": run["planner_status"],\n            "analysis_status": run.get("analysis_status", "NOT_RUN"),\n            "analysis_stages": run.get("analysis_stages", []),\n            "analysis_errors": run.get("analysis_errors", []),
             "platforms_expected": run["platforms_expected"],
             "platforms_succeeded": succeeded, "platform_statuses": run["platform_statuses"],
             "raw_result_count": run["raw_result_count"], "new_postings": run["new_postings"],
