@@ -189,17 +189,40 @@ class PublicHTMLCrawlAdapter:
                 if informative and not any(token in title_folded or token in url_folded for token in informative):
                     continue
                 seen.add(url)
-                results.append(self._record(url, title, body))
+                record = self._record(url, title, body)
+                # Carry the detail-page bytes into the ledger when the public
+                # page is fetchable; failures remain explicit, not silent passes.
+                try:
+                    detail_url, detail_type, detail_body = self._fetch(url)
+                    detail_digest, detail_path = self._store_artifact(detail_body)
+                    record.update({
+                        "acquired_source_url": detail_url,
+                        "acquired_content_type": detail_type,
+                        "acquired_content_sha256": detail_digest,
+                        "acquired_source_artifact": str(detail_path.relative_to(ARTIFACT_DIR.parent)),
+                        "detail_acquisition_status": "ACQUIRED_UNVERIFIED",
+                        "evidence_refs": [url, f"sha256:{detail_digest}"],
+                        "provenance_refs": [f"sha256:{detail_digest}", f"artifact:{detail_path.name}"],
+                    })
+                except Exception as exc:
+                    record["detail_acquisition_status"] = "FAILED"
+                    record["detail_acquisition_error"] = f"{type(exc).__name__}: {exc}"
+                results.append(record)
                 if len(results) >= self.config.max_links_per_seed:
                     break
         return results
 
-    def _record(self, url: str, title: str, listing_body: bytes) -> dict[str, Any]:
-        digest = hashlib.sha256(listing_body).hexdigest()
+    @staticmethod
+    def _store_artifact(body: bytes):
+        digest = hashlib.sha256(body).hexdigest()
         ARTIFACT_DIR.mkdir(parents=True, exist_ok=True)
         artifact_path = ARTIFACT_DIR / f"{digest}.html"
         if not artifact_path.exists():
-            artifact_path.write_bytes(listing_body)
+            artifact_path.write_bytes(body)
+        return digest, artifact_path
+
+    def _record(self, url: str, title: str, listing_body: bytes) -> dict[str, Any]:
+        digest, artifact_path = self._store_artifact(listing_body)
         host = (urlparse(url).hostname or "").lower()
         return {
             "institution": host,
