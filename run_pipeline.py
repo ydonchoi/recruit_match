@@ -119,6 +119,21 @@ def load_adapters() -> dict[str, Any]:
                     adapters[str(platform)] = adapter
         elif getattr(module, "PLATFORM", None) and callable(getattr(module, "search", None)):
             adapters[str(module.PLATFORM)] = module
+
+    # Compose the policy-bounded HTML crawler with the API discovery adapter
+    # for configured baseline platforms. Missing/invalid crawl config is not
+    # silently replaced with guessed seed URLs.
+    try:
+        from adapters.public_html_crawl import CompositeAdapter, build_crawl_adapters
+        crawl_adapters = build_crawl_adapters()
+        for platform, crawl_adapter in crawl_adapters.items():
+            existing = adapters.get(platform)
+            if existing is not None and not str(platform).startswith("__LOAD_ERROR__:"):
+                adapters[platform] = CompositeAdapter(platform, (existing, crawl_adapter))
+            else:
+                adapters[platform] = crawl_adapter
+    except Exception as exc:
+        adapters["__LOAD_ERROR__:public_html_crawl"] = exc
     return adapters
 
 def load_query_plan(user_query: str, axes: list[str], limit: int) -> list[str]:
@@ -267,6 +282,10 @@ def run_pipeline(iteration: int, axes: list[str], user_query: str, query_limit: 
             else:
                 run["errors_or_limitations"].append(f"{platform} query failed: {execution.run.error}")
             for hit in execution.hits:
+                for source_error in hit.raw.get("source_discovery_errors", []):
+                    run["errors_or_limitations"].append(
+                        f"{platform} partial discovery source failure: {source_error}"
+                    )
                 try:
                     posting = normalize_posting(hit.raw, run_id, hit.observed_at)
                     key = posting["official_url"]
