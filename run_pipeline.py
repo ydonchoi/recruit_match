@@ -105,9 +105,11 @@ def load_adapters() -> dict[str, Any]:
         if spec is None or spec.loader is None:
             continue
         module = importlib.util.module_from_spec(spec)
+        sys.modules[spec.name] = module
         try:
             spec.loader.exec_module(module)
         except Exception as exc:
+            sys.modules.pop(spec.name, None)
             adapters[f"__LOAD_ERROR__:{path.stem}"] = exc
             continue
         provided = getattr(module, "ADAPTERS", None)
