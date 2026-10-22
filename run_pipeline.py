@@ -113,38 +113,23 @@ def load_adapters() -> list[Any]:
     return adapters
 
 
-def load_legacy_query_plan(legacy_root: Path, user_query: str, axes: list[str]) -> list[str]:
-    """Use the registered legacy SearchMatrixPlanner; no fake or randomized results."""
-    legacy_root = legacy_root.resolve()
-    if not (legacy_root / "search_agent" / "search_matrix.py").is_file():
-        raise RuntimeError(f"Legacy checkout missing search_agent/search_matrix.py: {legacy_root}")
-    if str(legacy_root) not in sys.path:
-        sys.path.insert(0, str(legacy_root))
+def load_query_plan(user_query: str, axes: list[str], limit: int) -> list[str]:
+    """Use the locally ported planner; no legacy repository path/import is allowed."""
     try:
-        from search_agent.search_matrix import CandidateEvidence, SearchMatrixPlanner
-        from search_agent.search_memory import SearchMemory
-        from search_agent.adaptive_planner import AdaptiveSearchPlanner
-        from search_agent.router import TopLevelRouter
-        from search_agent.request_handler import CandidateEvidenceProvider, SearchAgentRequestHandler
+        from search_engine import CandidateEvidence, SearchMatrixPlanner, AdaptiveSearchPlanner
     except Exception as exc:
-        raise RuntimeError(f"Could not import legacy Search Agent: {type(exc).__name__}: {exc}") from exc
-
-    class _EvidenceProvider(CandidateEvidenceProvider):
-        def get(self) -> CandidateEvidence:
-            return CandidateEvidence(tuple(axes))
-
-    planner = AdaptiveSearchPlanner(SearchMatrixPlanner(tuple(axes)), SearchMemory())
-    handler = SearchAgentRequestHandler(TopLevelRouter(planner=planner), _EvidenceProvider())
-    request_plan = handler.plan(user_query, f"recruit-match-{uuid.uuid4().hex[:12]}")
+        raise RuntimeError(f"Could not import local search engine: {type(exc).__name__}: {exc}") from exc
+    planner = AdaptiveSearchPlanner(SearchMatrixPlanner(), outcome_memory={})
+    evidence = CandidateEvidence(tuple(axes))
+    plans = planner.plan(evidence, user_query, limit=limit)
     queries = []
-    for call in request_plan.calls:
-        query = str(call.arguments.get("query", "")).strip()
+    for plan in plans:
+        query = str(plan.combination.query).strip()
         if query and query not in queries:
             queries.append(query)
     if not queries:
-        raise RuntimeError("Legacy planner returned no executable queries")
+        raise RuntimeError("Local planner returned no executable queries")
     return queries
-
 
 def normalize_posting(raw: dict[str, Any], run_id: str, checked_at: str) -> dict[str, Any]:
     required = ("institution", "title", "official_url")
@@ -185,7 +170,7 @@ def write_summary(run: dict[str, Any], ledger: list[dict[str, Any]]) -> None:
         f"- Started: {run['started_at']}",
         f"- Ended: {run['ended_at']}",
         f"- Status: **{run['status']}**",
-        f"- Legacy planner: {run['legacy_planner_status']}",
+        f"- Local planner: {run['planner_status']}",
         f"- Platforms with successful adapter calls: {run['platforms_succeeded']}/{run['platforms_expected']}",
         f"- Raw results: {run['raw_result_count'] if run['raw_result_count'] is not None else 'unknown'}",
         f"- New postings: {run['new_postings']}",
@@ -207,7 +192,7 @@ def write_summary(run: dict[str, Any], ledger: list[dict[str, Any]]) -> None:
     SUMMARY_FILE.write_text("\n".join(lines), encoding="utf-8")
 
 
-def run_pipeline(iteration: int, axes: list[str], user_query: str, legacy_root: Path | None) -> int:
+def run_pipeline(iteration: int, axes: list[str], user_query: str, query_limit: int) -> int:
     started = now()
     run_id = datetime.now().strftime("%Y%m%d-%H%M%S") + "-" + uuid.uuid4().hex[:8]
     for folder in (LOGS, DATA, REPORTS):
@@ -221,17 +206,15 @@ def run_pipeline(iteration: int, axes: list[str], user_query: str, legacy_root: 
         "duplicates": 0, "updated_postings": 0, "errors_or_limitations": [],
         "evidence_urls": [], "platforms_expected": len(BASELINE_PLATFORMS),
         "platforms_attempted": 0, "platforms_succeeded": 0,
-        "platform_statuses": {}, "legacy_planner_status": "not_configured",
+        "platform_statuses": {}, "planner_status": "not_configured",
     }
     upsert_run_record(run)
 
     try:
         if not user_query.strip():
             raise ValueError("A non-empty --request is required")
-        if legacy_root is None:
-            raise RuntimeError("Legacy integration is required; supply --legacy-root to recruitment_matching checkout")
-        queries = load_legacy_query_plan(legacy_root, user_query, axes)
-        run["legacy_planner_status"] = "executed"
+        queries = load_query_plan(user_query, axes, query_limit)
+        run["planner_status"] = "executed"
         run["queries_executed"] = queries
 
         adapters = {str(a.PLATFORM): a for a in load_adapters()}
@@ -253,7 +236,7 @@ def run_pipeline(iteration: int, axes: list[str], user_query: str, legacy_root: 
                     "run_id": run_id, "iteration": iteration,
                     "query_axes": axes, "queries": queries,
                     "user_query": user_query, "platform": platform,
-                    "legacy_root": str(legacy_root.resolve()),
+                    "planner": "recruit_match.search_engine",
                 })
                 if not isinstance(found, list):
                     raise TypeError("adapter search(context) must return a list")
@@ -305,7 +288,7 @@ def run_pipeline(iteration: int, axes: list[str], user_query: str, legacy_root: 
         write_summary(run, ledger)
         print(json.dumps({
             "run_id": run_id, "status": run["status"],
-            "legacy_planner_status": run["legacy_planner_status"],
+            "planner_status": run["planner_status"],
             "platforms_expected": run["platforms_expected"],
             "platforms_succeeded": succeeded, "platform_statuses": run["platform_statuses"],
             "raw_result_count": run["raw_result_count"], "new_postings": run["new_postings"],
@@ -328,13 +311,15 @@ def main() -> int:
     parser.add_argument("--iteration", type=int, default=1)
     parser.add_argument("--axis", action="append", dest="axes", default=[], help="Search axis; repeat as needed.")
     parser.add_argument("--request", required=True, help="User's recruitment-search request.")
-    parser.add_argument("--legacy-root", type=Path, required=True, help="Path to local recruitment_matching checkout.")
+    parser.add_argument("--query-limit", type=int, default=120, help="Maximum planned queries per run (default: 120).")
     args = parser.parse_args()
     if args.iteration < 1:
         parser.error("--iteration must be >= 1")
     if not args.axes:
         args.axes = ["대학", "공공기관", "연구기관", "교육기관", "교육기업"]
-    return run_pipeline(args.iteration, args.axes, args.request, args.legacy_root)
+    if args.query_limit < 1:
+        parser.error("--query-limit must be >= 1")
+    return run_pipeline(args.iteration, args.axes, args.request, args.query_limit)
 
 
 if __name__ == "__main__":
