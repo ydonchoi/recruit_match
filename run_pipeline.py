@@ -188,6 +188,17 @@ def normalize_posting(raw: dict[str, Any], run_id: str, checked_at: str) -> dict
         "institution_compensation": raw.get("institution_compensation"),
         "public_benchmark_compensation": raw.get("public_benchmark_compensation"),
         "compensation_estimate": raw.get("compensation_estimate"),
+        "source_platform": raw.get("source_platform"),
+        "source_type": raw.get("source_type"),
+        "source_content_sha256": raw.get("source_content_sha256"),
+        "source_artifact": raw.get("source_artifact"),
+        "detail_acquisition_status": raw.get("detail_acquisition_status", "NOT_ATTEMPTED"),
+        "detail_acquisition_error": raw.get("detail_acquisition_error"),
+        "acquired_source_url": raw.get("acquired_source_url"),
+        "acquired_content_type": raw.get("acquired_content_type"),
+        "acquired_content_sha256": raw.get("acquired_content_sha256"),
+        "acquired_source_artifact": raw.get("acquired_source_artifact"),
+        "source_discovery_errors": list(raw.get("source_discovery_errors", [])),
         "first_seen_run_id": raw.get("first_seen_run_id") or run_id,
         "last_checked_at": checked_at,
         "last_checked_run_id": run_id,
@@ -285,6 +296,11 @@ def run_pipeline(iteration: int, axes: list[str], user_query: str, query_limit: 
                 for source_error in hit.raw.get("source_discovery_errors", []):
                     run["errors_or_limitations"].append(
                         f"{platform} partial discovery source failure: {source_error}"
+                    )
+                if hit.raw.get("detail_acquisition_status") == "FAILED":
+                    run["errors_or_limitations"].append(
+                        f"{platform} detail acquisition failed for {hit.raw.get('official_url')}: "
+                        f"{hit.raw.get('detail_acquisition_error', 'UNKNOWN_ERROR')}"
                     )
                 try:
                     posting = normalize_posting(hit.raw, run_id, hit.observed_at)
