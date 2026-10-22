@@ -43,7 +43,7 @@ python run_pipeline.py \
 - `analysis_pipeline.py`: 정규 분석 단계, 근거·자격요건 게이트, 보상 분류, 순위, Top-N, Registry Writer 게이트, 재검증
 - `analysis_services.py`: 외부 근거가 필요한 `opportunity_state_resolution`, `assessment_resolution`, `revalidation` 서비스를 `SERVICES` 딕셔너리로 제공하는 선택적 연결 파일
 
-필수 서비스나 플랫폼 어댑터가 없으면 전체 실행은 성공으로 표시되지 않습니다. 현재 저장소에는 실제 플랫폼 어댑터와 분석 서비스 연결이 없으므로 기본 실행 상태는 **차단**이어야 합니다. CI 워크플로는 추가했지만 실제 실행·통과 증거는 별도로 확인해야 합니다.
+필수 서비스나 플랫폼 어댑터가 없으면 전체 실행은 성공으로 표시되지 않습니다. 플랫폼 어댑터 코드는 포함되어 있지만 검색 API endpoint·키·호스트 allowlist와 분석 서비스가 설정되지 않은 기본 상태에서는 실행이 **차단**되어야 합니다. CI 워크플로는 추가했지만 실제 실행·통과 증거는 별도로 확인해야 합니다.
 
 
 ## 공개 웹 검색 어댑터 설정
