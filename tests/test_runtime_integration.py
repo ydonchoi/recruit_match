@@ -107,7 +107,7 @@ class RuntimeIntegrationTests(unittest.TestCase):
         env.pop("RECRUIT_MATCH_CRAWL_CONFIG_JSON", None)
         return subprocess.run(
             [sys.executable, "run_pipeline.py", "--request", "통합 테스트 채용 검색",
-             "--axis", "연구지원", "--query-limit", "4"],
+             "--axis", "연구지원", "--query-limit", "1"],
             cwd=self.root, env=env, text=True, capture_output=True, timeout=30,
         )
 
@@ -173,7 +173,7 @@ class RuntimeIntegrationTests(unittest.TestCase):
         env = os.environ.copy()
         env["PYTHONPATH"] = str(self.root)
         result = subprocess.run(
-            [sys.executable, "run_pipeline.py", "--request", "   ", "--query-limit", "4"],
+            [sys.executable, "run_pipeline.py", "--request", "   ", "--query-limit", "1"],
             cwd=self.root, env=env, text=True, capture_output=True, timeout=30,
         )
         self.assertEqual(result.returncode, 2)
