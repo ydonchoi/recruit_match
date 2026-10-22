@@ -251,12 +251,14 @@ def run_pipeline(iteration: int, axes: list[str], user_query: str, query_limit: 
         raw_count = 0
         succeeded_platforms = set()
         attempted_platforms = set()
+        platform_execution_statuses = {}
         for adapter_key, adapter_error in adapters.items():
             if adapter_key.startswith("__LOAD_ERROR__:"):
                 run["errors_or_limitations"].append(f"Adapter module {adapter_key.split(chr(58), 1)[1]} failed to load: {type(adapter_error).__name__}: {adapter_error}")
         for execution in executions:
             platform = execution.run.platform
             attempted_platforms.add(platform)
+            platform_execution_statuses.setdefault(platform, []).append(execution.run.status)
             if execution.run.status == "COMPLETED":
                 succeeded_platforms.add(platform)
                 raw_count += len(execution.hits)
@@ -265,32 +267,44 @@ def run_pipeline(iteration: int, axes: list[str], user_query: str, query_limit: 
             else:
                 run["errors_or_limitations"].append(f"{platform} query failed: {execution.run.error}")
             for hit in execution.hits:
-                posting = normalize_posting(hit.raw, run_id, hit.observed_at)
-                key = posting["official_url"]
-                append_jsonl(EVENTS_FILE, {
-                    "event_id": uuid.uuid4().hex, "posting_id": posting["posting_id"],
-                    "run_id": run_id, "event_type": "discovered_or_verified",
-                    "occurred_at": hit.observed_at, "evidence_urls": [posting["official_url"]],
-                    "notes": f"Observed by search orchestrator on {platform}; verification depends on supplied evidence.",
-                })
-                if key in index:
-                    old = index[key]
-                    if old != posting:
-                        merged = {**old, **posting}
-                        merged["alternate_source_urls"] = sorted(set(old.get("alternate_source_urls", [])) | set(posting.get("alternate_source_urls", [])))
-                        index[key] = merged
-                        run["updated_postings"] += 1
+                try:
+                    posting = normalize_posting(hit.raw, run_id, hit.observed_at)
+                    key = posting["official_url"]
+                    append_jsonl(EVENTS_FILE, {
+                        "event_id": uuid.uuid4().hex, "posting_id": posting["posting_id"],
+                        "run_id": run_id, "event_type": "discovered",
+                        "occurred_at": hit.observed_at, "evidence_urls": [posting["official_url"]],
+                        "notes": f"Discovered by search orchestrator on {platform}; official status and eligibility remain unverified unless evidence says otherwise.",
+                    })
+                    if key in index:
+                        old = index[key]
+                        if old != posting:
+                            merged = {**old, **posting}
+                            merged["alternate_source_urls"] = sorted(set(old.get("alternate_source_urls", [])) | set(posting.get("alternate_source_urls", [])))
+                            index[key] = merged
+                            run["updated_postings"] += 1
+                        else:
+                            run["duplicates"] += 1
                     else:
-                        run["duplicates"] += 1
-                else:
-                    index[key] = posting
-                    run["new_postings"] += 1
-                run["evidence_urls"].append(posting["official_url"])
-        run["platform_statuses"] = {
-            platform: ("completed" if platform in succeeded_platforms else
-                       "blocked" if platform not in adapters else "failed")
-            for platform in BASELINE_PLATFORMS
-        }
+                        index[key] = posting
+                        run["new_postings"] += 1
+                    run["evidence_urls"].append(posting["official_url"])
+                except Exception as exc:
+                    run["errors_or_limitations"].append(
+                        f"Could not normalize hit from {platform} ({hit.hit_id}): {type(exc).__name__}: {exc}"
+                    )
+        run["platform_statuses"] = {}
+        for platform in BASELINE_PLATFORMS:
+            statuses = platform_execution_statuses.get(platform, [])
+            if not statuses or all(status == "BLOCKED" for status in statuses):
+                platform_status = "blocked"
+            elif all(status == "COMPLETED" for status in statuses):
+                platform_status = "completed"
+            elif any(status == "COMPLETED" for status in statuses):
+                platform_status = "partially_completed"
+            else:
+                platform_status = "failed"
+            run["platform_statuses"][platform] = platform_status
         run["platforms_attempted"] = len(attempted_platforms)
         run["platforms_succeeded"] = len(succeeded_platforms)
         run["raw_result_count"] = raw_count if succeeded_platforms else None
