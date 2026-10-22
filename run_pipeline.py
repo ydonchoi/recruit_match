@@ -307,7 +307,7 @@ def run_pipeline(iteration: int, axes: list[str], user_query: str, query_limit: 
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Integrated legacy recruitment search pipeline.")
+    parser = argparse.ArgumentParser(description="Independent recruitment search pipeline.")
     parser.add_argument("--iteration", type=int, default=1)
     parser.add_argument("--axis", action="append", dest="axes", default=[], help="Search axis; repeat as needed.")
     parser.add_argument("--request", required=True, help="User's recruitment-search request.")
