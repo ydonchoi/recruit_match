@@ -377,15 +377,47 @@ def run_pipeline(iteration: int, axes: list[str], user_query: str, query_limit: 
             )
             run["errors_or_limitations"].extend(analysis.errors)
 
-        if len(succeeded_platforms) == len(BASELINE_PLATFORMS) and not run["errors_or_limitations"] and analysis.status == "COMPLETED":
+        # Completion requires every required query/platform pair to execute,
+        # no recorded collection/normalization/adapter limitation, successful
+        # analysis stages in canonical order, and all required output artifacts.
+        expected_pairs = len(queries) * len(BASELINE_PLATFORMS)
+        orchestration = run.get("orchestration_summary", {})
+        actual_pairs = orchestration.get("queries_platform_pairs", 0)
+        completed_pairs = orchestration.get("completed", 0)
+        failed_pairs = orchestration.get("failed", 0)
+        blocked_pairs = orchestration.get("blocked", 0)
+        required_stage_names = (
+            "discovery", "opportunity_state_resolution", "assessment_resolution",
+            "evidence_validation", "eligibility", "assessment", "compensation",
+            "ranking", "top50", "writer_gate", "revalidation",
+        )
+        stage_names = [stage.get("name") for stage in run.get("analysis_stages", [])]
+        stage_statuses = [stage.get("status") for stage in run.get("analysis_stages", [])]
+        all_stages_present = stage_names == list(required_stage_names)
+        all_stages_completed = all(status == "COMPLETED" for status in stage_statuses)
+        artifacts_written = all(path.is_file() for path in (RUN_LOG, POSTINGS_FILE, EVENTS_FILE, ANALYSIS_FILE))
+        no_limitations = not run["errors_or_limitations"]
+        full_search_coverage = (
+            expected_pairs > 0
+            and actual_pairs == expected_pairs
+            and completed_pairs == expected_pairs
+            and failed_pairs == 0
+            and blocked_pairs == 0
+        )
+        full_analysis = analysis.status == "COMPLETED" and all_stages_present and all_stages_completed
+        if full_search_coverage and no_limitations and full_analysis and artifacts_written:
             run["status"] = "completed"
-        elif succeeded_platforms and analysis.status != "BLOCKED":
+        elif completed_pairs > 0 or analysis.status in {"COMPLETED", "PARTIALLY_COMPLETED"}:
             run["status"] = "partially_completed"
         else:
             run["status"] = "blocked"
+
+        # Persist the terminal run state before creating the human-readable
+        # summary; a failed artifact write must never yield a success exit code.
         run["ended_at"] = now()
         upsert_run_record(run)
         write_summary(run, ledger)
+        artifacts_written = all(path.is_file() for path in (RUN_LOG, POSTINGS_FILE, EVENTS_FILE, ANALYSIS_FILE, SUMMARY_FILE))
         print(json.dumps({
             "run_id": run_id, "status": run["status"],
             "planner_status": run["planner_status"],
