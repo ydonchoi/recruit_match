@@ -190,7 +190,6 @@ def run_pipeline(iteration: int, query_axes: list[str], queries: list[str]) -> i
         raw_count = 0
         platform_successes = 0
         total_attempted = 0
-        run["queries_executed"] = queries
 
         for platform in BASELINE_PLATFORMS:
             adapter = adapter_by_platform.get(platform)
@@ -200,6 +199,7 @@ def run_pipeline(iteration: int, query_axes: list[str], queries: list[str]) -> i
                 continue
             total_attempted += 1
             try:
+                run["queries_executed"] = sorted(set(run["queries_executed"]) | set(queries))
                 found = adapter.search({
                     "run_id": run_id, "iteration": iteration,
                     "query_axes": query_axes, "queries": queries,
@@ -267,7 +267,7 @@ def run_pipeline(iteration: int, query_axes: list[str], queries: list[str]) -> i
         run["ended_at"] = now()
         run["status"] = "blocked"
         run["errors_or_limitations"].append(f"Pipeline gate: {type(exc).__name__}: {exc}")
-        append_jsonl(RUN_LOG, {**run, "phase": "finished"})
+        upsert_run_record(run)
         print(f"PIPELINE BLOCKED: {exc}", file=sys.stderr)
         return 2
 
