@@ -12,7 +12,7 @@ A search run MUST NOT be reported as complete unless its execution log and resul
 
 1. Create a run record before searching.
 2. Search the registered baseline platforms and any approved expansion sources. Keep the baseline platform set in scope unless access is blocked; record each platform's status.
-3. Record every query/axis actually executed, timestamp, source/platform, result URL or source reference, result count when available, and success/failure/blocked status.
+3. Record every query/platform execution reference, timestamp, source/platform, result URL or source reference, result count when available, and success/failure/blocked status. Do not persist query text, search axes, user selections, or applicant-derived criteria; use random per-run references and non-identifying counts.
 4. Save each found posting to the cumulative ledger. Deduplicate by official posting URL or stable posting identifier; retain alternate source URLs.
 5. For existing postings, append a verification event rather than creating a duplicate. Track application status, deadline, eligibility evidence, and last-checked time.
 6. Validate each candidate against the official posting. Use verified, partially_verified, unverified, closed, or excluded status; record evidence and reason.
@@ -40,8 +40,8 @@ Do not claim these artifacts exist until they have been created and verified. If
       "ended_at": "ISO-8601 with timezone or null",
       "iteration": 1,
       "platform": "platform name",
-      "query_axes": ["job title", "institution type"],
-      "queries_executed": ["exact query string"],
+      "query_count": 0,
+      "query_refs": ["random per-run query reference"],
       "status": "completed | partially_completed | blocked",
       "raw_result_count": null,
       "new_postings": 0,
@@ -81,6 +81,7 @@ Each event must include event_id, posting_id, run_id, event_type, occurred_at, e
 Before claiming a batch or 20-iteration sequence is complete, verify:
 - Every required platform/iteration has a run record or an explicit blocked/skipped reason.
 - Every run record corresponds to a real search execution.
+- Run records and execution summaries contain no query text, applicant information, user selections, or candidate-specific evaluation output.
 - All discovered postings are in the canonical ledger or have a documented exclusion reason.
 - Duplicate counts and status totals reconcile with the ledger/events.
 - All recommended postings have official-source evidence for current application status and eligibility, or are explicitly labelled unverified.

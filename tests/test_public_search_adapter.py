@@ -7,6 +7,7 @@ from adapters.public_search import (
     AdapterConfigurationError,
     PLATFORM_DOMAINS,
     PublicSearchAdapter,
+    SearchConfig,
     _config,
 )
 from search_orchestrator import execute_search_plan, summarize_executions
@@ -57,6 +58,68 @@ class PublicSearchAdapterTests(unittest.TestCase):
         summary = summarize_executions(rows)
         self.assertEqual(summary["failed"], 1)
         self.assertEqual(summary["raw_results"], 0)
+        self.assertNotIn("query", summary["execution_records"][0])
+
+    def test_orchestrator_batches_provider_calls_but_keeps_platform_run_rows(self):
+        class BatchAdapter:
+            def __init__(self, platform):
+                self.platform = platform
+
+            def search_batch(self, context, adapters):
+                return {
+                    platform: [{
+                        "institution": platform, "title": "Research role",
+                        "official_url": f"https://{platform}.example/job",
+                    }]
+                    for platform in adapters
+                }
+
+            def search(self, context):
+                raise AssertionError("individual fallback should not run")
+
+        adapters = {name: BatchAdapter(name) for name in ("A", "B")}
+        rows = execute_search_plan(
+            run_id="run", queries=["private query"], platforms=["A", "B"],
+            adapters=adapters, context={},
+        )
+        self.assertEqual([row.run.status for row in rows], ["COMPLETED", "COMPLETED"])
+        self.assertTrue(all(row.run.execution_mode == "grouped" for row in rows))
+        summary = summarize_executions(rows)
+        self.assertEqual(summary["queries_platform_pairs"], 2)
+        self.assertNotIn("private query", str(summary))
+        self.assertTrue(all("query" not in row for row in summary["execution_records"]))
+
+    def test_grouped_search_routes_results_to_every_platform_with_two_provider_calls(self):
+        adapters = {
+            "KEDI": PublicSearchAdapter("KEDI", ("kedi.re.kr",)),
+            "KICE": PublicSearchAdapter("KICE", ("kice.re.kr",)),
+            "대학 공식 채용 페이지": PublicSearchAdapter("대학 공식 채용 페이지", ()),
+            "연구기관 공식 채용 페이지": PublicSearchAdapter("연구기관 공식 채용 페이지", ()),
+        }
+        first = adapters["KEDI"]
+        calls = []
+
+        def fake_fetch(query, config):
+            calls.append(query)
+            if "site:" in query:
+                return [
+                    {"url": "https://www.kedi.re.kr/job/1", "name": "KEDI job", "siteName": "KEDI"},
+                    {"url": "https://kice.re.kr/job/2", "name": "KICE job", "siteName": "KICE"},
+                    {"url": "https://outside.example/job/3", "name": "Wrong channel", "siteName": "outside"},
+                ]
+            return [
+                {"url": "https://unmapped.example/job/4", "name": "Other public job", "siteName": "Public agency"},
+                {"url": "https://kedi.re.kr/job/1", "name": "Mapped site", "siteName": "KEDI"},
+            ]
+
+        first._fetch_pages = fake_fetch
+        with patch("adapters.public_search._config", return_value=SearchConfig("https://s.example", "key")):
+            routed = first.search_batch({"query": "public research hiring"}, adapters)
+        self.assertEqual(len(calls), 2)
+        self.assertEqual([row["official_url"] for row in routed["KEDI"]], ["https://www.kedi.re.kr/job/1"])
+        self.assertEqual([row["official_url"] for row in routed["KICE"]], ["https://kice.re.kr/job/2"])
+        self.assertEqual([row["official_url"] for row in routed["대학 공식 채용 페이지"]], ["https://unmapped.example/job/4"])
+        self.assertEqual([row["official_url"] for row in routed["연구기관 공식 채용 페이지"]], ["https://unmapped.example/job/4"])
 
 
 if __name__ == "__main__":

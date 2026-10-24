@@ -8,9 +8,9 @@ analysis services are explicit dependencies; missing services fail closed.
 from __future__ import annotations
 
 import argparse
-from dataclasses import asdict
 import importlib.util
 import json
+import re
 import sys
 import uuid
 from datetime import datetime, timezone
@@ -24,7 +24,6 @@ POSTINGS_FILE = DATA / "postings.jsonl"
 EVENTS_FILE = DATA / "posting_events.jsonl"
 SUMMARY_FILE = REPORTS / "latest_run_summary.md"
 ANALYSIS_FILE = DATA / "analysis_results.jsonl"
-JOB_MATCH_FILE = DATA / "job_match_evaluations.jsonl"
 
 BASELINE_PLATFORMS = [
     "JOB-ALIO", "NKIS", "나라일터", "고용24", "사람인", "잡코리아",
@@ -68,6 +67,8 @@ def append_jsonl(path: Path, value: dict[str, Any]) -> None:
 def upsert_run_record(run: dict[str, Any]) -> None:
     """Keep one latest-state record per run_id; preserve other runs."""
     rows = read_jsonl(RUN_LOG)
+    rows = [sanitize_run_record(old, legacy=True) for old in rows]
+    run = sanitize_run_record(run)
     for i, old in enumerate(rows):
         if old.get("run_id") == run["run_id"]:
             rows[i] = run
@@ -81,6 +82,93 @@ def upsert_run_record(run: dict[str, Any]) -> None:
         encoding="utf-8",
     )
     temp.replace(RUN_LOG)
+
+
+def sanitize_run_record(run: dict[str, Any], *, legacy: bool = False) -> dict[str, Any]:
+    """Remove search text and candidate-specific fields before persistence."""
+    allowed = {
+        "run_id", "started_at", "ended_at", "iteration", "platform",
+        "query_count", "query_refs", "status", "raw_result_count", "new_postings",
+        "duplicates", "updated_postings", "errors_or_limitations", "evidence_urls",
+        "platforms_expected", "platforms_attempted", "platforms_succeeded",
+        "platform_statuses", "planner_status", "orchestration_summary", "analysis_status",
+    }
+    sensitive_keys = {
+        "query_axes", "queries_executed", "user_query", "candidate_text",
+        "candidate_profile", "applicant_profile", "job_matching_output",
+        "job_matching_evaluation_id", "job_match_input", "job_matching_status",
+        "documents", "decisions", "fit_score", "criterion_results", "evidence_records",
+    }
+    had_legacy_text = any(key in run for key in sensitive_keys)
+    safe = {key: value for key, value in run.items() if key in allowed}
+    summary = safe.get("orchestration_summary")
+    if isinstance(summary, dict):
+        summary = dict(summary)
+        records = summary.get("execution_records", [])
+        clean_records = []
+        for record in records:
+            if not isinstance(record, dict):
+                continue
+            if "query" in record:
+                had_legacy_text = True
+            clean_record = {
+                key: record.get(key)
+                for key in ("run_id", "query_id", "platform", "started_at", "ended_at",
+                            "status", "result_count", "error", "execution_mode")
+                if key in record
+            }
+            if clean_record.get("error"):
+                clean_record["error"] = str(clean_record["error"]).split(":", 1)[0]
+            clean_records.append(clean_record)
+        summary["execution_records"] = clean_records
+        safe["orchestration_summary"] = summary
+    errors = safe.get("errors_or_limitations")
+    if isinstance(errors, list):
+        safe["errors_or_limitations"] = [safe_error_label(value) for value in errors]
+    if legacy and had_legacy_text:
+        safe["errors_or_limitations"] = ["LEGACY_DETAILS_REDACTED"]
+        safe["query_refs"] = []
+        if isinstance(safe.get("orchestration_summary"), dict):
+            safe["orchestration_summary"]["execution_records"] = []
+    return safe
+
+
+def sanitize_search_text(value: str) -> str:
+    """Remove common direct identifiers before user text reaches search APIs."""
+    text = re.sub(r"[\w.+-]+@[\w.-]+\.[A-Za-z]{2,}", " ", value)
+    text = re.sub(r"(?<!\d)(?:\+?82[- .]?)?0?1[016789][- .]?\d{3,4}[- .]?\d{4}(?!\d)", " ", text)
+    text = re.sub(r"(?<!\d)\d{6}[- ]?[1-4]\d{6}(?!\d)", " ", text)
+    return re.sub(r"\s+", " ", text).strip()
+
+
+def safe_error_label(value: Any) -> str:
+    """Map diagnostics to fixed labels so exception text cannot persist."""
+    message = str(value)
+    known = {
+        "LEGACY_DETAILS_REDACTED", "PIPELINE_GATE_FAILURE", "NORMALIZATION_FAILURE",
+        "ADAPTER_LOAD_FAILURE", "NO_ADAPTER", "QUERY_FAILED",
+        "PARTIAL_DISCOVERY_FAILURE", "DETAIL_ACQUISITION_FAILURE",
+        "OPERATIONAL_LIMITATION",
+    }
+    if message in known or re.fullmatch(r"[A-Z0-9-]+: (NO_ADAPTER|QUERY_FAILED|PARTIAL_DISCOVERY_FAILURE|DETAIL_ACQUISITION_FAILURE)", message):
+        return message
+    prefix = message.split(":", 1)[0]
+    platform = prefix if prefix in BASELINE_PLATFORMS else ""
+    if "no installed adapter" in message:
+        return f"{platform}: NO_ADAPTER" if platform else "NO_ADAPTER"
+    if "query failed" in message:
+        return f"{platform}: QUERY_FAILED" if platform else "QUERY_FAILED"
+    if "partial discovery source failure" in message:
+        return f"{platform}: PARTIAL_DISCOVERY_FAILURE" if platform else "PARTIAL_DISCOVERY_FAILURE"
+    if "detail acquisition failed" in message:
+        return f"{platform}: DETAIL_ACQUISITION_FAILURE" if platform else "DETAIL_ACQUISITION_FAILURE"
+    if message.startswith("Could not normalize hit"):
+        return "NORMALIZATION_FAILURE"
+    if message.startswith("Adapter module"):
+        return "ADAPTER_LOAD_FAILURE"
+    if message.startswith("Pipeline gate"):
+        return "PIPELINE_GATE_FAILURE"
+    return "OPERATIONAL_LIMITATION"
 
 
 def write_jsonl(path: Path, rows: list[dict[str, Any]]) -> None:
@@ -134,7 +222,11 @@ def load_adapters() -> dict[str, Any]:
             else:
                 adapters[platform] = crawl_adapter
     except Exception as exc:
-        adapters["__LOAD_ERROR__:public_html_crawl"] = exc
+        # HTML discovery is optional when the policy-reviewed config is absent;
+        # the public-search API still covers those platform pairs.
+        if not (type(exc).__name__ == "CrawlConfigurationError"
+                and str(exc) == "NO_TERMS_REVIEWED_CRAWL_CONFIGS: set RECRUIT_MATCH_CRAWL_CONFIG_JSON with reviewed seed URLs and host allowlists"):
+            adapters["__LOAD_ERROR__:public_html_crawl"] = exc
     return adapters
 
 def load_query_plan(user_query: str, axes: list[str], limit: int) -> list[str]:
@@ -199,7 +291,7 @@ def normalize_posting(raw: dict[str, Any], run_id: str, checked_at: str) -> dict
         "acquired_content_type": raw.get("acquired_content_type"),
         "acquired_content_sha256": raw.get("acquired_content_sha256"),
         "acquired_source_artifact": raw.get("acquired_source_artifact"),
-        "source_discovery_errors": list(raw.get("source_discovery_errors", [])),
+        "source_discovery_errors": [safe_error_label(value) for value in raw.get("source_discovery_errors", [])],
         "first_seen_run_id": raw.get("first_seen_run_id") or run_id,
         "last_checked_at": checked_at,
         "last_checked_run_id": run_id,
@@ -217,7 +309,7 @@ def write_summary(run: dict[str, Any], ledger: list[dict[str, Any]]) -> None:
         f"- Ended: {run['ended_at']}",
         f"- Status: **{run['status']}**",
         f"- Local planner: {run['planner_status']}",
-        f"- Analysis status: {run.get('analysis_status', 'NOT_RUN')}",
+        f"- Analysis status: {run.get('analysis_status', 'NOT_RUN_STAGE_1')}",
         f"- Platforms with successful adapter calls: {run['platforms_succeeded']}/{run['platforms_expected']}",
         f"- Raw results: {run['raw_result_count'] if run['raw_result_count'] is not None else 'unknown'}",
         f"- New postings: {run['new_postings']}",
@@ -239,16 +331,66 @@ def write_summary(run: dict[str, Any], ledger: list[dict[str, Any]]) -> None:
     SUMMARY_FILE.write_text("\n".join(lines), encoding="utf-8")
 
 
-def run_pipeline(iteration: int, axes: list[str], user_query: str, query_limit: int, job_match_input: str | None = None) -> int:
+def load_analysis_services() -> dict[str, Any]:
+    """Load public-posting analysis hooks without exposing exception payloads."""
+    service_path = ROOT / "analysis_services.py"
+    if not service_path.is_file():
+        return {}
+    spec = importlib.util.spec_from_file_location("recruit_match_analysis_services", service_path)
+    if spec is None or spec.loader is None:
+        raise RuntimeError("ANALYSIS_SERVICES_LOAD_FAILED")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    supplied = getattr(module, "SERVICES", {})
+    if not isinstance(supplied, dict):
+        raise TypeError("ANALYSIS_SERVICES_MUST_BE_DICT")
+    return supplied
+
+
+def run_selected_analysis(posting_ids: list[str]) -> dict[str, Any]:
+    """Run stage 2 only for explicitly selected public posting IDs."""
+    requested = list(dict.fromkeys(str(value).strip() for value in posting_ids if str(value).strip()))
+    if not requested:
+        raise ValueError("SELECT_AT_LEAST_ONE_POSTING")
+    ledger = read_jsonl(POSTINGS_FILE)
+    by_id = {str(row.get("posting_id") or row.get("official_url")): row for row in ledger}
+    missing = [posting_id for posting_id in requested if posting_id not in by_id]
+    if missing:
+        raise ValueError("UNKNOWN_POSTING_ID")
+    selected = [by_id[posting_id] for posting_id in requested]
+    from analysis_pipeline import run_analysis_pipeline
+    run_id = "analysis-" + uuid.uuid4().hex[:12]
+    try:
+        result = run_analysis_pipeline(
+            run_id=run_id, postings=selected,
+            services=load_analysis_services(), require_all_services=True, top_n=len(selected),
+        )
+    except Exception as exc:
+        return {
+            "run_id": run_id, "status": "BLOCKED", "selected_count": len(selected),
+            "records": [], "errors": [type(exc).__name__],
+        }
+    write_jsonl(ANALYSIS_FILE, [dict(row) for row in result.records])
+    return {
+        "run_id": run_id,
+        "status": result.status,
+        "selected_count": len(selected),
+        "records": [dict(row) for row in result.records],
+        "errors": [error.split(":", 1)[0] for error in result.errors],
+    }
+
+
+def run_pipeline(iteration: int, axes: list[str], user_query: str, query_limit: int) -> int:
     started = now()
     run_id = datetime.now().strftime("%Y%m%d-%H%M%S") + "-" + uuid.uuid4().hex[:8]
     for folder in (LOGS, DATA, REPORTS):
         folder.mkdir(parents=True, exist_ok=True)
+    EVENTS_FILE.touch(exist_ok=True)
 
     run: dict[str, Any] = {
         "run_id": run_id, "started_at": started, "ended_at": None,
         "iteration": iteration, "platform": "multi-platform",
-        "query_axes": axes, "queries_executed": [],
+        "query_count": 0, "query_refs": [],
         "status": "blocked", "raw_result_count": None, "new_postings": 0,
         "duplicates": 0, "updated_postings": 0, "errors_or_limitations": [],
         "evidence_urls": [], "platforms_expected": len(BASELINE_PLATFORMS),
@@ -260,9 +402,14 @@ def run_pipeline(iteration: int, axes: list[str], user_query: str, query_limit: 
     try:
         if not user_query.strip():
             raise ValueError("A non-empty --request is required")
-        queries = load_query_plan(user_query, axes, query_limit)
+        safe_query = sanitize_search_text(user_query)
+        safe_axes = [sanitize_search_text(axis) for axis in axes]
+        safe_axes = [axis for axis in safe_axes if axis]
+        if not safe_query and not safe_axes:
+            raise ValueError("NO_SEARCH_TERMS_AFTER_REDACTION")
+        queries = load_query_plan(safe_query, safe_axes, query_limit)
         run["planner_status"] = "executed"
-        run["queries_executed"] = queries
+        run["query_count"] = len(queries)
 
         adapters = load_adapters()
         ledger_rows = read_jsonl(POSTINGS_FILE)
@@ -271,10 +418,13 @@ def run_pipeline(iteration: int, axes: list[str], user_query: str, query_limit: 
         executions = execute_search_plan(
             run_id=run_id, queries=queries, platforms=BASELINE_PLATFORMS,
             adapters=adapters,
-            context={"iteration": iteration, "query_axes": axes,
-                     "user_query": user_query, "planner": "recruit_match.search_engine"},
+            context={"iteration": iteration, "query_axes": safe_axes,
+                     "user_query": safe_query, "planner": "recruit_match.search_engine"},
         )
         run["orchestration_summary"] = summarize_executions(executions)
+        run["query_refs"] = list(dict.fromkeys(
+            row["query_id"] for row in run["orchestration_summary"].get("execution_records", [])
+        ))
         raw_count = 0
         succeeded_platforms = set()
         attempted_platforms = set()
@@ -292,7 +442,7 @@ def run_pipeline(iteration: int, axes: list[str], user_query: str, query_limit: 
             elif execution.run.status == "BLOCKED":
                 run["errors_or_limitations"].append(f"{platform}: no installed adapter; query not executed")
             else:
-                run["errors_or_limitations"].append(f"{platform} query failed: {execution.run.error}")
+                run["errors_or_limitations"].append(f"{platform} query failed: {str(execution.run.error or 'PROVIDER_ERROR').split(':', 1)[0]}")
             for hit in execution.hits:
                 for source_error in hit.raw.get("source_discovery_errors", []):
                     run["errors_or_limitations"].append(
@@ -327,7 +477,7 @@ def run_pipeline(iteration: int, axes: list[str], user_query: str, query_limit: 
                     run["evidence_urls"].append(posting["official_url"])
                 except Exception as exc:
                     run["errors_or_limitations"].append(
-                        f"Could not normalize hit from {platform} ({hit.hit_id}): {type(exc).__name__}: {exc}"
+                        f"Could not normalize hit from {platform} ({hit.hit_id}): {type(exc).__name__}"
                     )
         run["platform_statuses"] = {}
         for platform in BASELINE_PLATFORMS:
@@ -346,78 +496,17 @@ def run_pipeline(iteration: int, axes: list[str], user_query: str, query_limit: 
         run["raw_result_count"] = raw_count if succeeded_platforms else None
         ledger = list(index.values())
         write_jsonl(POSTINGS_FILE, ledger)
+        run["analysis_status"] = "NOT_RUN_STAGE_1"
 
-        # Run the canonical analysis stages over the observed cumulative ledger.
-        # External evidence-dependent services are explicit optional hooks; absent
-        # hooks block the full pipeline rather than fabricate verification.
-        from analysis_pipeline import run_analysis_pipeline
-        analysis_services = {}
-        service_path = ROOT / "analysis_services.py"
-        if service_path.is_file():
-            spec = importlib.util.spec_from_file_location("recruit_match_analysis_services", service_path)
-            if spec is None or spec.loader is None:
-                run["errors_or_limitations"].append("analysis_services.py exists but cannot be loaded")
-            else:
-                module = importlib.util.module_from_spec(spec)
-                spec.loader.exec_module(module)
-                supplied = getattr(module, "SERVICES", {})
-                if not isinstance(supplied, dict):
-                    raise TypeError("analysis_services.py SERVICES must be a dict")
-                analysis_services = supplied
-        analysis = run_analysis_pipeline(
-            run_id=run_id, postings=ledger, services=analysis_services,
-            require_all_services=True, top_n=50,
-        )
-        write_jsonl(ANALYSIS_FILE, [dict(row) for row in analysis.records])
-
-        # Optional requirement-centered candidate-material evaluation. Source
-        # documents are read on demand; no normalized applicant profile is built.
-        if job_match_input:
-            match_path = Path(job_match_input).expanduser()
-            if not match_path.is_absolute():
-                match_path = ROOT / match_path
-            payload = json.loads(match_path.read_text(encoding="utf-8"))
-            from analysis_pipeline import evaluate_job_matching_payload
-            match_result = evaluate_job_matching_payload(payload)
-            append_jsonl(JOB_MATCH_FILE, match_result)
-            run["job_matching_status"] = match_result.get("evaluation_status", "UNASSESSED")
-            run["job_matching_evaluation_id"] = match_result.get("evaluation_id")
-            run["job_matching_output"] = str(JOB_MATCH_FILE.relative_to(ROOT))
-            if match_result.get("evaluation_status") in {"UNASSESSED", "PROVISIONAL"}:
-                run["errors_or_limitations"].append(
-                    f"Job matching evaluation is {match_result.get('evaluation_status')}; review unresolved requirements and evidence."
-                )
-        else:
-            run["job_matching_status"] = "NOT_REQUESTED"
-
-        run["analysis_status"] = analysis.status
-        run["analysis_stages"] = [asdict(stage) for stage in analysis.stages]
-        run["analysis_errors"] = list(analysis.errors)
-        if analysis.status != "COMPLETED":
-            run["errors_or_limitations"].append(
-                f"Canonical analysis pipeline status: {analysis.status}"
-            )
-            run["errors_or_limitations"].extend(analysis.errors)
-
-        # Completion requires every required query/platform pair to execute,
-        # no recorded collection/normalization/adapter limitation, successful
-        # analysis stages in canonical order, and all required output artifacts.
+        # Stage 1 completion covers collection only. Selected-job analysis is a
+        # separate stage and does not block the search results list.
         expected_pairs = len(queries) * len(BASELINE_PLATFORMS)
         orchestration = run.get("orchestration_summary", {})
         actual_pairs = orchestration.get("queries_platform_pairs", 0)
         completed_pairs = orchestration.get("completed", 0)
         failed_pairs = orchestration.get("failed", 0)
         blocked_pairs = orchestration.get("blocked", 0)
-        required_stage_names = (
-            "discovery", "opportunity_state_resolution", "assessment_resolution",
-            "evidence_validation", "eligibility", "assessment", "compensation",
-            "ranking", "top50", "writer_gate", "revalidation",
-        )
-        stage_names = [stage.get("name") for stage in run.get("analysis_stages", [])]
-        stage_statuses = [stage.get("status") for stage in run.get("analysis_stages", [])]
-        all_stages_present = stage_names == list(required_stage_names)
-        all_stages_completed = all(status == "COMPLETED" for status in stage_statuses)
-        artifacts_written = all(path.is_file() for path in (RUN_LOG, POSTINGS_FILE, EVENTS_FILE, ANALYSIS_FILE))
+        artifacts_written = all(path.is_file() for path in (RUN_LOG, POSTINGS_FILE, EVENTS_FILE))
         no_limitations = not run["errors_or_limitations"]
         full_search_coverage = (
             expected_pairs > 0
@@ -426,10 +515,9 @@ def run_pipeline(iteration: int, axes: list[str], user_query: str, query_limit: 
             and failed_pairs == 0
             and blocked_pairs == 0
         )
-        full_analysis = analysis.status == "COMPLETED" and all_stages_present and all_stages_completed
-        if full_search_coverage and no_limitations and full_analysis and artifacts_written:
+        if full_search_coverage and no_limitations and artifacts_written:
             run["status"] = "completed"
-        elif completed_pairs > 0 or analysis.status in {"COMPLETED", "PARTIALLY_COMPLETED"}:
+        elif completed_pairs > 0:
             run["status"] = "partially_completed"
         else:
             run["status"] = "blocked"
@@ -437,17 +525,14 @@ def run_pipeline(iteration: int, axes: list[str], user_query: str, query_limit: 
         # Persist the terminal run state before creating the human-readable
         # summary; a failed artifact write must never yield a success exit code.
         run["ended_at"] = now()
+        run = sanitize_run_record(run)
         upsert_run_record(run)
         write_summary(run, ledger)
-        artifacts_written = all(path.is_file() for path in (RUN_LOG, POSTINGS_FILE, EVENTS_FILE, ANALYSIS_FILE, SUMMARY_FILE))
+        artifacts_written = all(path.is_file() for path in (RUN_LOG, POSTINGS_FILE, EVENTS_FILE, SUMMARY_FILE))
         print(json.dumps({
             "run_id": run_id, "status": run["status"],
             "planner_status": run["planner_status"],
-            "analysis_status": run.get("analysis_status", "NOT_RUN"),
-            "job_matching_status": run.get("job_matching_status", "NOT_REQUESTED"),
-            "job_matching_output": run.get("job_matching_output"),
-            "analysis_stages": run.get("analysis_stages", []),
-            "analysis_errors": run.get("analysis_errors", []),
+            "analysis_status": run.get("analysis_status", "NOT_RUN_STAGE_1"),
             "platforms_expected": run["platforms_expected"],
             "platforms_succeeded": len(succeeded_platforms), "platform_statuses": run["platform_statuses"],
             "raw_result_count": run["raw_result_count"], "new_postings": run["new_postings"],
@@ -459,9 +544,10 @@ def run_pipeline(iteration: int, axes: list[str], user_query: str, query_limit: 
     except Exception as exc:
         run["ended_at"] = now()
         run["status"] = "blocked"
-        run["errors_or_limitations"].append(f"Pipeline gate: {type(exc).__name__}: {exc}")
+        run["errors_or_limitations"].append(f"Pipeline gate: {type(exc).__name__}")
+        run = sanitize_run_record(run)
         upsert_run_record(run)
-        print(f"PIPELINE BLOCKED: {exc}", file=sys.stderr)
+        print(f"PIPELINE BLOCKED: {type(exc).__name__}", file=sys.stderr)
         return 2
 
 
@@ -469,9 +555,10 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="Independent recruitment search pipeline.")
     parser.add_argument("--iteration", type=int, default=1)
     parser.add_argument("--axis", action="append", dest="axes", default=[], help="Search axis; repeat as needed.")
-    parser.add_argument("--request", required=True, help="User's recruitment-search request.")
+    parser.add_argument("--request", help="Recruitment-search request. Use --interactive-session to enter it without shell history.")
     parser.add_argument("--query-limit", type=int, default=120, help="Maximum planned queries per run (default: 120).")
-    parser.add_argument("--job-match-input", help="Optional JSON input with job requirements, source documents, and criterion decisions; no applicant profile is created.")
+    parser.add_argument("--analyze-posting", nargs="+", help="Run stage 2 for selected posting IDs only.")
+    parser.add_argument("--interactive-session", action="store_true", help="Run the 3-stage workflow with personal inputs kept in memory only.")
     args = parser.parse_args()
     if args.iteration < 1:
         parser.error("--iteration must be >= 1")
@@ -479,7 +566,23 @@ def main() -> int:
         args.axes = ["대학", "공공기관", "연구기관", "교육기관", "교육기업"]
     if args.query_limit < 1:
         parser.error("--query-limit must be >= 1")
-    return run_pipeline(args.iteration, args.axes, args.request, args.query_limit, args.job_match_input)
+    if args.analyze_posting:
+        try:
+            result = run_selected_analysis(args.analyze_posting)
+        except Exception as exc:
+            print(json.dumps({"status": "blocked", "error": type(exc).__name__}, ensure_ascii=False))
+            return 2
+        print(json.dumps({key: value for key, value in result.items() if key != "records"} |
+                         {"records": result["records"]}, ensure_ascii=False, indent=2))
+        return 0 if result["status"] == "COMPLETED" else 2
+    if args.interactive_session:
+        from interactive_workflow import run_interactive_session
+        return run_interactive_session(run_pipeline, run_selected_analysis)
+    if not args.request:
+        parser.error("--request is required unless --interactive-session or --analyze-posting is used")
+    if not args.axes:
+        args.axes = ["대학", "공공기관", "연구기관", "교육기관", "교육기업"]
+    return run_pipeline(args.iteration, args.axes, args.request, args.query_limit)
 
 
 if __name__ == "__main__":

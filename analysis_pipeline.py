@@ -255,7 +255,6 @@ def evaluate_job_matching_payload(payload: dict[str, Any]) -> dict[str, Any]:
     """
     from job_matching_model import (
         CriterionDecision, JobRequirement, SourceDocument, build_evaluation_run,
-        retrieve_evidence_on_demand,
     )
     if not isinstance(payload, dict):
         raise ValueError("job matching input must be a JSON object")
@@ -289,11 +288,6 @@ def evaluate_job_matching_payload(payload: dict[str, Any]) -> dict[str, Any]:
             observed_at=str(item.get("observed_at", "")),
             content_hash=str(item.get("content_hash", "")),
         ))
-    # Evidence IDs are deterministic within a given source document/version.
-    available_evidence = {}
-    for requirement in requirements:
-        for snippet in retrieve_evidence_on_demand(requirement, documents):
-            available_evidence[snippet.evidence_id] = snippet
     decisions = []
     for item in decisions_raw:
         if not isinstance(item, dict):

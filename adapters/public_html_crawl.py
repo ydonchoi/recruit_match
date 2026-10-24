@@ -262,7 +262,8 @@ class CompositeAdapter:
                         seen.add(url)
                         hits.append(row)
             except Exception as exc:
-                errors.append(f"{type(adapter).__name__}:{type(exc).__name__}:{exc}")
+                # Avoid copying request text or response bodies into posting records.
+                errors.append(f"{type(adapter).__name__}:{type(exc).__name__}")
         self.last_errors = tuple(errors)
         if errors:
             for row in hits:

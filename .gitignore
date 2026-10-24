@@ -6,6 +6,11 @@
 /data/tmp/
 /data/*.local.jsonl
 /data/*.tmp
+/data/job_match_evaluations.jsonl
+
+# Python runtime artifacts
+__pycache__/
+*.py[cod]
 
 # Generated latest-run summary (rebuild from search logs and cumulative ledger)
 /reports/latest_run_summary.md

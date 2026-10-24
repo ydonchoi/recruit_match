@@ -27,4 +27,4 @@ The initial retrieval implementation is deterministic keyword overlap across sen
 
 ## Current integration boundary
 
-This is a standalone model and test module. It is **not yet wired into** `analysis_pipeline.py` or `run_pipeline.py`; the existing posting-analysis pipeline continues to run independently. Runtime integration and end-to-end validation are separate follow-up work.
+The model is invoked for one user-selected posting by `interactive_workflow.py`. Requirements and candidate material are held in process memory; criterion decisions are entered by the user after reviewing retrieved snippets. The resulting evaluation, excerpts, and recommendation are returned to the active session and are not written to the repository. Recommendation requires eligibility `PASS`, a user-configured overall score threshold, and no assessed mandatory criterion below 3/5. These are transparent initial rules, not an empirically calibrated predictor. The initial retrieval remains deterministic keyword overlap. Long-term application tracking requires a separate approved secure store and is not implemented here.

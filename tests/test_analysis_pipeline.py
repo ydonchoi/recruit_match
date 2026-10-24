@@ -41,6 +41,16 @@ class AnalysisPipelineTests(unittest.TestCase):
 
     def test_requirement_centered_matching_bridge_keeps_profile_unstructured(self):
         from analysis_pipeline import evaluate_job_matching_payload
+        from job_matching_model import JobRequirement, SourceDocument, retrieve_evidence_on_demand
+        requirement = JobRequirement(
+            requirement_id="REQ-1", description="SQL data analysis",
+            requirement_type="TECHNICAL", weight=1.0, keywords=("SQL", "analysis"),
+        )
+        source = SourceDocument(
+            document_id="DOC-1", text="Used SQL for analysis and reporting.",
+            source_url="https://example.org/source",
+        )
+        evidence_ref = retrieve_evidence_on_demand(requirement, [source])[0].evidence_id
         payload = {
             "evaluation_id": "eval-bridge",
             "job_id": "job-bridge",
@@ -61,7 +71,7 @@ class AnalysisPipelineTests(unittest.TestCase):
                 "requirement_id": "REQ-1",
                 "score": 4,
                 "status": "ASSESSED",
-                "evidence_refs": ["DOC-1:0-37"],
+                "evidence_refs": [evidence_ref],
                 "rationale": "Specific evidence is present.",
             }],
         }

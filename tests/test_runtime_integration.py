@@ -23,6 +23,8 @@ RUNTIME_FILES = (
     "search_engine.py",
     "search_orchestrator.py",
     "analysis_pipeline.py",
+    "workflow_session.py",
+    "interactive_workflow.py",
     "adapters",
 )
 
@@ -50,6 +52,8 @@ class RuntimeIntegrationTests(unittest.TestCase):
                     self.PLATFORM = platform
 
                 def search(self, context):
+                    if "@" in context.get("query", ""):
+                        raise RuntimeError("direct identifier reached search provider")
                     if os.environ.get("INTEGRATION_MODE") == "fail-one" and self.PLATFORM == "KEDI":
                         raise RuntimeError("deterministic integration failure")
                     return [{
@@ -71,7 +75,7 @@ class RuntimeIntegrationTests(unittest.TestCase):
         # A temporary adapter module makes the actual CLI loader use deterministic
         # local fixtures while still exercising orchestration, normalization,
         # the canonical analysis pipeline, persistent artifacts and exit status.
-        adapters = self.root / "adapters" / "integration_fixture.py"
+        adapters = self.root / "adapters" / "zz_integration_fixture.py"
         adapters.write_text(textwrap.dedent(
             """
             import os
@@ -91,7 +95,7 @@ class RuntimeIntegrationTests(unittest.TestCase):
         )
         # Do not permit copied production adapter modules to shadow fixture adapters.
         for path in (self.root / "adapters").glob("*.py"):
-            if path.name not in {"__init__.py", "integration_fixture.py", "public_html_crawl.py"}:
+            if path.name not in {"__init__.py", "zz_integration_fixture.py", "public_html_crawl.py", "public_search.py"}:
                 path.unlink()
         init = self.root / "adapters" / "__init__.py"
         if not init.exists():
@@ -106,7 +110,7 @@ class RuntimeIntegrationTests(unittest.TestCase):
         env["INTEGRATION_MODE"] = mode
         env.pop("RECRUIT_MATCH_CRAWL_CONFIG_JSON", None)
         return subprocess.run(
-            [sys.executable, "run_pipeline.py", "--request", "통합 테스트 채용 검색",
+            [sys.executable, "run_pipeline.py", "--request", "통합 테스트 채용 검색 candidate@example.com",
              "--axis", "연구지원", "--query-limit", "1"],
             cwd=self.root, env=env, text=True, capture_output=True, timeout=30,
         )
@@ -116,32 +120,33 @@ class RuntimeIntegrationTests(unittest.TestCase):
         self.assertTrue(path.is_file(), f"expected runtime artifact: {relative}")
         return [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line.strip()]
 
-    def test_success_path_executes_pipeline_and_persists_reconcilable_artifacts(self):
+    def test_stage_one_collects_and_persists_only_public_postings_and_safe_run_metadata(self):
         result = self.run_cli()
         self.assertEqual(result.returncode, 0, msg=result.stderr + result.stdout)
         payload = json.loads(result.stdout)
         self.assertEqual(payload["status"], "completed")
-        self.assertEqual(payload["analysis_status"], "COMPLETED")
+        self.assertEqual(payload["analysis_status"], "NOT_RUN_STAGE_1")
         self.assertEqual(payload["platforms_succeeded"], payload["platforms_expected"])
-        self.assertTrue(payload["analysis_stages"])
 
         runs = self.read_jsonl("logs/search_runs.jsonl")
         self.assertEqual(len(runs), 1)
         run = runs[0]
         self.assertEqual(run["run_id"], payload["run_id"])
         self.assertIsNotNone(run["ended_at"])
-        self.assertGreater(len(run["queries_executed"]), 0)
+        self.assertGreater(run["query_count"], 0)
+        self.assertNotIn("queries_executed", run)
+        self.assertNotIn("query_axes", run)
+        self.assertNotIn("candidate@example.com", json.dumps(run, ensure_ascii=False))
+        self.assertNotIn("통합 테스트 채용 검색", json.dumps(run, ensure_ascii=False))
+        self.assertTrue(all("query" not in row for row in run["orchestration_summary"]["execution_records"]))
         self.assertEqual(run["status"], "completed")
         self.assertEqual(run["platforms_succeeded"], 12)
 
         postings = self.read_jsonl("data/postings.jsonl")
         events = self.read_jsonl("data/posting_events.jsonl")
-        analysis = self.read_jsonl("data/analysis_results.jsonl")
         self.assertEqual(len(postings), 1, "same URL returned by 12 platforms must deduplicate")
         self.assertEqual(len(events), 12, "each observed hit should leave a discovery event")
-        self.assertEqual(len(analysis), 1)
-        self.assertEqual(analysis[0]["eligibility_gate"], "HOLD")
-        self.assertEqual(analysis[0]["writer_gate"], "HOLD")
+        self.assertFalse((self.root / "data/analysis_results.jsonl").exists())
         summary = self.root / "reports/latest_run_summary.md"
         self.assertTrue(summary.is_file())
         self.assertIn(payload["run_id"], summary.read_text(encoding="utf-8"))
@@ -158,16 +163,37 @@ class RuntimeIntegrationTests(unittest.TestCase):
         self.assertTrue(self.read_jsonl("logs/search_runs.jsonl"))
         self.assertTrue((self.root / "reports/latest_run_summary.md").is_file())
 
-    def test_missing_analysis_services_fail_closed_even_if_discovery_succeeds(self):
+    def test_search_stage_does_not_run_or_require_analysis_services(self):
         (self.root / "analysis_services.py").unlink()
         result = self.run_cli()
-        self.assertEqual(result.returncode, 2, msg=result.stderr + result.stdout)
+        self.assertEqual(result.returncode, 0, msg=result.stderr + result.stdout)
         payload = json.loads(result.stdout)
-        self.assertNotEqual(payload["analysis_status"], "COMPLETED")
-        self.assertTrue(payload["analysis_errors"])
-        rows = self.read_jsonl("data/analysis_results.jsonl")
-        self.assertEqual(rows[0]["writer_gate"], "HOLD")
-        self.assertTrue(any("MISSING_REQUIRED_SERVICE" in error for error in payload["analysis_errors"]))
+        self.assertEqual(payload["analysis_status"], "NOT_RUN_STAGE_1")
+        self.assertFalse((self.root / "data/analysis_results.jsonl").exists())
+
+    def test_stage_two_analyzes_only_selected_posting_ids(self):
+        data = self.root / "data"
+        data.mkdir(exist_ok=True)
+        postings = [
+            {"posting_id": f"p{i}", "institution": "기관", "title": f"공고 {i}",
+             "official_url": f"https://jobs.example.invalid/{i}", "application_status": "unknown",
+             "eligibility_status": "unverified"}
+            for i in range(1, 4)
+        ]
+        (data / "postings.jsonl").write_text(
+            "".join(json.dumps(row, ensure_ascii=False) + "\n" for row in postings), encoding="utf-8"
+        )
+        result = subprocess.run(
+            [sys.executable, "run_pipeline.py", "--analyze-posting", "p1", "p3"],
+            cwd=self.root, env={**os.environ, "PYTHONPATH": str(self.root)},
+            text=True, capture_output=True, timeout=30,
+        )
+        self.assertEqual(result.returncode, 0, msg=result.stderr + result.stdout)
+        payload = json.loads(result.stdout)
+        self.assertEqual(payload["selected_count"], 2)
+        self.assertEqual({row["posting_id"] for row in payload["records"]}, {"p1", "p3"})
+        saved = self.read_jsonl("data/analysis_results.jsonl")
+        self.assertEqual({row["posting_id"] for row in saved}, {"p1", "p3"})
 
     def test_empty_request_is_blocked_and_recorded_before_execution(self):
         env = os.environ.copy()
@@ -181,7 +207,7 @@ class RuntimeIntegrationTests(unittest.TestCase):
         self.assertEqual(len(runs), 1)
         self.assertEqual(runs[0]["status"], "blocked")
         self.assertIsNotNone(runs[0]["ended_at"])
-        self.assertTrue(any("non-empty" in error for error in runs[0]["errors_or_limitations"]))
+        self.assertEqual(runs[0]["errors_or_limitations"], ["PIPELINE_GATE_FAILURE"])
 
 
 if __name__ == "__main__":

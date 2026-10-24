@@ -36,7 +36,7 @@ class PublicHTMLCrawlTests(unittest.TestCase):
     def test_search_is_discovery_only_and_keeps_content_hash_provenance(self):
         config = CrawlConfig("KEDI", ("https://kedi.re.kr/jobs",), ("kedi.re.kr",), True, max_links_per_seed=10)
         adapter = PublicHTMLCrawlAdapter(config)
-        listing = b'<a href="/jobs/1">교육행정 연구원 채용</a><a href="https://outside.example/job">외부</a>'
+        listing = '<a href="/jobs/1">교육행정 연구원 채용</a><a href="https://outside.example/job">외부</a>'.encode("utf-8")
         adapter._fetch = lambda url: ("https://kedi.re.kr/jobs", "text/html", listing)
         with tempfile.TemporaryDirectory() as tmp, patch("adapters.public_html_crawl.ARTIFACT_DIR", __import__("pathlib").Path(tmp)):
             rows = adapter.search({"query": "교육행정 채용"})
