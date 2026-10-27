@@ -1,8 +1,6 @@
-"""Self-contained selective port of the legacy Search Matrix query-planning contract.
+"""Self-contained deterministic Search Matrix query-planning contract.
 
-Ported from ydonchoi/recruitment_matching/search_agent/search_matrix.py and
-search_agent/adaptive_planner.py. This module intentionally has no import-time
-or runtime dependency on the legacy repository.
+This module has no import-time or runtime dependency on external repositories.
 """
 from __future__ import annotations
 
