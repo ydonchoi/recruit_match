@@ -14,3 +14,13 @@ __pycache__/
 
 # Generated latest-run summary (rebuild from search logs and cumulative ledger)
 /reports/latest_run_summary.md
+
+# Local environment configuration and secrets; never commit real credentials
+.env
+.env.*
+!.env.example
+!.env.*.example
+/secrets/
+/credentials.local.*
+/secrets.local.*
+*.secret
