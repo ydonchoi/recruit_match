@@ -6,7 +6,7 @@ A clean, verification-first reimplementation of the recruitment matching system.
 
 **Review the whole legacy architecture first; then selectively migrate, redesign, rebuild, or retire each component.** This project is not limited to moving the data model, and it will not blindly copy the legacy implementation.
 
-- Legacy source: [ydonchoi/recruitment_matching](https://github.com/ydonchoi/recruitment_matching)
+- Architecture: standalone implementation with locally maintained search and discovery components
 - Migration inventory: [docs/migration-map.md](docs/migration-map.md)
 - Tracked-tree inventory and code findings: [docs/legacy-architecture-inventory.md](docs/legacy-architecture-inventory.md)
 - Target architecture: [docs/architecture.md](docs/architecture.md) and [docs/target-architecture-and-migration-plan.md](docs/target-architecture-and-migration-plan.md)
