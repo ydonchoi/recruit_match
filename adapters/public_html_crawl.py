@@ -1,4 +1,4 @@
-"""Policy-bounded public HTML discovery adapter ported from recruitment_matching.
+"""Policy-bounded public HTML discovery adapter.
 
 This adapter is discovery-only. It requires explicit reviewed seed URLs/hosts,
 checks robots.txt, uses HTTPS and same-host redirects, limits bytes and request
