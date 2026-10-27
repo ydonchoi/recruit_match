@@ -1,6 +1,6 @@
 # recruit_match
 
-독립형 채용 검색 실행기. 검색 쿼리 생성 엔진은 레거시 저장소에서 선택적으로 이식한 `search_engine.py`이며, 실행 시 `recruitment_matching` 저장소를 import하거나 참조하지 않습니다.
+독립형 채용 검색 실행기입니다. 검색 쿼리 생성 엔진은 이 저장소에 포함된 `search_engine.py`이며, 실행에 별도 저장소 체크아웃이 필요하지 않습니다.
 
 ## 실행
 
@@ -27,7 +27,7 @@ python run_pipeline.py \
 
 ## 선택적 이식 및 출처
 
-`search_engine.py`는 `ydonchoi/recruitment_matching`의 `search_agent/search_matrix.py`와 `search_agent/adaptive_planner.py`를 바탕으로 필요한 검색 행렬·쿼리 계획 계약을 이식한 구현입니다. 실행 시 레거시 체크아웃은 필요하지 않습니다. 이식은 선택적이며 원본 전체 코드의 복제나 완전한 의미 동등성 검증을 뜻하지 않습니다.
+`search_engine.py`는 검색 행렬과 쿼리 계획을 생성하는 모듈입니다. 이 저장소의 실행 경로는 해당 모듈의 로컬 구현을 사용합니다.
 
 ## 현재 제한
 
@@ -35,7 +35,7 @@ python run_pipeline.py \
 
 ## 레거시 공개 HTML 어댑터 이식 및 실행 연결
 
-`adapters/public_html_crawl.py`는 `recruitment_matching`의 공개 HTML 발견 어댑터를 이 저장소 계약에 맞춰 이식한 구현입니다. `run_pipeline.py`의 어댑터 로더가 기준 플랫폼별 공개 검색 API 어댑터와, 명시적으로 설정된 HTML 크롤러를 `CompositeAdapter`로 결합합니다. HTML 어댑터는 발견 전용이며 공고 상태·공식성·자격을 검증된 것으로 설정하지 않습니다.
+`adapters/public_html_crawl.py`는 공개 HTML에서 공고 후보를 발견하는 어댑터입니다. `run_pipeline.py`의 어댑터 로더는 공개 검색 API 어댑터와 명시적으로 설정된 HTML 크롤러를 `CompositeAdapter`로 결합합니다. HTML 어댑터는 발견 전용이며 공고 상태·공식성·자격을 검증된 것으로 설정하지 않습니다.
 
 크롤러를 사용하려면 `RECRUIT_MATCH_CRAWL_CONFIG_JSON` 환경변수에 검토한 플랫폼별 seed URL, 허용 호스트, 이용약관 검토 여부를 제공해야 합니다. URL이나 호스트는 자동 추측하지 않습니다.
 
