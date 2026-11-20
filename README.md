@@ -92,6 +92,19 @@ HTML 크롤러는 발견 전용이며, 검토된 seed URL·허용 호스트·이
 - [필수 검색 워크플로](docs/mandatory-search-workflow.md)
 - [요건 중심 직무 매칭](docs/requirement-centered-job-matching.md)
 - [목표 워크플로 설계](docs/target-workflow-design.md)
+- [Notion 접근 정책](docs/notion-access-policy.md)
+
+## Notion 읽기 (선택, 읽기 전용)
+
+hosted Notion MCP의 Query Data Source SQL 할당량을 아끼기 위해, 반복·대량 조회는 개인 Integration Token으로 REST API를 직접 호출하는 읽기 전용 CLI를 씁니다. 서버 측 필터·페이지 상한·평균 3 req/s 속도 제한·429 재시도를 적용합니다.
+
+```bash
+export NOTION_TOKEN="토큰을 안전한 방식으로 주입"
+python -m adapters.notion_api query --data-source "collection://<ds-id>" \
+  --where '상태|status|equals|"진행"' --date-prop 마감일 --since 2026-11-01 --page-size 50
+```
+
+에이전트용 우선순위 규칙은 [CLAUDE.md](CLAUDE.md), 배경과 한계는 [Notion 접근 정책](docs/notion-access-policy.md)을 참조하세요. 쓰기 기능은 없습니다.
 
 ## 개인정보 및 데이터 취급
 
